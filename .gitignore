@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Build artifacts
+client/dist/
+
+# Database / runtime data
+server/data/*.db
+
+# Environment / misc
+.env
+.DS_Store
+Thumbs.db

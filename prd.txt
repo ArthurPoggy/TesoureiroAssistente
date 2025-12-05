@@ -1,0 +1,44 @@
+RF01 – Cadastro de membros
+O sistema deve permitir cadastrar, editar e remover membros do clã.
+
+RF02 – Registro de pagamentos mensais
+O sistema deve permitir registrar se um membro pagou ou não a caixinha no mês.
+
+RF03 – Histórico de pagamentos
+O sistema deve armazenar o histórico de pagamentos para consultas futuras.
+
+RF04 – Exibição de arrecadação mensal
+O sistema deve exibir quanto foi arrecadado em um mês específico.
+
+RF05 – Exibição de arrecadação total
+O sistema deve calcular e exibir o total arrecadado no ano.
+
+RF06 – Gerenciamento de metas
+O sistema deve permitir criar, editar e excluir metas de arrecadação.
+
+RF07 – Monitoramento de progresso de metas
+O sistema deve exibir o progresso da arrecadação em relação às metas.
+
+RF08 – Registro de despesas
+O sistema deve permitir registrar despesas do clã.
+
+RF09 – Cálculo automático do saldo
+O sistema deve calcular saldo = arrecadação – despesas.
+
+RF10 – Dashboard visual
+O sistema deve apresentar gráficos com indicadores financeiros.
+
+RF11 – Filtros de inadimplência
+O sistema deve permitir filtrar membros que não pagaram a caixinha.
+
+RF12 – Exportação de relatórios
+O sistema deve permitir exportar relatórios em PDF ou CSV.
+
+✔ Sistema de eventos
+Ex.: “Acampamento de junho – arrecadado X – gasto Y”.
+
+✔ Botão “gerar recibo”
+Você pode gerar um recibo simples automático.
+
+✔ Tela de Ranking
+Ranking de quem paga em dia — gamifica e incentiva.
