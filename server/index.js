@@ -7,11 +7,13 @@ const PDFDocument = require('pdfkit');
 
 const PORT = process.env.PORT || 4000;
 const app = express();
+const isVercel = Boolean(process.env.VERCEL);
 
 app.use(cors());
 app.use(express.json());
 
-const dataDir = path.join(__dirname, 'data');
+// On Vercel we only have write access to /tmp, locally we keep the DB under ./data
+const dataDir = process.env.DATA_DIR || path.join(isVercel ? '/tmp' : __dirname, 'data');
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
@@ -728,6 +730,10 @@ app.post('/api/seed', (req, res) => {
 
 app.use((req, res) => fail(res, 'Rota não encontrada', 404));
 
-app.listen(PORT, () => {
-  console.log(`Tesoureiro Assistente API rodando na porta ${PORT}`);
-});
+if (!isVercel) {
+  app.listen(PORT, () => {
+    console.log(`Tesoureiro Assistente API rodando na porta ${PORT}`);
+  });
+}
+
+module.exports = app;
