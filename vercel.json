@@ -2,13 +2,13 @@
   "version": 2,
   "installCommand": "npm install --prefix server && npm install --prefix client",
   "functions": {
-    "server/index.js": {
+    "api/index.js": {
       "runtime": "nodejs20.x"
     }
   },
   "builds": [
     {
-      "src": "server/index.js",
+      "src": "api/index.js",
       "use": "@vercel/node"
     },
     {
@@ -22,7 +22,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/server/index.js"
+      "dest": "/api/index.js"
     },
     {
       "src": "/(.*)",
