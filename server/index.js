@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const PDFDocument = require('pdfkit');
 const { Pool, types } = require('pg');
+const jwt = require('jsonwebtoken');
 
 const NUMERIC_OID = 1700;
 const BIGINT_OID = 20;
@@ -132,7 +133,75 @@ const execute = async (sql, params = []) => {
 const success = (res, payload = {}) => res.json({ ok: true, ...payload });
 const fail = (res, message, status = 400) => res.status(status).json({ ok: false, message });
 
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const JWT_SECRET = process.env.JWT_SECRET || 'tesoureiroassistente-secret';
+const authConfigured = Boolean(ADMIN_EMAIL && ADMIN_PASSWORD && JWT_SECRET);
+
+const getTokenFromRequest = (req) => {
+  const authHeader = req.headers.authorization || '';
+  if (!authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  return authHeader.slice(7);
+};
+
+const verifyAdminToken = (token) => {
+  if (!authConfigured) {
+    throw new Error('Autenticação não configurada');
+  }
+  const payload = jwt.verify(token, JWT_SECRET);
+  if (payload.role !== 'admin') {
+    throw new Error('Token inválido');
+  }
+  return payload;
+};
+
+const requireAdmin = (req, res, next) => {
+  try {
+    const token = getTokenFromRequest(req);
+    if (!token) {
+      return fail(res, 'Não autorizado', 401);
+    }
+    req.user = verifyAdminToken(token);
+    return next();
+  } catch (error) {
+    const status = error.message === 'Autenticação não configurada' ? 500 : 401;
+    return fail(res, error.message === 'Autenticação não configurada' ? error.message : 'Não autorizado', status);
+  }
+};
+
 app.get('/api/health', (req, res) => success(res, { status: 'running' }));
+
+app.post('/api/login', (req, res) => {
+  try {
+    if (!authConfigured) {
+      return fail(res, 'Autenticação não configurada', 500);
+    }
+    const { email, password } = req.body;
+    if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+      return fail(res, 'Credenciais inválidas', 401);
+    }
+    const token = jwt.sign({ role: 'admin', email }, JWT_SECRET, { expiresIn: '12h' });
+    success(res, { token });
+  } catch (error) {
+    fail(res, error.message);
+  }
+});
+
+app.get('/api/me', (req, res) => {
+  try {
+    const token = getTokenFromRequest(req);
+    if (!token) {
+      return fail(res, 'Não autorizado', 401);
+    }
+    const payload = verifyAdminToken(token);
+    success(res, { role: payload.role, email: payload.email });
+  } catch (error) {
+    const status = error.message === 'Autenticação não configurada' ? 500 : 401;
+    fail(res, error.message === 'Autenticação não configurada' ? error.message : 'Não autorizado', status);
+  }
+});
 
 // Members -----------------------------------------------------
 app.get('/api/members', async (req, res) => {
@@ -144,7 +213,7 @@ app.get('/api/members', async (req, res) => {
   }
 });
 
-app.post('/api/members', async (req, res) => {
+app.post('/api/members', requireAdmin, async (req, res) => {
   try {
     const { name, email, nickname } = req.body;
     if (!name) {
@@ -160,7 +229,7 @@ app.post('/api/members', async (req, res) => {
   }
 });
 
-app.put('/api/members/:id', async (req, res) => {
+app.put('/api/members/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, email, nickname } = req.body;
@@ -174,7 +243,7 @@ app.put('/api/members/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/members/:id', async (req, res) => {
+app.delete('/api/members/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     await execute('DELETE FROM members WHERE id = ?', [id]);
@@ -228,7 +297,7 @@ app.get('/api/payments/history/:memberId', async (req, res) => {
   }
 });
 
-app.post('/api/payments', async (req, res) => {
+app.post('/api/payments', requireAdmin, async (req, res) => {
   try {
     const { memberId, month, year, amount, paid, paidAt, notes, goalId } = req.body;
     if (!memberId || !month || !year || !amount) {
@@ -255,7 +324,7 @@ app.post('/api/payments', async (req, res) => {
   }
 });
 
-app.put('/api/payments/:id', async (req, res) => {
+app.put('/api/payments/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { amount, paid, paidAt, notes, goalId } = req.body;
@@ -270,7 +339,7 @@ app.put('/api/payments/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/payments/:id', async (req, res) => {
+app.delete('/api/payments/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     await execute('DELETE FROM payments WHERE id = ?', [id]);
@@ -280,7 +349,7 @@ app.delete('/api/payments/:id', async (req, res) => {
   }
 });
 
-app.get('/api/payments/:id/receipt', async (req, res) => {
+app.get('/api/payments/:id/receipt', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const payment = await queryOne(
@@ -342,7 +411,7 @@ app.get('/api/goals', async (req, res) => {
   }
 });
 
-app.post('/api/goals', async (req, res) => {
+app.post('/api/goals', requireAdmin, async (req, res) => {
   try {
     const { title, targetAmount, deadline, description } = req.body;
     if (!title || !targetAmount) {
@@ -358,7 +427,7 @@ app.post('/api/goals', async (req, res) => {
   }
 });
 
-app.put('/api/goals/:id', async (req, res) => {
+app.put('/api/goals/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { title, targetAmount, deadline, description } = req.body;
@@ -372,7 +441,7 @@ app.put('/api/goals/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/goals/:id', async (req, res) => {
+app.delete('/api/goals/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     await execute('DELETE FROM goals WHERE id = ?', [id]);
@@ -392,7 +461,7 @@ app.get('/api/expenses', async (req, res) => {
   }
 });
 
-app.post('/api/expenses', async (req, res) => {
+app.post('/api/expenses', requireAdmin, async (req, res) => {
   try {
     const { title, amount, expenseDate, category, notes, eventId } = req.body;
     if (!title || !amount || !expenseDate) {
@@ -408,7 +477,7 @@ app.post('/api/expenses', async (req, res) => {
   }
 });
 
-app.put('/api/expenses/:id', async (req, res) => {
+app.put('/api/expenses/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { title, amount, expenseDate, category, notes, eventId } = req.body;
@@ -422,7 +491,7 @@ app.put('/api/expenses/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/expenses/:id', async (req, res) => {
+app.delete('/api/expenses/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     await execute('DELETE FROM expenses WHERE id = ?', [id]);
@@ -442,7 +511,7 @@ app.get('/api/events', async (req, res) => {
   }
 });
 
-app.post('/api/events', async (req, res) => {
+app.post('/api/events', requireAdmin, async (req, res) => {
   try {
     const { name, eventDate, raisedAmount, spentAmount, description } = req.body;
     if (!name || !eventDate) {
@@ -458,7 +527,7 @@ app.post('/api/events', async (req, res) => {
   }
 });
 
-app.put('/api/events/:id', async (req, res) => {
+app.put('/api/events/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, eventDate, raisedAmount, spentAmount, description } = req.body;
@@ -472,7 +541,7 @@ app.put('/api/events/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/events/:id', async (req, res) => {
+app.delete('/api/events/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     await execute('DELETE FROM events WHERE id = ?', [id]);
@@ -736,7 +805,7 @@ app.get('/api/events/summary', async (req, res) => {
 });
 
 // Utility endpoint to seed example data for demos
-app.post('/api/seed', async (req, res) => {
+app.post('/api/seed', requireAdmin, async (req, res) => {
   try {
     const membersCountRow = await queryOne('SELECT COUNT(*) as total FROM members');
     if (membersCountRow?.total) {

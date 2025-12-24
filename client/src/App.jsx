@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -31,9 +31,16 @@ const currentMonth = new Date().getMonth() + 1;
 const currentYear = new Date().getFullYear();
 
 const fetchJSON = async (url, options = {}) => {
-  const config = options;
-  if (config.body && !config.headers) {
-    config.headers = { 'Content-Type': 'application/json' };
+  const config = { ...options };
+  if (config.body && typeof config.body !== 'string') {
+    config.body = JSON.stringify(config.body);
+  }
+  const headers = { ...(options.headers || {}) };
+  if (config.body && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
+  if (Object.keys(headers).length) {
+    config.headers = headers;
   }
   const response = await fetch(url, config);
   if (!response.ok) {
@@ -43,8 +50,9 @@ const fetchJSON = async (url, options = {}) => {
   return response.json();
 };
 
-const downloadBinary = async (url, filename) => {
-  const res = await fetch(url);
+const downloadBinary = async (url, filename, token) => {
+  const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+  const res = await fetch(url, { headers });
   if (!res.ok) {
     throw new Error('Falha ao gerar arquivo');
   }
@@ -61,6 +69,10 @@ const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' 
 const formatCurrency = (value = 0) => BRL.format(value || 0);
 
 function App() {
+  const [authToken, setAuthToken] = useState(() => localStorage.getItem('tesoureiro_token'));
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [authLoading, setAuthLoading] = useState(false);
   const [members, setMembers] = useState([]);
   const [memberForm, setMemberForm] = useState({ name: '', email: '', nickname: '' });
   const [editingMemberId, setEditingMemberId] = useState(null);
@@ -118,6 +130,18 @@ function App() {
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
+  const canEdit = isAdmin;
+
+  const apiFetch = useCallback(
+    (url, options = {}) => {
+      const headers = { ...(options.headers || {}) };
+      if (authToken) {
+        headers.Authorization = `Bearer ${authToken}`;
+      }
+      return fetchJSON(url, { ...options, headers });
+    },
+    [authToken]
+  );
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -129,9 +153,33 @@ function App() {
     showToast(error.message || 'Algo deu errado', 'error');
   };
 
+  const handleLogin = async (event) => {
+    event.preventDefault();
+    try {
+      setAuthLoading(true);
+      const data = await fetchJSON('/api/login', { method: 'POST', body: loginForm });
+      setAuthToken(data.token);
+      localStorage.setItem('tesoureiro_token', data.token);
+      setIsAdmin(true);
+      setLoginForm({ email: '', password: '' });
+      showToast('Login realizado');
+    } catch (error) {
+      handleError(error);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    setAuthToken(null);
+    setIsAdmin(false);
+    localStorage.removeItem('tesoureiro_token');
+    showToast('Sessão encerrada');
+  };
+
   const loadMembers = async () => {
     try {
-      const data = await fetchJSON('/api/members');
+      const data = await apiFetch('/api/members');
       setMembers(data.members || []);
     } catch (error) {
       handleError(error);
@@ -142,7 +190,7 @@ function App() {
     try {
       setLoading(true);
       const params = new URLSearchParams({ month: selectedMonth, year: selectedYear });
-      const data = await fetchJSON(`/api/payments?${params.toString()}`);
+      const data = await apiFetch(`/api/payments?${params.toString()}`);
       setPayments(data.payments || []);
     } catch (error) {
       handleError(error);
@@ -153,7 +201,7 @@ function App() {
 
   const loadGoals = async () => {
     try {
-      const data = await fetchJSON('/api/goals');
+      const data = await apiFetch('/api/goals');
       setGoals(data.goals || []);
     } catch (error) {
       handleError(error);
@@ -162,7 +210,7 @@ function App() {
 
   const loadExpenses = async () => {
     try {
-      const data = await fetchJSON('/api/expenses');
+      const data = await apiFetch('/api/expenses');
       setExpenses(data.expenses || []);
     } catch (error) {
       handleError(error);
@@ -171,7 +219,7 @@ function App() {
 
   const loadEvents = async () => {
     try {
-      const data = await fetchJSON('/api/events');
+      const data = await apiFetch('/api/events');
       setEvents(data.events || []);
     } catch (error) {
       handleError(error);
@@ -181,7 +229,7 @@ function App() {
   const loadDelinquent = async () => {
     try {
       const params = new URLSearchParams({ month: selectedMonth, year: selectedYear });
-      const data = await fetchJSON(`/api/members/delinquent?${params.toString()}`);
+      const data = await apiFetch(`/api/members/delinquent?${params.toString()}`);
       setDelinquent(data.members || []);
     } catch (error) {
       handleError(error);
@@ -190,7 +238,7 @@ function App() {
 
   const loadRanking = async () => {
     try {
-      const data = await fetchJSON(`/api/ranking?year=${selectedYear}`);
+      const data = await apiFetch(`/api/ranking?year=${selectedYear}`);
       setRanking(data.ranking || []);
     } catch (error) {
       handleError(error);
@@ -200,12 +248,36 @@ function App() {
   const loadDashboard = async () => {
     try {
       const params = new URLSearchParams({ month: selectedMonth, year: selectedYear });
-      const data = await fetchJSON(`/api/dashboard?${params.toString()}`);
+      const data = await apiFetch(`/api/dashboard?${params.toString()}`);
       setDashboard(data);
     } catch (error) {
       handleError(error);
     }
   };
+
+  useEffect(() => {
+    if (!authToken) {
+      setIsAdmin(false);
+      return;
+    }
+    let canceled = false;
+    apiFetch('/api/me')
+      .then(() => {
+        if (!canceled) {
+          setIsAdmin(true);
+        }
+      })
+      .catch(() => {
+        if (!canceled) {
+          setIsAdmin(false);
+          setAuthToken(null);
+          localStorage.removeItem('tesoureiro_token');
+        }
+      });
+    return () => {
+      canceled = true;
+    };
+  }, [authToken, apiFetch]);
 
   useEffect(() => {
     loadMembers();
@@ -264,7 +336,7 @@ function App() {
       };
       const endpoint = editingMemberId ? `/api/members/${editingMemberId}` : '/api/members';
       const method = editingMemberId ? 'PUT' : 'POST';
-      await fetchJSON(endpoint, { method, body: JSON.stringify(payload) });
+      await apiFetch(endpoint, { method, body: JSON.stringify(payload) });
       await loadMembers();
       resetMemberForm();
       showToast('Membro salvo com sucesso');
@@ -276,7 +348,7 @@ function App() {
   const handleMemberDelete = async (id) => {
     if (!window.confirm('Remover este membro?')) return;
     try {
-      await fetchJSON(`/api/members/${id}`, { method: 'DELETE' });
+      await apiFetch(`/api/members/${id}`, { method: 'DELETE' });
       await loadMembers();
       showToast('Membro removido');
     } catch (error) {
@@ -301,7 +373,7 @@ function App() {
         notes: paymentForm.notes,
         goalId: paymentForm.goalId ? Number(paymentForm.goalId) : null
       };
-      await fetchJSON('/api/payments', {
+      await apiFetch('/api/payments', {
         method: 'POST',
         body: JSON.stringify(payload)
       });
@@ -315,7 +387,7 @@ function App() {
   const handlePaymentDelete = async (id) => {
     if (!window.confirm('Remover este pagamento?')) return;
     try {
-      await fetchJSON(`/api/payments/${id}`, { method: 'DELETE' });
+      await apiFetch(`/api/payments/${id}`, { method: 'DELETE' });
       await Promise.all([loadPayments(), loadDashboard(), loadDelinquent(), loadRanking()]);
       showToast('Pagamento removido');
     } catch (error) {
@@ -334,7 +406,7 @@ function App() {
       };
       const endpoint = editingGoalId ? `/api/goals/${editingGoalId}` : '/api/goals';
       const method = editingGoalId ? 'PUT' : 'POST';
-      await fetchJSON(endpoint, { method, body: JSON.stringify(payload) });
+      await apiFetch(endpoint, { method, body: JSON.stringify(payload) });
       await loadGoals();
       resetGoalForm();
       showToast('Meta salva');
@@ -346,7 +418,7 @@ function App() {
   const handleGoalDelete = async (id) => {
     if (!window.confirm('Excluir esta meta?')) return;
     try {
-      await fetchJSON(`/api/goals/${id}`, { method: 'DELETE' });
+      await apiFetch(`/api/goals/${id}`, { method: 'DELETE' });
       await loadGoals();
       showToast('Meta removida');
     } catch (error) {
@@ -367,7 +439,7 @@ function App() {
       };
       const endpoint = editingExpenseId ? `/api/expenses/${editingExpenseId}` : '/api/expenses';
       const method = editingExpenseId ? 'PUT' : 'POST';
-      await fetchJSON(endpoint, { method, body: JSON.stringify(payload) });
+      await apiFetch(endpoint, { method, body: JSON.stringify(payload) });
       await Promise.all([loadExpenses(), loadDashboard()]);
       resetExpenseForm();
       showToast('Despesa registrada');
@@ -379,7 +451,7 @@ function App() {
   const handleExpenseDelete = async (id) => {
     if (!window.confirm('Remover esta despesa?')) return;
     try {
-      await fetchJSON(`/api/expenses/${id}`, { method: 'DELETE' });
+      await apiFetch(`/api/expenses/${id}`, { method: 'DELETE' });
       await Promise.all([loadExpenses(), loadDashboard()]);
       showToast('Despesa removida');
     } catch (error) {
@@ -399,7 +471,7 @@ function App() {
       };
       const endpoint = editingEventId ? `/api/events/${editingEventId}` : '/api/events';
       const method = editingEventId ? 'PUT' : 'POST';
-      await fetchJSON(endpoint, { method, body: JSON.stringify(payload) });
+      await apiFetch(endpoint, { method, body: JSON.stringify(payload) });
       await loadEvents();
       resetEventForm();
       showToast('Evento salvo');
@@ -411,7 +483,7 @@ function App() {
   const handleEventDelete = async (id) => {
     if (!window.confirm('Remover este evento?')) return;
     try {
-      await fetchJSON(`/api/events/${id}`, { method: 'DELETE' });
+      await apiFetch(`/api/events/${id}`, { method: 'DELETE' });
       await loadEvents();
       showToast('Evento removido');
     } catch (error) {
@@ -421,7 +493,7 @@ function App() {
 
   const handleReceipt = async (id) => {
     try {
-      await downloadBinary(`/api/payments/${id}/receipt`, `recibo-${id}.pdf`);
+      await downloadBinary(`/api/payments/${id}/receipt`, `recibo-${id}.pdf`, authToken);
       showToast('Recibo gerado');
     } catch (error) {
       handleError(error);
@@ -437,7 +509,8 @@ function App() {
         month: selectedMonth,
         year: selectedYear
       });
-      const res = await fetch(`/api/reports/export?${params.toString()}`);
+      const headers = authToken ? { Authorization: `Bearer ${authToken}` } : undefined;
+      const res = await fetch(`/api/reports/export?${params.toString()}`, { headers });
       if (!res.ok) {
         throw new Error('Falha ao exportar');
       }
@@ -498,6 +571,36 @@ function App() {
             onChange={(e) => setSelectedYear(Number(e.target.value))}
           />
         </div>
+        <div className="auth-panel">
+          {isAdmin ? (
+            <div className="auth-status">
+              <span>Logado como tesoureiro</span>
+              <button type="button" onClick={handleLogout}>
+                Sair
+              </button>
+            </div>
+          ) : (
+            <form className="login-form" onSubmit={handleLogin}>
+              <input
+                type="email"
+                placeholder="Email do tesoureiro"
+                value={loginForm.email}
+                onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+                required
+              />
+              <input
+                type="password"
+                placeholder="Senha"
+                value={loginForm.password}
+                onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                required
+              />
+              <button type="submit" disabled={authLoading}>
+                {authLoading ? 'Entrando...' : 'Entrar'}
+              </button>
+            </form>
+          )}
+        </div>
       </header>
 
       {toast && <div className={`toast ${toast.type}`}>{toast.message}</div>}
@@ -536,14 +639,26 @@ function App() {
               <div className="progress">
                 <div style={{ width: `${goal.progress || 0}%` }} />
               </div>
-              <div className="goal-actions">
-                <button onClick={() => { setGoalForm({ title: goal.title, targetAmount: goal.target_amount, deadline: goal.deadline || '', description: goal.description || '' }); setEditingGoalId(goal.id); }}>
-                  Editar
-                </button>
-                <button className="ghost" onClick={() => handleGoalDelete(goal.id)}>
-                  Remover
-                </button>
-              </div>
+              {canEdit && (
+                <div className="goal-actions">
+                  <button
+                    onClick={() => {
+                      setGoalForm({
+                        title: goal.title,
+                        targetAmount: goal.target_amount,
+                        deadline: goal.deadline || '',
+                        description: goal.description || ''
+                      });
+                      setEditingGoalId(goal.id);
+                    }}
+                  >
+                    Editar
+                  </button>
+                  <button className="ghost" onClick={() => handleGoalDelete(goal.id)}>
+                    Remover
+                  </button>
+                </div>
+              )}
             </article>
           ))}
         </div>
@@ -554,32 +669,36 @@ function App() {
           <h2>Membros</h2>
           <p>Cadastre, edite ou remova membros do clã.</p>
         </div>
-        <form className="form-grid" onSubmit={handleMemberSubmit}>
-          <input
-            placeholder="Nome"
-            value={memberForm.name}
-            onChange={(e) => setMemberForm({ ...memberForm, name: e.target.value })}
-            required
-          />
-          <input
-            placeholder="Email"
-            value={memberForm.email}
-            onChange={(e) => setMemberForm({ ...memberForm, email: e.target.value })}
-          />
-          <input
-            placeholder="Apelido"
-            value={memberForm.nickname}
-            onChange={(e) => setMemberForm({ ...memberForm, nickname: e.target.value })}
-          />
-          <div className="form-actions">
-            <button type="submit">{editingMemberId ? 'Atualizar' : 'Adicionar'}</button>
-            {editingMemberId && (
-              <button type="button" className="ghost" onClick={resetMemberForm}>
-                Cancelar
-              </button>
-            )}
-          </div>
-        </form>
+        {canEdit ? (
+          <form className="form-grid" onSubmit={handleMemberSubmit}>
+            <input
+              placeholder="Nome"
+              value={memberForm.name}
+              onChange={(e) => setMemberForm({ ...memberForm, name: e.target.value })}
+              required
+            />
+            <input
+              placeholder="Email"
+              value={memberForm.email}
+              onChange={(e) => setMemberForm({ ...memberForm, email: e.target.value })}
+            />
+            <input
+              placeholder="Apelido"
+              value={memberForm.nickname}
+              onChange={(e) => setMemberForm({ ...memberForm, nickname: e.target.value })}
+            />
+            <div className="form-actions">
+              <button type="submit">{editingMemberId ? 'Atualizar' : 'Adicionar'}</button>
+              {editingMemberId && (
+                <button type="button" className="ghost" onClick={resetMemberForm}>
+                  Cancelar
+                </button>
+              )}
+            </div>
+          </form>
+        ) : (
+          <p className="lock-hint">Faça login como tesoureiro para cadastrar ou editar membros.</p>
+        )}
         <div className="table-wrapper">
           <table>
             <thead>
@@ -587,7 +706,7 @@ function App() {
                 <th>Nome</th>
                 <th>Email</th>
                 <th>Apelido</th>
-                <th>Ações</th>
+                {canEdit && <th>Ações</th>}
               </tr>
             </thead>
             <tbody>
@@ -596,23 +715,25 @@ function App() {
                   <td>{member.name}</td>
                   <td>{member.email}</td>
                   <td>{member.nickname}</td>
-                  <td>
-                    <button
-                      onClick={() => {
-                        setMemberForm({
-                          name: member.name,
-                          email: member.email || '',
-                          nickname: member.nickname || ''
-                        });
-                        setEditingMemberId(member.id);
-                      }}
-                    >
-                      Editar
-                    </button>
-                    <button className="ghost" onClick={() => handleMemberDelete(member.id)}>
-                      Remover
-                    </button>
-                  </td>
+                  {canEdit && (
+                    <td>
+                      <button
+                        onClick={() => {
+                          setMemberForm({
+                            name: member.name,
+                            email: member.email || '',
+                            nickname: member.nickname || ''
+                          });
+                          setEditingMemberId(member.id);
+                        }}
+                      >
+                        Editar
+                      </button>
+                      <button className="ghost" onClick={() => handleMemberDelete(member.id)}>
+                        Remover
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -625,73 +746,77 @@ function App() {
           <h2>Pagamentos mensais</h2>
           <p>Histórico completo e geração de recibos.</p>
         </div>
-        <form className="form-grid" onSubmit={handlePaymentSubmit}>
-          <select
-            value={paymentForm.memberId}
-            onChange={(e) => setPaymentForm({ ...paymentForm, memberId: e.target.value })}
-            required
-          >
-            <option value="">Selecione um membro</option>
-            {members.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={paymentForm.month}
-            onChange={(e) => setPaymentForm({ ...paymentForm, month: Number(e.target.value) })}
-          >
-            {months.map((monthOption) => (
-              <option key={monthOption.value} value={monthOption.value}>
-                {monthOption.label}
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            value={paymentForm.year}
-            onChange={(e) => setPaymentForm({ ...paymentForm, year: Number(e.target.value) })}
-          />
-          <input
-            type="number"
-            value={paymentForm.amount}
-            onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
-            placeholder="Valor"
-          />
-          <select
-            value={paymentForm.goalId}
-            onChange={(e) => setPaymentForm({ ...paymentForm, goalId: e.target.value })}
-          >
-            <option value="">Meta opcional</option>
-            {goals.map((goal) => (
-              <option key={goal.id} value={goal.id}>
-                {goal.title}
-              </option>
-            ))}
-          </select>
-          <label className="checkbox">
+        {canEdit ? (
+          <form className="form-grid" onSubmit={handlePaymentSubmit}>
+            <select
+              value={paymentForm.memberId}
+              onChange={(e) => setPaymentForm({ ...paymentForm, memberId: e.target.value })}
+              required
+            >
+              <option value="">Selecione um membro</option>
+              {members.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={paymentForm.month}
+              onChange={(e) => setPaymentForm({ ...paymentForm, month: Number(e.target.value) })}
+            >
+              {months.map((monthOption) => (
+                <option key={monthOption.value} value={monthOption.value}>
+                  {monthOption.label}
+                </option>
+              ))}
+            </select>
             <input
-              type="checkbox"
-              checked={paymentForm.paid}
-              onChange={(e) => setPaymentForm({ ...paymentForm, paid: e.target.checked })}
+              type="number"
+              value={paymentForm.year}
+              onChange={(e) => setPaymentForm({ ...paymentForm, year: Number(e.target.value) })}
             />
-            Pago
-          </label>
-          <input
-            type="date"
-            value={paymentForm.paidAt}
-            onChange={(e) => setPaymentForm({ ...paymentForm, paidAt: e.target.value })}
-          />
-          <input
-            placeholder="Observações"
-            value={paymentForm.notes}
-            onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
-          />
-          <div className="form-actions">
-            <button type="submit">Registrar pagamento</button>
-          </div>
-        </form>
+            <input
+              type="number"
+              value={paymentForm.amount}
+              onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
+              placeholder="Valor"
+            />
+            <select
+              value={paymentForm.goalId}
+              onChange={(e) => setPaymentForm({ ...paymentForm, goalId: e.target.value })}
+            >
+              <option value="">Meta opcional</option>
+              {goals.map((goal) => (
+                <option key={goal.id} value={goal.id}>
+                  {goal.title}
+                </option>
+              ))}
+            </select>
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={paymentForm.paid}
+                onChange={(e) => setPaymentForm({ ...paymentForm, paid: e.target.checked })}
+              />
+              Pago
+            </label>
+            <input
+              type="date"
+              value={paymentForm.paidAt}
+              onChange={(e) => setPaymentForm({ ...paymentForm, paidAt: e.target.value })}
+            />
+            <input
+              placeholder="Observações"
+              value={paymentForm.notes}
+              onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
+            />
+            <div className="form-actions">
+              <button type="submit">Registrar pagamento</button>
+            </div>
+          </form>
+        ) : (
+          <p className="lock-hint">Somente o tesoureiro pode registrar ou editar pagamentos.</p>
+        )}
         <div className="table-wrapper">
           {loading ? (
             <p>Carregando pagamentos...</p>
@@ -704,7 +829,7 @@ function App() {
                   <th>Valor</th>
                   <th>Status</th>
                   <th>Meta</th>
-                  <th>Ações</th>
+                  {canEdit && <th>Ações</th>}
                 </tr>
               </thead>
               <tbody>
@@ -719,12 +844,14 @@ function App() {
                       {payment.paid ? 'Pago' : 'Pendente'}
                     </td>
                     <td>{payment.goal_id ? goals.find((goal) => goal.id === payment.goal_id)?.title : '-'}</td>
-                    <td>
-                      <button onClick={() => handleReceipt(payment.id)}>Gerar recibo</button>
-                      <button className="ghost" onClick={() => handlePaymentDelete(payment.id)}>
-                        Remover
-                      </button>
-                    </td>
+                    {canEdit && (
+                      <td>
+                        <button onClick={() => handleReceipt(payment.id)}>Gerar recibo</button>
+                        <button className="ghost" onClick={() => handlePaymentDelete(payment.id)}>
+                          Remover
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -739,56 +866,60 @@ function App() {
             <h2>Despesas</h2>
             <p>Controle de gastos por categoria.</p>
           </div>
-          <form className="form-grid" onSubmit={handleExpenseSubmit}>
-            <input
-              placeholder="Descrição"
-              value={expenseForm.title}
-              onChange={(e) => setExpenseForm({ ...expenseForm, title: e.target.value })}
-              required
-            />
-            <input
-              type="number"
-              placeholder="Valor"
-              value={expenseForm.amount}
-              onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
-              required
-            />
-            <input
-              type="date"
-              value={expenseForm.expenseDate}
-              onChange={(e) => setExpenseForm({ ...expenseForm, expenseDate: e.target.value })}
-              required
-            />
-            <input
-              placeholder="Categoria"
-              value={expenseForm.category}
-              onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
-            />
-            <select
-              value={expenseForm.eventId}
-              onChange={(e) => setExpenseForm({ ...expenseForm, eventId: e.target.value })}
-            >
-              <option value="">Evento associado</option>
-              {events.map((eventItem) => (
-                <option key={eventItem.id} value={eventItem.id}>
-                  {eventItem.name}
-                </option>
-              ))}
-            </select>
-            <input
-              placeholder="Observações"
-              value={expenseForm.notes}
-              onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })}
-            />
-            <div className="form-actions">
-              <button type="submit">{editingExpenseId ? 'Atualizar' : 'Salvar despesa'}</button>
-              {editingExpenseId && (
-                <button type="button" className="ghost" onClick={resetExpenseForm}>
-                  Cancelar
-                </button>
-              )}
-            </div>
-          </form>
+          {canEdit ? (
+            <form className="form-grid" onSubmit={handleExpenseSubmit}>
+              <input
+                placeholder="Descrição"
+                value={expenseForm.title}
+                onChange={(e) => setExpenseForm({ ...expenseForm, title: e.target.value })}
+                required
+              />
+              <input
+                type="number"
+                placeholder="Valor"
+                value={expenseForm.amount}
+                onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
+                required
+              />
+              <input
+                type="date"
+                value={expenseForm.expenseDate}
+                onChange={(e) => setExpenseForm({ ...expenseForm, expenseDate: e.target.value })}
+                required
+              />
+              <input
+                placeholder="Categoria"
+                value={expenseForm.category}
+                onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
+              />
+              <select
+                value={expenseForm.eventId}
+                onChange={(e) => setExpenseForm({ ...expenseForm, eventId: e.target.value })}
+              >
+                <option value="">Evento associado</option>
+                {events.map((eventItem) => (
+                  <option key={eventItem.id} value={eventItem.id}>
+                    {eventItem.name}
+                  </option>
+                ))}
+              </select>
+              <input
+                placeholder="Observações"
+                value={expenseForm.notes}
+                onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })}
+              />
+              <div className="form-actions">
+                <button type="submit">{editingExpenseId ? 'Atualizar' : 'Salvar despesa'}</button>
+                {editingExpenseId && (
+                  <button type="button" className="ghost" onClick={resetExpenseForm}>
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            </form>
+          ) : (
+            <p className="lock-hint">Somente o tesoureiro pode registrar despesas.</p>
+          )}
           <div className="table-wrapper compact">
             <table>
               <thead>
@@ -797,7 +928,7 @@ function App() {
                   <th>Título</th>
                   <th>Valor</th>
                   <th>Categoria</th>
-                  <th>Ações</th>
+                  {canEdit && <th>Ações</th>}
                 </tr>
               </thead>
               <tbody>
@@ -807,6 +938,7 @@ function App() {
                     <td>{expense.title}</td>
                     <td>{formatCurrency(expense.amount)}</td>
                     <td>{expense.category}</td>
+                  {canEdit && (
                     <td>
                       <button
                         onClick={() => {
@@ -827,6 +959,7 @@ function App() {
                         Remover
                       </button>
                     </td>
+                  )}
                   </tr>
                 ))}
               </tbody>
@@ -838,45 +971,49 @@ function App() {
             <h2>Eventos</h2>
             <p>Use eventos para contar histórias como &quot;Acampamento de junho&quot;.</p>
           </div>
-          <form className="form-grid" onSubmit={handleEventSubmit}>
-            <input
-              placeholder="Nome do evento"
-              value={eventForm.name}
-              onChange={(e) => setEventForm({ ...eventForm, name: e.target.value })}
-              required
-            />
-            <input
-              type="date"
-              value={eventForm.eventDate}
-              onChange={(e) => setEventForm({ ...eventForm, eventDate: e.target.value })}
-              required
-            />
-            <input
-              type="number"
-              placeholder="Arrecadado"
-              value={eventForm.raisedAmount}
-              onChange={(e) => setEventForm({ ...eventForm, raisedAmount: e.target.value })}
-            />
-            <input
-              type="number"
-              placeholder="Gasto"
-              value={eventForm.spentAmount}
-              onChange={(e) => setEventForm({ ...eventForm, spentAmount: e.target.value })}
-            />
-            <input
-              placeholder="Descrição"
-              value={eventForm.description}
-              onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
-            />
-            <div className="form-actions">
-              <button type="submit">{editingEventId ? 'Atualizar evento' : 'Salvar evento'}</button>
-              {editingEventId && (
-                <button type="button" className="ghost" onClick={resetEventForm}>
-                  Cancelar
-                </button>
-              )}
-            </div>
-          </form>
+          {canEdit ? (
+            <form className="form-grid" onSubmit={handleEventSubmit}>
+              <input
+                placeholder="Nome do evento"
+                value={eventForm.name}
+                onChange={(e) => setEventForm({ ...eventForm, name: e.target.value })}
+                required
+              />
+              <input
+                type="date"
+                value={eventForm.eventDate}
+                onChange={(e) => setEventForm({ ...eventForm, eventDate: e.target.value })}
+                required
+              />
+              <input
+                type="number"
+                placeholder="Arrecadado"
+                value={eventForm.raisedAmount}
+                onChange={(e) => setEventForm({ ...eventForm, raisedAmount: e.target.value })}
+              />
+              <input
+                type="number"
+                placeholder="Gasto"
+                value={eventForm.spentAmount}
+                onChange={(e) => setEventForm({ ...eventForm, spentAmount: e.target.value })}
+              />
+              <input
+                placeholder="Descrição"
+                value={eventForm.description}
+                onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
+              />
+              <div className="form-actions">
+                <button type="submit">{editingEventId ? 'Atualizar evento' : 'Salvar evento'}</button>
+                {editingEventId && (
+                  <button type="button" className="ghost" onClick={resetEventForm}>
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            </form>
+          ) : (
+            <p className="lock-hint">Somente o tesoureiro pode registrar eventos.</p>
+          )}
           <div className="events-list">
             {events.map((eventItem) => (
               <article key={eventItem.id} className="event-card">
@@ -890,25 +1027,27 @@ function App() {
                   {formatCurrency(eventItem.spent_amount)} • Saldo{' '}
                   {formatCurrency((eventItem.raised_amount || 0) - (eventItem.spent_amount || 0))}
                 </p>
-                <div className="goal-actions">
-                  <button
-                    onClick={() => {
-                      setEventForm({
-                        name: eventItem.name,
-                        eventDate: eventItem.event_date,
-                        raisedAmount: eventItem.raised_amount,
-                        spentAmount: eventItem.spent_amount,
-                        description: eventItem.description || ''
-                      });
-                      setEditingEventId(eventItem.id);
-                    }}
-                  >
-                    Editar
-                  </button>
-                  <button className="ghost" onClick={() => handleEventDelete(eventItem.id)}>
-                    Remover
-                  </button>
-                </div>
+                {canEdit && (
+                  <div className="goal-actions">
+                    <button
+                      onClick={() => {
+                        setEventForm({
+                          name: eventItem.name,
+                          eventDate: eventItem.event_date,
+                          raisedAmount: eventItem.raised_amount,
+                          spentAmount: eventItem.spent_amount,
+                          description: eventItem.description || ''
+                        });
+                        setEditingEventId(eventItem.id);
+                      }}
+                    >
+                      Editar
+                    </button>
+                    <button className="ghost" onClick={() => handleEventDelete(eventItem.id)}>
+                      Remover
+                    </button>
+                  </div>
+                )}
               </article>
             ))}
           </div>

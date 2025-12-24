@@ -13,10 +13,11 @@
 
 header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 1.5rem;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 header h1 {
@@ -34,6 +35,40 @@ header h1 {
   border-radius: 0.5rem;
   border: 1px solid #d1d5db;
   background: #fff;
+}
+
+.auth-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 240px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.auth-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: flex-end;
+}
+
+.auth-status button {
+  align-self: flex-end;
+}
+
+.lock-hint {
+  background: #fff7ed;
+  border: 1px dashed #fb923c;
+  color: #9a3412;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
 }
 
 .panel {
