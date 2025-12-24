@@ -925,16 +925,16 @@ function App() {
             <h3>Inadimplentes do mês</h3>
             <ul className="pill-list">
               {delinquent.length === 0 && <li>Todos pagaram! 🎉</li>}
-              {delinquent.map((member) => (
-                <li key={member.id || member.name}>{member.name}</li>
+              {delinquent.map((member, index) => (
+                <li key={`${member.name}-${index}`}>{member.name}</li>
               ))}
             </ul>
           </div>
           <div>
             <h3>Ranking de pontualidade</h3>
             <ol className="ranking">
-              {ranking.map((entry) => (
-                <li key={entry.name}>
+              {ranking.map((entry, index) => (
+                <li key={`${entry.name}-${index}`}>
                   <span>{entry.name}</span>
                   <strong>{entry.payments} pagamentos</strong>
                 </li>
