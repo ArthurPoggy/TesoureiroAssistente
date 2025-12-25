@@ -47,3 +47,13 @@ CREATE TABLE IF NOT EXISTS expenses (
   notes TEXT,
   event_id INTEGER REFERENCES events(id) ON DELETE SET NULL
 );
+
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  name TEXT,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'viewer',
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+);

@@ -5,6 +5,7 @@ const fs = require('fs');
 const PDFDocument = require('pdfkit');
 const { Pool, types } = require('pg');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
 const NUMERIC_OID = 1700;
 const BIGINT_OID = 20;
@@ -90,6 +91,15 @@ const migrations = [
       notes TEXT,
       event_id INTEGER,
       FOREIGN KEY(event_id) REFERENCES events(id) ON DELETE SET NULL
+    )`,
+  `CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'viewer',
+      active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )`
 ];
 
@@ -146,15 +156,25 @@ const getTokenFromRequest = (req) => {
   return authHeader.slice(7);
 };
 
-const verifyAdminToken = (token) => {
+const verifyToken = (token) => {
   if (!authConfigured) {
     throw new Error('Autenticação não configurada');
   }
-  const payload = jwt.verify(token, JWT_SECRET);
-  if (payload.role !== 'admin') {
-    throw new Error('Token inválido');
+  return jwt.verify(token, JWT_SECRET);
+};
+
+const requireAuth = (req, res, next) => {
+  try {
+    const token = getTokenFromRequest(req);
+    if (!token) {
+      return fail(res, 'Não autorizado', 401);
+    }
+    req.user = verifyToken(token);
+    return next();
+  } catch (error) {
+    const status = error.message === 'Autenticação não configurada' ? 500 : 401;
+    return fail(res, error.message === 'Autenticação não configurada' ? error.message : 'Não autorizado', status);
   }
-  return payload;
 };
 
 const requireAdmin = (req, res, next) => {
@@ -163,7 +183,11 @@ const requireAdmin = (req, res, next) => {
     if (!token) {
       return fail(res, 'Não autorizado', 401);
     }
-    req.user = verifyAdminToken(token);
+    const payload = verifyToken(token);
+    if (payload.role !== 'admin') {
+      return fail(res, 'Acesso restrito', 403);
+    }
+    req.user = payload;
     return next();
   } catch (error) {
     const status = error.message === 'Autenticação não configurada' ? 500 : 401;
@@ -173,17 +197,37 @@ const requireAdmin = (req, res, next) => {
 
 app.get('/api/health', (req, res) => success(res, { status: 'running' }));
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   try {
     if (!authConfigured) {
       return fail(res, 'Autenticação não configurada', 500);
     }
-    const { email, password } = req.body;
-    if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      return fail(res, 'Informe email e senha', 400);
+    }
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      const token = jwt.sign({ role: 'admin', email }, JWT_SECRET, { expiresIn: '12h' });
+      return success(res, { token, role: 'admin' });
+    }
+    const user = await queryOne(
+      'SELECT id, name, email, password_hash, role, active FROM users WHERE email = ?',
+      [email]
+    );
+    if (!user || user.active === 0 || user.active === false) {
       return fail(res, 'Credenciais inválidas', 401);
     }
-    const token = jwt.sign({ role: 'admin', email }, JWT_SECRET, { expiresIn: '12h' });
-    success(res, { token });
+    const matches = await bcrypt.compare(password, user.password_hash);
+    if (!matches) {
+      return fail(res, 'Credenciais inválidas', 401);
+    }
+    const role = user.role || 'viewer';
+    const token = jwt.sign(
+      { role, email: user.email, userId: user.id, name: user.name || '' },
+      JWT_SECRET,
+      { expiresIn: '12h' }
+    );
+    return success(res, { token, role });
   } catch (error) {
     fail(res, error.message);
   }
@@ -195,16 +239,61 @@ app.get('/api/me', (req, res) => {
     if (!token) {
       return fail(res, 'Não autorizado', 401);
     }
-    const payload = verifyAdminToken(token);
-    success(res, { role: payload.role, email: payload.email });
+    const payload = verifyToken(token);
+    success(res, { role: payload.role, email: payload.email, name: payload.name || '' });
   } catch (error) {
     const status = error.message === 'Autenticação não configurada' ? 500 : 401;
     fail(res, error.message === 'Autenticação não configurada' ? error.message : 'Não autorizado', status);
   }
 });
 
+// Users (viewers) --------------------------------------------
+app.get('/api/users', requireAdmin, async (req, res) => {
+  try {
+    const users = await query(
+      'SELECT id, name, email, role, active, created_at FROM users ORDER BY created_at DESC'
+    );
+    success(res, { users });
+  } catch (error) {
+    fail(res, error.message);
+  }
+});
+
+app.post('/api/users', requireAdmin, async (req, res) => {
+  try {
+    const { name, email, password } = req.body || {};
+    if (!email || !password) {
+      return fail(res, 'Informe email e senha', 400);
+    }
+    const passwordHash = await bcrypt.hash(password, 10);
+    const [user] = await query(
+      'INSERT INTO users (name, email, password_hash, role, active) VALUES (?, ?, ?, ?, ?) RETURNING id, name, email, role, active, created_at',
+      [name || '', email, passwordHash, 'viewer', 1]
+    );
+    if (!user) {
+      return fail(res, 'Email já cadastrado', 409);
+    }
+    success(res, { user });
+  } catch (error) {
+    if (error.message && error.message.includes('UNIQUE')) {
+      return fail(res, 'Email já cadastrado', 409);
+    }
+    fail(res, error.message);
+  }
+});
+
+app.delete('/api/users/:id', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await execute('DELETE FROM users WHERE id = ?', [id]);
+    success(res);
+  } catch (error) {
+    fail(res, error.message);
+  }
+});
+
 // Members -----------------------------------------------------
-app.get('/api/members', async (req, res) => {
+app.get('/api/members', requireAuth, async (req, res) => {
   try {
     const members = await query('SELECT * FROM members ORDER BY name');
     success(res, { members });
@@ -254,7 +343,7 @@ app.delete('/api/members/:id', requireAdmin, async (req, res) => {
 });
 
 // Payments ----------------------------------------------------
-app.get('/api/payments', async (req, res) => {
+app.get('/api/payments', requireAuth, async (req, res) => {
   try {
     const { month, year, memberId } = req.query;
     let sql = `
@@ -284,7 +373,7 @@ app.get('/api/payments', async (req, res) => {
   }
 });
 
-app.get('/api/payments/history/:memberId', async (req, res) => {
+app.get('/api/payments/history/:memberId', requireAuth, async (req, res) => {
   try {
     const { memberId } = req.params;
     const payments = await query(
@@ -349,7 +438,7 @@ app.delete('/api/payments/:id', requireAdmin, async (req, res) => {
   }
 });
 
-app.get('/api/payments/:id/receipt', requireAdmin, async (req, res) => {
+app.get('/api/payments/:id/receipt', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const payment = await queryOne(
@@ -390,7 +479,7 @@ app.get('/api/payments/:id/receipt', requireAdmin, async (req, res) => {
 });
 
 // Goals -------------------------------------------------------
-app.get('/api/goals', async (req, res) => {
+app.get('/api/goals', requireAuth, async (req, res) => {
   try {
     const goals = await query('SELECT * FROM goals ORDER BY deadline');
     const totalsRows = await query(
@@ -452,7 +541,7 @@ app.delete('/api/goals/:id', requireAdmin, async (req, res) => {
 });
 
 // Expenses ----------------------------------------------------
-app.get('/api/expenses', async (req, res) => {
+app.get('/api/expenses', requireAuth, async (req, res) => {
   try {
     const expenses = await query('SELECT * FROM expenses ORDER BY expense_date DESC');
     success(res, { expenses });
@@ -502,7 +591,7 @@ app.delete('/api/expenses/:id', requireAdmin, async (req, res) => {
 });
 
 // Events ------------------------------------------------------
-app.get('/api/events', async (req, res) => {
+app.get('/api/events', requireAuth, async (req, res) => {
   try {
     const events = await query('SELECT * FROM events ORDER BY event_date DESC');
     success(res, { events });
@@ -582,7 +671,7 @@ const sumExpenses = async (filters = {}) => {
   return Number(row?.total) || 0;
 };
 
-app.get('/api/reports/monthly', async (req, res) => {
+app.get('/api/reports/monthly', requireAuth, async (req, res) => {
   try {
     const { month, year } = req.query;
     if (!month || !year) {
@@ -595,7 +684,7 @@ app.get('/api/reports/monthly', async (req, res) => {
   }
 });
 
-app.get('/api/reports/annual', async (req, res) => {
+app.get('/api/reports/annual', requireAuth, async (req, res) => {
   try {
     const { year } = req.query;
     if (!year) {
@@ -608,7 +697,7 @@ app.get('/api/reports/annual', async (req, res) => {
   }
 });
 
-app.get('/api/reports/balance', async (req, res) => {
+app.get('/api/reports/balance', requireAuth, async (req, res) => {
   try {
     const { year } = req.query;
     const yearNum = year ? Number(year) : undefined;
@@ -622,7 +711,7 @@ app.get('/api/reports/balance', async (req, res) => {
   }
 });
 
-app.get('/api/members/delinquent', async (req, res) => {
+app.get('/api/members/delinquent', requireAuth, async (req, res) => {
   try {
     const { month, year } = req.query;
     if (!month || !year) {
@@ -642,7 +731,7 @@ app.get('/api/members/delinquent', async (req, res) => {
   }
 });
 
-app.get('/api/ranking', async (req, res) => {
+app.get('/api/ranking', requireAuth, async (req, res) => {
   try {
     const { year } = req.query;
     const params = [];
@@ -665,7 +754,7 @@ app.get('/api/ranking', async (req, res) => {
   }
 });
 
-app.get('/api/dashboard', async (req, res) => {
+app.get('/api/dashboard', requireAuth, async (req, res) => {
   try {
     const year = Number(req.query.year) || new Date().getFullYear();
     const month = req.query.month ? Number(req.query.month) : new Date().getMonth() + 1;
@@ -726,7 +815,7 @@ app.get('/api/dashboard', async (req, res) => {
   }
 });
 
-app.get('/api/reports/export', async (req, res) => {
+app.get('/api/reports/export', requireAuth, async (req, res) => {
   try {
     const { format = 'csv', type = 'payments', month, year } = req.query;
     let rows = [];
@@ -791,7 +880,7 @@ app.get('/api/reports/export', async (req, res) => {
   }
 });
 
-app.get('/api/events/summary', async (req, res) => {
+app.get('/api/events/summary', requireAuth, async (req, res) => {
   try {
     const events = await query(
       `SELECT name, event_date as date, raised_amount as raised, spent_amount as spent,

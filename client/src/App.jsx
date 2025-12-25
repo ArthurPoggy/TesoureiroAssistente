@@ -70,7 +70,8 @@ const formatCurrency = (value = 0) => BRL.format(value || 0);
 
 function App() {
   const [authToken, setAuthToken] = useState(() => localStorage.getItem('tesoureiro_token'));
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [authUser, setAuthUser] = useState({ role: null, email: '', name: '' });
+  const [authChecked, setAuthChecked] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [authLoading, setAuthLoading] = useState(false);
   const [members, setMembers] = useState([]);
@@ -130,6 +131,10 @@ function App() {
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
+  const [viewers, setViewers] = useState([]);
+  const [viewerForm, setViewerForm] = useState({ name: '', email: '', password: '' });
+  const [usersLoading, setUsersLoading] = useState(false);
+  const isAdmin = authUser.role === 'admin';
   const canEdit = isAdmin;
 
   const apiFetch = useCallback(
@@ -160,7 +165,8 @@ function App() {
       const data = await fetchJSON('/api/login', { method: 'POST', body: loginForm });
       setAuthToken(data.token);
       localStorage.setItem('tesoureiro_token', data.token);
-      setIsAdmin(true);
+      setAuthUser({ role: data.role, email: loginForm.email, name: '' });
+      setAuthChecked(true);
       setLoginForm({ email: '', password: '' });
       showToast('Login realizado');
     } catch (error) {
@@ -172,9 +178,53 @@ function App() {
 
   const handleLogout = () => {
     setAuthToken(null);
-    setIsAdmin(false);
+    setAuthUser({ role: null, email: '', name: '' });
+    setAuthChecked(true);
     localStorage.removeItem('tesoureiro_token');
     showToast('Sessão encerrada');
+  };
+
+  const loadUsers = async () => {
+    if (!isAdmin) {
+      return;
+    }
+    try {
+      setUsersLoading(true);
+      const data = await apiFetch('/api/users');
+      setViewers(data.users || []);
+    } catch (error) {
+      handleError(error);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const handleViewerSubmit = async (event) => {
+    event.preventDefault();
+    try {
+      const payload = {
+        name: viewerForm.name,
+        email: viewerForm.email,
+        password: viewerForm.password
+      };
+      await apiFetch('/api/users', { method: 'POST', body: payload });
+      setViewerForm({ name: '', email: '', password: '' });
+      await loadUsers();
+      showToast('Usuário visualizador criado');
+    } catch (error) {
+      handleError(error);
+    }
+  };
+
+  const handleViewerDelete = async (id) => {
+    if (!window.confirm('Remover este usuário?')) return;
+    try {
+      await apiFetch(`/api/users/${id}`, { method: 'DELETE' });
+      await loadUsers();
+      showToast('Usuário removido');
+    } catch (error) {
+      handleError(error);
+    }
   };
 
   const loadMembers = async () => {
@@ -257,21 +307,24 @@ function App() {
 
   useEffect(() => {
     if (!authToken) {
-      setIsAdmin(false);
+      setAuthUser({ role: null, email: '', name: '' });
+      setAuthChecked(true);
       return;
     }
     let canceled = false;
     apiFetch('/api/me')
-      .then(() => {
+      .then((data) => {
         if (!canceled) {
-          setIsAdmin(true);
+          setAuthUser({ role: data.role, email: data.email, name: data.name || '' });
+          setAuthChecked(true);
         }
       })
       .catch(() => {
         if (!canceled) {
-          setIsAdmin(false);
+          setAuthUser({ role: null, email: '', name: '' });
           setAuthToken(null);
           localStorage.removeItem('tesoureiro_token');
+          setAuthChecked(true);
         }
       });
     return () => {
@@ -280,18 +333,32 @@ function App() {
   }, [authToken, apiFetch]);
 
   useEffect(() => {
+    if (!authToken || !authChecked) {
+      return;
+    }
     loadMembers();
     loadGoals();
     loadExpenses();
     loadEvents();
-  }, []);
+  }, [authToken, authChecked]);
 
   useEffect(() => {
+    if (!authToken || !authChecked) {
+      return;
+    }
     loadPayments();
     loadDelinquent();
     loadRanking();
     loadDashboard();
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, authToken, authChecked]);
+
+  useEffect(() => {
+    if (!authToken || !authChecked || !isAdmin) {
+      setViewers([]);
+      return;
+    }
+    loadUsers();
+  }, [authToken, authChecked, isAdmin]);
 
   const resetMemberForm = () => {
     setMemberForm({ name: '', email: '', nickname: '' });
@@ -549,6 +616,47 @@ function App() {
     };
   }, [dashboard]);
 
+  if (!authToken) {
+    return (
+      <div className="login-screen">
+        <div className="login-card">
+          {toast && <div className={`toast ${toast.type}`}>{toast.message}</div>}
+          <h1>Tesoureiro Assistente</h1>
+          <p>Entre para acessar os dados do clã.</p>
+          <form className="login-form" onSubmit={handleLogin}>
+            <input
+              type="email"
+              placeholder="Email"
+              value={loginForm.email}
+              onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+              required
+            />
+            <input
+              type="password"
+              placeholder="Senha"
+              value={loginForm.password}
+              onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+              required
+            />
+            <button type="submit" disabled={authLoading}>
+              {authLoading ? 'Entrando...' : 'Entrar'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authChecked) {
+    return (
+      <div className="login-screen">
+        <div className="login-card">
+          <p>Validando sessão...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-shell">
       <header>
@@ -572,34 +680,13 @@ function App() {
           />
         </div>
         <div className="auth-panel">
-          {isAdmin ? (
-            <div className="auth-status">
-              <span>Logado como tesoureiro</span>
-              <button type="button" onClick={handleLogout}>
-                Sair
-              </button>
-            </div>
-          ) : (
-            <form className="login-form" onSubmit={handleLogin}>
-              <input
-                type="email"
-                placeholder="Email do tesoureiro"
-                value={loginForm.email}
-                onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
-                required
-              />
-              <input
-                type="password"
-                placeholder="Senha"
-                value={loginForm.password}
-                onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                required
-              />
-              <button type="submit" disabled={authLoading}>
-                {authLoading ? 'Entrando...' : 'Entrar'}
-              </button>
-            </form>
-          )}
+          <div className="auth-status">
+            <span>{isAdmin ? 'Tesoureiro' : 'Visualização'}</span>
+            <span>{authUser.email}</span>
+            <button type="button" onClick={handleLogout}>
+              Sair
+            </button>
+          </div>
         </div>
       </header>
 
@@ -663,6 +750,74 @@ function App() {
           ))}
         </div>
       </section>
+
+      {isAdmin && (
+        <section className="panel">
+          <div className="panel-header">
+            <h2>Usuários visualizadores</h2>
+            <p>Crie logins com permissão apenas de leitura.</p>
+          </div>
+          <form className="form-grid" onSubmit={handleViewerSubmit}>
+            <input
+              placeholder="Nome"
+              value={viewerForm.name}
+              onChange={(e) => setViewerForm({ ...viewerForm, name: e.target.value })}
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              value={viewerForm.email}
+              onChange={(e) => setViewerForm({ ...viewerForm, email: e.target.value })}
+              required
+            />
+            <input
+              type="password"
+              placeholder="Senha"
+              value={viewerForm.password}
+              onChange={(e) => setViewerForm({ ...viewerForm, password: e.target.value })}
+              required
+            />
+            <div className="form-actions">
+              <button type="submit">Criar usuário</button>
+            </div>
+          </form>
+          <div className="table-wrapper">
+            {usersLoading ? (
+              <p>Carregando usuários...</p>
+            ) : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {viewers.length === 0 && (
+                    <tr>
+                      <td colSpan="4">Nenhum usuário criado ainda.</td>
+                    </tr>
+                  )}
+                  {viewers.map((user) => (
+                    <tr key={user.id}>
+                      <td>{user.name || '-'}</td>
+                      <td>{user.email}</td>
+                      <td>{user.active ? 'Ativo' : 'Inativo'}</td>
+                      <td>
+                        <button className="ghost" onClick={() => handleViewerDelete(user.id)}>
+                          Remover
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="panel">
         <div className="panel-header">
