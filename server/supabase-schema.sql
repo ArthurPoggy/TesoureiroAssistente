@@ -54,5 +54,8 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'viewer',
   active BOOLEAN NOT NULL DEFAULT TRUE,
+  must_reset_password BOOLEAN NOT NULL DEFAULT FALSE,
+  setup_token_hash TEXT,
+  setup_token_created_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );

@@ -6,6 +6,7 @@ const PDFDocument = require('pdfkit');
 const { Pool, types } = require('pg');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const NUMERIC_OID = 1700;
 const BIGINT_OID = 20;
@@ -99,12 +100,28 @@ const migrations = [
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'viewer',
       active INTEGER NOT NULL DEFAULT 1,
+      must_reset_password INTEGER NOT NULL DEFAULT 0,
+      setup_token_hash TEXT,
+      setup_token_created_at TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    )`
+    )`,
+  `ALTER TABLE users ADD COLUMN must_reset_password INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE users ADD COLUMN setup_token_hash TEXT`,
+  `ALTER TABLE users ADD COLUMN setup_token_created_at TEXT`
 ];
 
 if (!useSupabase) {
-  migrations.forEach((sql) => sqliteDb.prepare(sql).run());
+  const runMigration = (sql) => {
+    try {
+      sqliteDb.prepare(sql).run();
+    } catch (error) {
+      if (/duplicate column|already exists/i.test(error.message)) {
+        return;
+      }
+      throw error;
+    }
+  };
+  migrations.forEach(runMigration);
 }
 
 const convertPlaceholders = (sql) => {
@@ -164,11 +181,24 @@ const verifyToken = (token) => {
   return jwt.verify(token, JWT_SECRET);
 };
 
-const createViewerUser = async ({ name, email, password }) => {
+const hashSetupToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
+
+const createViewerUser = async ({ name, email, password, mustResetPassword = false, setupTokenHash = null }) => {
   const passwordHash = await bcrypt.hash(password, 10);
   const [user] = await query(
-    'INSERT INTO users (name, email, password_hash, role, active) VALUES (?, ?, ?, ?, ?) RETURNING id, name, email, role, active, created_at',
-    [name || '', email, passwordHash, 'viewer', 1]
+    `INSERT INTO users (name, email, password_hash, role, active, must_reset_password, setup_token_hash, setup_token_created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     RETURNING id, name, email, role, active, must_reset_password, created_at`,
+    [
+      name || '',
+      email,
+      passwordHash,
+      'viewer',
+      1,
+      mustResetPassword ? 1 : 0,
+      setupTokenHash,
+      setupTokenHash ? new Date().toISOString() : null
+    ]
   );
   return user;
 };
@@ -221,11 +251,14 @@ app.post('/api/login', async (req, res) => {
       return success(res, { token, role: 'admin' });
     }
     const user = await queryOne(
-      'SELECT id, name, email, password_hash, role, active FROM users WHERE email = ?',
+      'SELECT id, name, email, password_hash, role, active, must_reset_password FROM users WHERE email = ?',
       [email]
     );
     if (!user || user.active === 0 || user.active === false) {
       return fail(res, 'Credenciais inválidas', 401);
+    }
+    if (user.must_reset_password) {
+      return fail(res, 'Defina sua senha pelo link de primeiro acesso', 403);
     }
     const matches = await bcrypt.compare(password, user.password_hash);
     if (!matches) {
@@ -270,6 +303,39 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
+app.post('/api/setup-password', async (req, res) => {
+  try {
+    if (!jwtConfigured) {
+      return fail(res, 'Autenticação não configurada', 500);
+    }
+    const { token, password } = req.body || {};
+    if (!token || !password) {
+      return fail(res, 'Informe token e senha', 400);
+    }
+    const tokenHash = hashSetupToken(token);
+    const user = await queryOne(
+      'SELECT id, name, email, role, active FROM users WHERE setup_token_hash = ?',
+      [tokenHash]
+    );
+    if (!user || user.active === 0 || user.active === false) {
+      return fail(res, 'Token inválido', 400);
+    }
+    const passwordHash = await bcrypt.hash(password, 10);
+    await execute(
+      'UPDATE users SET password_hash = ?, must_reset_password = 0, setup_token_hash = NULL, setup_token_created_at = NULL WHERE id = ?',
+      [passwordHash, user.id]
+    );
+    const authToken = jwt.sign(
+      { role: user.role || 'viewer', email: user.email, userId: user.id, name: user.name || '' },
+      JWT_SECRET,
+      { expiresIn: '12h' }
+    );
+    return success(res, { token: authToken, role: user.role || 'viewer', email: user.email, name: user.name || '' });
+  } catch (error) {
+    fail(res, error.message);
+  }
+});
+
 app.get('/api/me', (req, res) => {
   try {
     const token = getTokenFromRequest(req);
@@ -288,7 +354,7 @@ app.get('/api/me', (req, res) => {
 app.get('/api/users', requireAdmin, async (req, res) => {
   try {
     const users = await query(
-      'SELECT id, name, email, role, active, created_at FROM users ORDER BY created_at DESC'
+      'SELECT id, name, email, role, active, must_reset_password, created_at FROM users ORDER BY created_at DESC'
     );
     success(res, { users });
   } catch (error) {
@@ -298,15 +364,23 @@ app.get('/api/users', requireAdmin, async (req, res) => {
 
 app.post('/api/users', requireAdmin, async (req, res) => {
   try {
-    const { name, email, password } = req.body || {};
-    if (!email || !password) {
-      return fail(res, 'Informe email e senha', 400);
+    const { name, email } = req.body || {};
+    if (!email) {
+      return fail(res, 'Informe email', 400);
     }
-    const user = await createViewerUser({ name, email, password });
+    const setupToken = crypto.randomBytes(24).toString('hex');
+    const tempPassword = crypto.randomBytes(18).toString('base64url');
+    const user = await createViewerUser({
+      name,
+      email,
+      password: tempPassword,
+      mustResetPassword: true,
+      setupTokenHash: hashSetupToken(setupToken)
+    });
     if (!user) {
       return fail(res, 'Email já cadastrado', 409);
     }
-    success(res, { user });
+    success(res, { user, setupToken });
   } catch (error) {
     if (error.message && error.message.toLowerCase().includes('unique')) {
       return fail(res, 'Email já cadastrado', 409);
@@ -685,6 +759,10 @@ const sumPayments = async (filters = {}) => {
     sql += ' AND month = ?';
     params.push(filters.month);
   }
+  if (filters.memberId) {
+    sql += ' AND member_id = ?';
+    params.push(filters.memberId);
+  }
   const row = await queryOne(sql, params);
   return Number(row?.total) || 0;
 };
@@ -746,18 +824,21 @@ app.get('/api/reports/balance', requireAuth, async (req, res) => {
 
 app.get('/api/members/delinquent', requireAuth, async (req, res) => {
   try {
-    const { month, year } = req.query;
+    const { month, year, memberId } = req.query;
     if (!month || !year) {
       return fail(res, 'Informe mês e ano');
     }
-    const members = await query(
-      `SELECT m.*
+    let sql = `SELECT m.*
        FROM members m
        LEFT JOIN payments p ON p.member_id = m.id AND p.month = ? AND p.year = ?
-       WHERE p.id IS NULL OR p.paid IS NOT TRUE
-       ORDER BY m.name`,
-      [Number(month), Number(year)]
-    );
+       WHERE (p.id IS NULL OR p.paid IS NOT TRUE)`;
+    const params = [Number(month), Number(year)];
+    if (memberId) {
+      sql += ' AND m.id = ?';
+      params.push(Number(memberId));
+    }
+    sql += ' ORDER BY m.name';
+    const members = await query(sql, params);
     success(res, { members });
   } catch (error) {
     fail(res, error.message);
@@ -766,12 +847,16 @@ app.get('/api/members/delinquent', requireAuth, async (req, res) => {
 
 app.get('/api/ranking', requireAuth, async (req, res) => {
   try {
-    const { year } = req.query;
+    const { year, memberId } = req.query;
     const params = [];
     let filter = '';
     if (year) {
       filter = 'AND p.year = ?';
       params.push(Number(year));
+    }
+    if (memberId) {
+      filter = `${filter} AND m.id = ?`;
+      params.push(Number(memberId));
     }
     const ranking = await query(
       `SELECT m.name, COUNT(p.id) AS payments
@@ -791,48 +876,58 @@ app.get('/api/dashboard', requireAuth, async (req, res) => {
   try {
     const year = Number(req.query.year) || new Date().getFullYear();
     const month = req.query.month ? Number(req.query.month) : new Date().getMonth() + 1;
+    const memberId = req.query.memberId ? Number(req.query.memberId) : null;
 
-    const monthly = await query(
-      `SELECT year, month, SUM(amount) AS total 
+    let monthlySql = `SELECT year, month, SUM(amount) AS total 
        FROM payments 
-       WHERE paid AND year = ? 
-       GROUP BY year, month 
-       ORDER BY month`,
-      [year]
-    );
+       WHERE paid AND year = ?`;
+    const monthlyParams = [year];
+    if (memberId) {
+      monthlySql += ' AND member_id = ?';
+      monthlyParams.push(memberId);
+    }
+    monthlySql += ' GROUP BY year, month ORDER BY month';
+    const monthly = await query(monthlySql, monthlyParams);
 
-    const [totalRaised, totalExpenses] = await Promise.all([sumPayments({ year }), sumExpenses({ year })]);
-    const goalRows = await query(
-      `SELECT g.*, COALESCE(SUM(p.amount), 0) AS raised
+    const totalRaised = await sumPayments({ year, memberId });
+    const totalExpenses = memberId ? 0 : await sumExpenses({ year });
+    let goalSql = `SELECT g.*, COALESCE(SUM(p.amount), 0) AS raised
        FROM goals g
-       LEFT JOIN payments p ON p.goal_id = g.id AND p.paid
-       GROUP BY g.id`
-    );
+       LEFT JOIN payments p ON p.goal_id = g.id AND p.paid`;
+    const goalParams = [];
+    if (memberId) {
+      goalSql += ' AND p.member_id = ?';
+      goalParams.push(memberId);
+    }
+    goalSql += ' GROUP BY g.id';
+    const goalRows = await query(goalSql, goalParams);
     const goalData = goalRows.map((goal) => ({
       ...goal,
       progress: goal.target_amount ? Math.min(100, (goal.raised / goal.target_amount) * 100) : 0
     }));
 
-    const delinquentMembers = (
-      await query(
-        `SELECT m.name
+    let delinquentSql = `SELECT m.name
          FROM members m
          LEFT JOIN payments p ON p.member_id = m.id AND p.month = ? AND p.year = ?
-         WHERE p.id IS NULL OR p.paid IS NOT TRUE
-         ORDER BY m.name`,
-        [month, year]
-      )
-    ).map((row) => row.name);
+         WHERE (p.id IS NULL OR p.paid IS NOT TRUE)`;
+    const delinquentParams = [month, year];
+    if (memberId) {
+      delinquentSql += ' AND m.id = ?';
+      delinquentParams.push(memberId);
+    }
+    delinquentSql += ' ORDER BY m.name';
+    const delinquentMembers = (await query(delinquentSql, delinquentParams)).map((row) => row.name);
 
-    const ranking = await query(
-      `SELECT m.name, COUNT(p.id) AS payments
+    let rankingSql = `SELECT m.name, COUNT(p.id) AS payments
        FROM members m
-       LEFT JOIN payments p ON p.member_id = m.id AND p.paid AND p.year = ?
-       GROUP BY m.id
-       ORDER BY payments DESC, m.name ASC
-       LIMIT 5`,
-      [year]
-    );
+       LEFT JOIN payments p ON p.member_id = m.id AND p.paid AND p.year = ?`;
+    const rankingParams = [year];
+    if (memberId) {
+      rankingSql += ' WHERE m.id = ?';
+      rankingParams.push(memberId);
+    }
+    rankingSql += ' GROUP BY m.id ORDER BY payments DESC, m.name ASC LIMIT 5';
+    const ranking = await query(rankingSql, rankingParams);
 
     success(res, {
       totalRaised,

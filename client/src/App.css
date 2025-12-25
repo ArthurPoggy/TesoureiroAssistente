@@ -37,6 +37,28 @@ header h1 {
   background: #fff;
 }
 
+.user-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.user-filters button {
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+}
+
+.user-filters button.active {
+  background: #0f172a;
+  color: #fff;
+}
+
+.filter-hint {
+  font-size: 0.8rem;
+  color: #b45309;
+}
+
 .auth-panel {
   display: flex;
   flex-direction: column;
@@ -105,6 +127,35 @@ header h1 {
 
 .link-button:hover {
   text-decoration: underline;
+}
+
+.invite-link {
+  background: #f8fafc;
+  border: 1px dashed #cbd5f5;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  margin-bottom: 1rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.invite-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.user-detail {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+}
+
+tr.selected {
+  background: #eff6ff;
 }
 
 .panel {

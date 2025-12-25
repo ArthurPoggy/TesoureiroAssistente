@@ -80,6 +80,7 @@ function App() {
     confirmPassword: ''
   });
   const [authMode, setAuthMode] = useState('login');
+  const [setupToken, setSetupToken] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [members, setMembers] = useState([]);
   const [memberForm, setMemberForm] = useState({ name: '', email: '', nickname: '' });
@@ -139,10 +140,58 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
   const [viewers, setViewers] = useState([]);
-  const [viewerForm, setViewerForm] = useState({ name: '', email: '', password: '' });
+  const [viewerForm, setViewerForm] = useState({ name: '', email: '' });
   const [usersLoading, setUsersLoading] = useState(false);
+  const [inviteLink, setInviteLink] = useState('');
+  const [selectedViewer, setSelectedViewer] = useState(null);
+  const [selectedUserFilter, setSelectedUserFilter] = useState('all');
   const isAdmin = authUser.role === 'admin';
   const canEdit = isAdmin;
+
+  const userFilterOptions = useMemo(() => {
+    const options = [{ id: 'all', label: 'Todos', email: null }];
+    if (isAdmin) {
+      viewers.forEach((user) => {
+        options.push({
+          id: `user-${user.id}`,
+          label: user.name || user.email,
+          email: user.email
+        });
+      });
+      return options;
+    }
+    if (authUser.email) {
+      options.push({
+        id: 'me',
+        label: authUser.name || authUser.email,
+        email: authUser.email
+      });
+    }
+    return options;
+  }, [isAdmin, viewers, authUser]);
+
+  useEffect(() => {
+    if (!userFilterOptions.some((option) => option.id === selectedUserFilter)) {
+      setSelectedUserFilter('all');
+    }
+  }, [userFilterOptions, selectedUserFilter]);
+
+  const selectedUser = useMemo(
+    () => userFilterOptions.find((option) => option.id === selectedUserFilter) || userFilterOptions[0],
+    [userFilterOptions, selectedUserFilter]
+  );
+
+  const selectedMemberId = useMemo(() => {
+    if (!selectedUser?.email) return null;
+    const email = selectedUser.email.toLowerCase();
+    const member = members.find((item) => (item.email || '').toLowerCase() === email);
+    return member ? member.id : -1;
+  }, [members, selectedUser]);
+
+  const visibleMembers = useMemo(
+    () => (selectedMemberId ? members.filter((member) => member.id === selectedMemberId) : members),
+    [members, selectedMemberId]
+  );
 
   const apiFetch = useCallback(
     (url, options = {}) => {
@@ -154,6 +203,15 @@ function App() {
     },
     [authToken]
   );
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const setup = params.get('setup');
+    if (setup) {
+      setSetupToken(setup);
+      setAuthMode('setup');
+    }
+  }, []);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -190,6 +248,8 @@ function App() {
     setAuthChecked(true);
     localStorage.removeItem('tesoureiro_token');
     setAuthMode('login');
+    setSetupToken('');
+    setSelectedUserFilter('all');
     showToast('Sessão encerrada');
   };
 
@@ -220,6 +280,35 @@ function App() {
     }
   };
 
+  const handleSetupPassword = async (event) => {
+    event.preventDefault();
+    if (!setupToken) {
+      showToast('Informe o token de acesso', 'error');
+      return;
+    }
+    if (registerForm.password !== registerForm.confirmPassword) {
+      showToast('As senhas não conferem', 'error');
+      return;
+    }
+    try {
+      setAuthLoading(true);
+      const payload = { token: setupToken, password: registerForm.password };
+      const data = await fetchJSON('/api/setup-password', { method: 'POST', body: payload });
+      setAuthToken(data.token);
+      localStorage.setItem('tesoureiro_token', data.token);
+      setAuthUser({ role: data.role, email: data.email, name: data.name || '' });
+      setAuthChecked(true);
+      setRegisterForm({ name: '', email: '', password: '', confirmPassword: '' });
+      setAuthMode('login');
+      setSetupToken('');
+      showToast('Senha definida com sucesso');
+    } catch (error) {
+      handleError(error);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   const loadUsers = async () => {
     if (!isAdmin) {
       return;
@@ -240,11 +329,14 @@ function App() {
     try {
       const payload = {
         name: viewerForm.name,
-        email: viewerForm.email,
-        password: viewerForm.password
+        email: viewerForm.email
       };
-      await apiFetch('/api/users', { method: 'POST', body: payload });
-      setViewerForm({ name: '', email: '', password: '' });
+      const data = await apiFetch('/api/users', { method: 'POST', body: payload });
+      setViewerForm({ name: '', email: '' });
+      if (data.setupToken) {
+        const link = `${window.location.origin}/?setup=${data.setupToken}`;
+        setInviteLink(link);
+      }
       await loadUsers();
       showToast('Usuário visualizador criado');
     } catch (error) {
@@ -256,6 +348,9 @@ function App() {
     if (!window.confirm('Remover este usuário?')) return;
     try {
       await apiFetch(`/api/users/${id}`, { method: 'DELETE' });
+      if (selectedViewer?.id === id) {
+        setSelectedViewer(null);
+      }
       await loadUsers();
       showToast('Usuário removido');
     } catch (error) {
@@ -275,7 +370,11 @@ function App() {
   const loadPayments = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({ month: selectedMonth, year: selectedYear });
+      const params = new URLSearchParams({
+        month: selectedMonth,
+        year: selectedYear,
+        ...(selectedMemberId ? { memberId: selectedMemberId } : {})
+      });
       const data = await apiFetch(`/api/payments?${params.toString()}`);
       setPayments(data.payments || []);
     } catch (error) {
@@ -314,7 +413,11 @@ function App() {
 
   const loadDelinquent = async () => {
     try {
-      const params = new URLSearchParams({ month: selectedMonth, year: selectedYear });
+      const params = new URLSearchParams({
+        month: selectedMonth,
+        year: selectedYear,
+        ...(selectedMemberId ? { memberId: selectedMemberId } : {})
+      });
       const data = await apiFetch(`/api/members/delinquent?${params.toString()}`);
       setDelinquent(data.members || []);
     } catch (error) {
@@ -324,7 +427,11 @@ function App() {
 
   const loadRanking = async () => {
     try {
-      const data = await apiFetch(`/api/ranking?year=${selectedYear}`);
+      const params = new URLSearchParams({
+        year: selectedYear,
+        ...(selectedMemberId ? { memberId: selectedMemberId } : {})
+      });
+      const data = await apiFetch(`/api/ranking?${params.toString()}`);
       setRanking(data.ranking || []);
     } catch (error) {
       handleError(error);
@@ -333,7 +440,11 @@ function App() {
 
   const loadDashboard = async () => {
     try {
-      const params = new URLSearchParams({ month: selectedMonth, year: selectedYear });
+      const params = new URLSearchParams({
+        month: selectedMonth,
+        year: selectedYear,
+        ...(selectedMemberId ? { memberId: selectedMemberId } : {})
+      });
       const data = await apiFetch(`/api/dashboard?${params.toString()}`);
       setDashboard(data);
     } catch (error) {
@@ -386,7 +497,7 @@ function App() {
     loadDelinquent();
     loadRanking();
     loadDashboard();
-  }, [selectedMonth, selectedYear, authToken, authChecked]);
+  }, [selectedMonth, selectedYear, selectedMemberId, authToken, authChecked]);
 
   useEffect(() => {
     if (!authToken || !authChecked || !isAdmin) {
@@ -687,8 +798,15 @@ function App() {
               >
                 Criar conta de visualização
               </button>
+              <button
+                type="button"
+                className="link-button"
+                onClick={() => setAuthMode('setup')}
+              >
+                Tenho um link de primeiro acesso
+              </button>
             </>
-          ) : (
+          ) : authMode === 'register' ? (
             <>
               <p>Crie um login apenas para visualização.</p>
               <form className="login-form" onSubmit={handleRegister}>
@@ -722,6 +840,44 @@ function App() {
                 />
                 <button type="submit" disabled={authLoading}>
                   {authLoading ? 'Criando...' : 'Criar conta'}
+                </button>
+              </form>
+              <button
+                type="button"
+                className="link-button"
+                onClick={() => setAuthMode('login')}
+              >
+                Voltar para login
+              </button>
+            </>
+          ) : (
+            <>
+              <p>Defina sua nova senha para o primeiro acesso.</p>
+              <form className="login-form" onSubmit={handleSetupPassword}>
+                <input
+                  placeholder="Token de acesso"
+                  value={setupToken}
+                  onChange={(e) => setSetupToken(e.target.value)}
+                  required
+                />
+                <input
+                  type="password"
+                  placeholder="Nova senha"
+                  value={registerForm.password}
+                  onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
+                  required
+                />
+                <input
+                  type="password"
+                  placeholder="Confirmar senha"
+                  value={registerForm.confirmPassword}
+                  onChange={(e) =>
+                    setRegisterForm({ ...registerForm, confirmPassword: e.target.value })
+                  }
+                  required
+                />
+                <button type="submit" disabled={authLoading}>
+                  {authLoading ? 'Salvando...' : 'Salvar senha'}
                 </button>
               </form>
               <button
@@ -769,6 +925,21 @@ function App() {
             min="2020"
             onChange={(e) => setSelectedYear(Number(e.target.value))}
           />
+        </div>
+        <div className="user-filters">
+          {userFilterOptions.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              className={selectedUserFilter === option.id ? 'active' : 'ghost'}
+              onClick={() => setSelectedUserFilter(option.id)}
+            >
+              {option.label}
+            </button>
+          ))}
+          {selectedUser?.email && selectedMemberId === -1 && (
+            <span className="filter-hint">Sem membro vinculado a este email.</span>
+          )}
         </div>
         <div className="auth-panel">
           <div className="auth-status">
@@ -861,17 +1032,29 @@ function App() {
               onChange={(e) => setViewerForm({ ...viewerForm, email: e.target.value })}
               required
             />
-            <input
-              type="password"
-              placeholder="Senha"
-              value={viewerForm.password}
-              onChange={(e) => setViewerForm({ ...viewerForm, password: e.target.value })}
-              required
-            />
             <div className="form-actions">
               <button type="submit">Criar usuário</button>
             </div>
           </form>
+          {inviteLink && (
+            <div className="invite-link">
+              <p>Link de primeiro acesso:</p>
+              <div className="invite-row">
+                <input readOnly value={inviteLink} />
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={() => {
+                    navigator.clipboard.writeText(inviteLink);
+                    showToast('Link copiado');
+                  }}
+                >
+                  Copiar
+                </button>
+              </div>
+              <small>Compartilhe este link com o usuário para ele criar a senha.</small>
+            </div>
+          )}
           <div className="table-wrapper">
             {usersLoading ? (
               <p>Carregando usuários...</p>
@@ -882,22 +1065,34 @@ function App() {
                     <th>Nome</th>
                     <th>Email</th>
                     <th>Status</th>
+                    <th>Senha</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {viewers.length === 0 && (
                     <tr>
-                      <td colSpan="4">Nenhum usuário criado ainda.</td>
+                      <td colSpan="5">Nenhum usuário criado ainda.</td>
                     </tr>
                   )}
                   {viewers.map((user) => (
-                    <tr key={user.id}>
+                    <tr
+                      key={user.id}
+                      className={selectedViewer?.id === user.id ? 'selected' : ''}
+                      onClick={() => setSelectedViewer(user)}
+                    >
                       <td>{user.name || '-'}</td>
                       <td>{user.email}</td>
                       <td>{user.active ? 'Ativo' : 'Inativo'}</td>
+                      <td>{user.must_reset_password ? 'Aguardando senha' : 'Ativo'}</td>
                       <td>
-                        <button className="ghost" onClick={() => handleViewerDelete(user.id)}>
+                        <button
+                          className="ghost"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleViewerDelete(user.id);
+                          }}
+                        >
                           Remover
                         </button>
                       </td>
@@ -907,6 +1102,33 @@ function App() {
               </table>
             )}
           </div>
+          {selectedViewer && (
+            <div className="user-detail">
+              <h3>Detalhes do usuário</h3>
+              <p>
+                <strong>Nome:</strong> {selectedViewer.name || '-'}
+              </p>
+              <p>
+                <strong>Email:</strong> {selectedViewer.email}
+              </p>
+              <p>
+                <strong>Permissão:</strong> {selectedViewer.role}
+              </p>
+              <p>
+                <strong>Status:</strong> {selectedViewer.active ? 'Ativo' : 'Inativo'}
+              </p>
+              <p>
+                <strong>Primeiro acesso:</strong>{' '}
+                {selectedViewer.must_reset_password ? 'Pendente' : 'Concluído'}
+              </p>
+              <p>
+                <strong>Criado em:</strong> {selectedViewer.created_at || '-'}
+              </p>
+              <button className="ghost" onClick={() => handleViewerDelete(selectedViewer.id)}>
+                Remover usuário
+              </button>
+            </div>
+          )}
         </section>
       )}
 
@@ -956,7 +1178,7 @@ function App() {
               </tr>
             </thead>
             <tbody>
-              {members.map((member) => (
+              {visibleMembers.map((member) => (
                 <tr key={member.id}>
                   <td>{member.name}</td>
                   <td>{member.email}</td>
