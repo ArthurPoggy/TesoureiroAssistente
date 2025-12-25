@@ -146,7 +146,8 @@ const fail = (res, message, status = 400) => res.status(status).json({ ok: false
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const JWT_SECRET = process.env.JWT_SECRET || 'tesoureiroassistente-secret';
-const authConfigured = Boolean(ADMIN_EMAIL && ADMIN_PASSWORD && JWT_SECRET);
+const adminConfigured = Boolean(ADMIN_EMAIL && ADMIN_PASSWORD);
+const jwtConfigured = Boolean(JWT_SECRET);
 
 const getTokenFromRequest = (req) => {
   const authHeader = req.headers.authorization || '';
@@ -157,10 +158,19 @@ const getTokenFromRequest = (req) => {
 };
 
 const verifyToken = (token) => {
-  if (!authConfigured) {
+  if (!jwtConfigured) {
     throw new Error('Autenticação não configurada');
   }
   return jwt.verify(token, JWT_SECRET);
+};
+
+const createViewerUser = async ({ name, email, password }) => {
+  const passwordHash = await bcrypt.hash(password, 10);
+  const [user] = await query(
+    'INSERT INTO users (name, email, password_hash, role, active) VALUES (?, ?, ?, ?, ?) RETURNING id, name, email, role, active, created_at',
+    [name || '', email, passwordHash, 'viewer', 1]
+  );
+  return user;
 };
 
 const requireAuth = (req, res, next) => {
@@ -199,14 +209,14 @@ app.get('/api/health', (req, res) => success(res, { status: 'running' }));
 
 app.post('/api/login', async (req, res) => {
   try {
-    if (!authConfigured) {
+    if (!jwtConfigured) {
       return fail(res, 'Autenticação não configurada', 500);
     }
     const { email, password } = req.body || {};
     if (!email || !password) {
       return fail(res, 'Informe email e senha', 400);
     }
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+    if (adminConfigured && email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
       const token = jwt.sign({ role: 'admin', email }, JWT_SECRET, { expiresIn: '12h' });
       return success(res, { token, role: 'admin' });
     }
@@ -229,6 +239,33 @@ app.post('/api/login', async (req, res) => {
     );
     return success(res, { token, role });
   } catch (error) {
+    fail(res, error.message);
+  }
+});
+
+app.post('/api/register', async (req, res) => {
+  try {
+    if (!jwtConfigured) {
+      return fail(res, 'Autenticação não configurada', 500);
+    }
+    const { name, email, password } = req.body || {};
+    if (!email || !password) {
+      return fail(res, 'Informe email e senha', 400);
+    }
+    const user = await createViewerUser({ name, email, password });
+    if (!user) {
+      return fail(res, 'Email já cadastrado', 409);
+    }
+    const token = jwt.sign(
+      { role: 'viewer', email: user.email, userId: user.id, name: user.name || '' },
+      JWT_SECRET,
+      { expiresIn: '12h' }
+    );
+    return success(res, { token, role: 'viewer' });
+  } catch (error) {
+    if (error.message && error.message.toLowerCase().includes('unique')) {
+      return fail(res, 'Email já cadastrado', 409);
+    }
     fail(res, error.message);
   }
 });
@@ -265,17 +302,13 @@ app.post('/api/users', requireAdmin, async (req, res) => {
     if (!email || !password) {
       return fail(res, 'Informe email e senha', 400);
     }
-    const passwordHash = await bcrypt.hash(password, 10);
-    const [user] = await query(
-      'INSERT INTO users (name, email, password_hash, role, active) VALUES (?, ?, ?, ?, ?) RETURNING id, name, email, role, active, created_at',
-      [name || '', email, passwordHash, 'viewer', 1]
-    );
+    const user = await createViewerUser({ name, email, password });
     if (!user) {
       return fail(res, 'Email já cadastrado', 409);
     }
     success(res, { user });
   } catch (error) {
-    if (error.message && error.message.includes('UNIQUE')) {
+    if (error.message && error.message.toLowerCase().includes('unique')) {
       return fail(res, 'Email já cadastrado', 409);
     }
     fail(res, error.message);

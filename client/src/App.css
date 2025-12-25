@@ -93,6 +93,20 @@ header h1 {
   margin: 0;
 }
 
+.link-button {
+  background: transparent;
+  color: #2563eb;
+  padding: 0;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}
+
 .panel {
   background: #fff;
   border-radius: 1rem;

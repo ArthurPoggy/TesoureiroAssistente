@@ -73,6 +73,13 @@ function App() {
   const [authUser, setAuthUser] = useState({ role: null, email: '', name: '' });
   const [authChecked, setAuthChecked] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [registerForm, setRegisterForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [authMode, setAuthMode] = useState('login');
   const [authLoading, setAuthLoading] = useState(false);
   const [members, setMembers] = useState([]);
   const [memberForm, setMemberForm] = useState({ name: '', email: '', nickname: '' });
@@ -168,6 +175,7 @@ function App() {
       setAuthUser({ role: data.role, email: loginForm.email, name: '' });
       setAuthChecked(true);
       setLoginForm({ email: '', password: '' });
+      setAuthMode('login');
       showToast('Login realizado');
     } catch (error) {
       handleError(error);
@@ -181,7 +189,35 @@ function App() {
     setAuthUser({ role: null, email: '', name: '' });
     setAuthChecked(true);
     localStorage.removeItem('tesoureiro_token');
+    setAuthMode('login');
     showToast('Sessão encerrada');
+  };
+
+  const handleRegister = async (event) => {
+    event.preventDefault();
+    if (registerForm.password !== registerForm.confirmPassword) {
+      showToast('As senhas não conferem', 'error');
+      return;
+    }
+    try {
+      setAuthLoading(true);
+      const payload = {
+        name: registerForm.name,
+        email: registerForm.email,
+        password: registerForm.password
+      };
+      const data = await fetchJSON('/api/register', { method: 'POST', body: payload });
+      setAuthToken(data.token);
+      localStorage.setItem('tesoureiro_token', data.token);
+      setAuthUser({ role: data.role, email: registerForm.email, name: registerForm.name });
+      setAuthChecked(true);
+      setRegisterForm({ name: '', email: '', password: '', confirmPassword: '' });
+      showToast('Conta criada com sucesso');
+    } catch (error) {
+      handleError(error);
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
   const loadUsers = async () => {
@@ -622,26 +658,81 @@ function App() {
         <div className="login-card">
           {toast && <div className={`toast ${toast.type}`}>{toast.message}</div>}
           <h1>Tesoureiro Assistente</h1>
-          <p>Entre para acessar os dados do clã.</p>
-          <form className="login-form" onSubmit={handleLogin}>
-            <input
-              type="email"
-              placeholder="Email"
-              value={loginForm.email}
-              onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
-              required
-            />
-            <input
-              type="password"
-              placeholder="Senha"
-              value={loginForm.password}
-              onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-              required
-            />
-            <button type="submit" disabled={authLoading}>
-              {authLoading ? 'Entrando...' : 'Entrar'}
-            </button>
-          </form>
+          {authMode === 'login' ? (
+            <>
+              <p>Entre para acessar os dados do clã.</p>
+              <form className="login-form" onSubmit={handleLogin}>
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={loginForm.email}
+                  onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+                  required
+                />
+                <input
+                  type="password"
+                  placeholder="Senha"
+                  value={loginForm.password}
+                  onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                  required
+                />
+                <button type="submit" disabled={authLoading}>
+                  {authLoading ? 'Entrando...' : 'Entrar'}
+                </button>
+              </form>
+              <button
+                type="button"
+                className="link-button"
+                onClick={() => setAuthMode('register')}
+              >
+                Criar conta de visualização
+              </button>
+            </>
+          ) : (
+            <>
+              <p>Crie um login apenas para visualização.</p>
+              <form className="login-form" onSubmit={handleRegister}>
+                <input
+                  placeholder="Nome"
+                  value={registerForm.name}
+                  onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={registerForm.email}
+                  onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                  required
+                />
+                <input
+                  type="password"
+                  placeholder="Senha"
+                  value={registerForm.password}
+                  onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
+                  required
+                />
+                <input
+                  type="password"
+                  placeholder="Confirmar senha"
+                  value={registerForm.confirmPassword}
+                  onChange={(e) =>
+                    setRegisterForm({ ...registerForm, confirmPassword: e.target.value })
+                  }
+                  required
+                />
+                <button type="submit" disabled={authLoading}>
+                  {authLoading ? 'Criando...' : 'Criar conta'}
+                </button>
+              </form>
+              <button
+                type="button"
+                className="link-button"
+                onClick={() => setAuthMode('login')}
+              >
+                Voltar para login
+              </button>
+            </>
+          )}
         </div>
       </div>
     );

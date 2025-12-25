@@ -1,4 +1,3 @@
--- Tabelas para provisionar no Supabase/Postgres
 CREATE TABLE IF NOT EXISTS members (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
