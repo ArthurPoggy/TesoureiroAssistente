@@ -51,6 +51,12 @@ const migrations = [
       name TEXT NOT NULL,
       email TEXT,
       nickname TEXT,
+      password_hash TEXT,
+      role TEXT NOT NULL DEFAULT 'viewer',
+      active INTEGER NOT NULL DEFAULT 1,
+      must_reset_password INTEGER NOT NULL DEFAULT 0,
+      setup_token_hash TEXT,
+      setup_token_created_at TEXT,
       joined_at TEXT DEFAULT CURRENT_TIMESTAMP
     )`,
   `CREATE TABLE IF NOT EXISTS goals (
@@ -93,21 +99,12 @@ const migrations = [
       event_id INTEGER,
       FOREIGN KEY(event_id) REFERENCES events(id) ON DELETE SET NULL
     )`,
-  `CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT,
-      email TEXT NOT NULL UNIQUE,
-      password_hash TEXT NOT NULL,
-      role TEXT NOT NULL DEFAULT 'viewer',
-      active INTEGER NOT NULL DEFAULT 1,
-      must_reset_password INTEGER NOT NULL DEFAULT 0,
-      setup_token_hash TEXT,
-      setup_token_created_at TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    )`,
-  `ALTER TABLE users ADD COLUMN must_reset_password INTEGER NOT NULL DEFAULT 0`,
-  `ALTER TABLE users ADD COLUMN setup_token_hash TEXT`,
-  `ALTER TABLE users ADD COLUMN setup_token_created_at TEXT`
+  `ALTER TABLE members ADD COLUMN password_hash TEXT`,
+  `ALTER TABLE members ADD COLUMN role TEXT NOT NULL DEFAULT 'viewer'`,
+  `ALTER TABLE members ADD COLUMN active INTEGER NOT NULL DEFAULT 1`,
+  `ALTER TABLE members ADD COLUMN must_reset_password INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE members ADD COLUMN setup_token_hash TEXT`,
+  `ALTER TABLE members ADD COLUMN setup_token_created_at TEXT`
 ];
 
 if (!useSupabase) {
@@ -183,15 +180,25 @@ const verifyToken = (token) => {
 
 const hashSetupToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
-const createViewerUser = async ({ name, email, password, mustResetPassword = false, setupTokenHash = null }) => {
+const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
+
+const createMemberUser = async ({
+  name,
+  email,
+  nickname,
+  password,
+  mustResetPassword = false,
+  setupTokenHash = null
+}) => {
   const passwordHash = await bcrypt.hash(password, 10);
-  const [user] = await query(
-    `INSERT INTO users (name, email, password_hash, role, active, must_reset_password, setup_token_hash, setup_token_created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-     RETURNING id, name, email, role, active, must_reset_password, created_at`,
+  const [member] = await query(
+    `INSERT INTO members (name, email, nickname, password_hash, role, active, must_reset_password, setup_token_hash, setup_token_created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+     RETURNING id, name, email, nickname, role, active, must_reset_password, joined_at`,
     [
       name || '',
       email,
+      nickname || null,
       passwordHash,
       'viewer',
       1,
@@ -200,7 +207,7 @@ const createViewerUser = async ({ name, email, password, mustResetPassword = fal
       setupTokenHash ? new Date().toISOString() : null
     ]
   );
-  return user;
+  return member;
 };
 
 const requireAuth = (req, res, next) => {
@@ -246,31 +253,44 @@ app.post('/api/login', async (req, res) => {
     if (!email || !password) {
       return fail(res, 'Informe email e senha', 400);
     }
-    if (adminConfigured && email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      const token = jwt.sign({ role: 'admin', email }, JWT_SECRET, { expiresIn: '12h' });
-      return success(res, { token, role: 'admin' });
+    const normalizedEmail = normalizeEmail(email);
+    if (
+      adminConfigured &&
+      normalizedEmail === normalizeEmail(ADMIN_EMAIL) &&
+      password === ADMIN_PASSWORD
+    ) {
+      const token = jwt.sign({ role: 'admin', email: ADMIN_EMAIL, memberId: null }, JWT_SECRET, {
+        expiresIn: '12h'
+      });
+      return success(res, { token, role: 'admin', email: ADMIN_EMAIL, memberId: null });
     }
-    const user = await queryOne(
-      'SELECT id, name, email, password_hash, role, active, must_reset_password FROM users WHERE email = ?',
-      [email]
+    const member = await queryOne(
+      'SELECT id, name, email, password_hash, role, active, must_reset_password FROM members WHERE LOWER(email) = ?',
+      [normalizedEmail]
     );
-    if (!user || user.active === 0 || user.active === false) {
+    if (!member || member.active === 0 || member.active === false || !member.password_hash) {
       return fail(res, 'Credenciais inválidas', 401);
     }
-    if (user.must_reset_password) {
+    if (member.must_reset_password) {
       return fail(res, 'Defina sua senha pelo link de primeiro acesso', 403);
     }
-    const matches = await bcrypt.compare(password, user.password_hash);
+    const matches = await bcrypt.compare(password, member.password_hash);
     if (!matches) {
       return fail(res, 'Credenciais inválidas', 401);
     }
-    const role = user.role || 'viewer';
+    const role = member.role || 'viewer';
     const token = jwt.sign(
-      { role, email: user.email, userId: user.id, name: user.name || '' },
+      { role, email: member.email, memberId: member.id, name: member.name || '' },
       JWT_SECRET,
       { expiresIn: '12h' }
     );
-    return success(res, { token, role });
+    return success(res, {
+      token,
+      role,
+      email: member.email,
+      name: member.name || '',
+      memberId: member.id
+    });
   } catch (error) {
     fail(res, error.message);
   }
@@ -282,19 +302,30 @@ app.post('/api/register', async (req, res) => {
       return fail(res, 'Autenticação não configurada', 500);
     }
     const { name, email, password } = req.body || {};
-    if (!email || !password) {
-      return fail(res, 'Informe email e senha', 400);
+    if (!name || !email || !password) {
+      return fail(res, 'Informe nome, email e senha', 400);
     }
-    const user = await createViewerUser({ name, email, password });
-    if (!user) {
+    const normalizedEmail = normalizeEmail(email);
+    const existing = await queryOne('SELECT id FROM members WHERE LOWER(email) = ?', [normalizedEmail]);
+    if (existing) {
+      return fail(res, 'Email já cadastrado', 409);
+    }
+    const member = await createMemberUser({ name, email: normalizedEmail, password });
+    if (!member) {
       return fail(res, 'Email já cadastrado', 409);
     }
     const token = jwt.sign(
-      { role: 'viewer', email: user.email, userId: user.id, name: user.name || '' },
+      { role: 'viewer', email: member.email, memberId: member.id, name: member.name || '' },
       JWT_SECRET,
       { expiresIn: '12h' }
     );
-    return success(res, { token, role: 'viewer' });
+    return success(res, {
+      token,
+      role: 'viewer',
+      memberId: member.id,
+      name: member.name || '',
+      email: member.email
+    });
   } catch (error) {
     if (error.message && error.message.toLowerCase().includes('unique')) {
       return fail(res, 'Email já cadastrado', 409);
@@ -313,24 +344,30 @@ app.post('/api/setup-password', async (req, res) => {
       return fail(res, 'Informe token e senha', 400);
     }
     const tokenHash = hashSetupToken(token);
-    const user = await queryOne(
-      'SELECT id, name, email, role, active FROM users WHERE setup_token_hash = ?',
+    const member = await queryOne(
+      'SELECT id, name, email, role, active FROM members WHERE setup_token_hash = ?',
       [tokenHash]
     );
-    if (!user || user.active === 0 || user.active === false) {
+    if (!member || member.active === 0 || member.active === false) {
       return fail(res, 'Token inválido', 400);
     }
     const passwordHash = await bcrypt.hash(password, 10);
     await execute(
-      'UPDATE users SET password_hash = ?, must_reset_password = 0, setup_token_hash = NULL, setup_token_created_at = NULL WHERE id = ?',
-      [passwordHash, user.id]
+      'UPDATE members SET password_hash = ?, must_reset_password = 0, setup_token_hash = NULL, setup_token_created_at = NULL WHERE id = ?',
+      [passwordHash, member.id]
     );
     const authToken = jwt.sign(
-      { role: user.role || 'viewer', email: user.email, userId: user.id, name: user.name || '' },
+      { role: member.role || 'viewer', email: member.email, memberId: member.id, name: member.name || '' },
       JWT_SECRET,
       { expiresIn: '12h' }
     );
-    return success(res, { token: authToken, role: user.role || 'viewer', email: user.email, name: user.name || '' });
+    return success(res, {
+      token: authToken,
+      role: member.role || 'viewer',
+      email: member.email,
+      name: member.name || '',
+      memberId: member.id
+    });
   } catch (error) {
     fail(res, error.message);
   }
@@ -343,66 +380,26 @@ app.get('/api/me', (req, res) => {
       return fail(res, 'Não autorizado', 401);
     }
     const payload = verifyToken(token);
-    success(res, { role: payload.role, email: payload.email, name: payload.name || '' });
+    success(res, {
+      role: payload.role,
+      email: payload.email,
+      name: payload.name || '',
+      memberId: payload.memberId ?? null
+    });
   } catch (error) {
     const status = error.message === 'Autenticação não configurada' ? 500 : 401;
     fail(res, error.message === 'Autenticação não configurada' ? error.message : 'Não autorizado', status);
   }
 });
 
-// Users (viewers) --------------------------------------------
-app.get('/api/users', requireAdmin, async (req, res) => {
-  try {
-    const users = await query(
-      'SELECT id, name, email, role, active, must_reset_password, created_at FROM users ORDER BY created_at DESC'
-    );
-    success(res, { users });
-  } catch (error) {
-    fail(res, error.message);
-  }
-});
-
-app.post('/api/users', requireAdmin, async (req, res) => {
-  try {
-    const { name, email } = req.body || {};
-    if (!email) {
-      return fail(res, 'Informe email', 400);
-    }
-    const setupToken = crypto.randomBytes(24).toString('hex');
-    const tempPassword = crypto.randomBytes(18).toString('base64url');
-    const user = await createViewerUser({
-      name,
-      email,
-      password: tempPassword,
-      mustResetPassword: true,
-      setupTokenHash: hashSetupToken(setupToken)
-    });
-    if (!user) {
-      return fail(res, 'Email já cadastrado', 409);
-    }
-    success(res, { user, setupToken });
-  } catch (error) {
-    if (error.message && error.message.toLowerCase().includes('unique')) {
-      return fail(res, 'Email já cadastrado', 409);
-    }
-    fail(res, error.message);
-  }
-});
-
-app.delete('/api/users/:id', requireAdmin, async (req, res) => {
-  try {
-    const { id } = req.params;
-    await execute('DELETE FROM users WHERE id = ?', [id]);
-    success(res);
-  } catch (error) {
-    fail(res, error.message);
-  }
-});
-
 // Members -----------------------------------------------------
 app.get('/api/members', requireAuth, async (req, res) => {
   try {
-    const members = await query('SELECT * FROM members ORDER BY name');
+    const isAdminRequest = req.user?.role === 'admin';
+    const baseFields = ['id', 'name', 'email', 'nickname', 'joined_at'];
+    const adminFields = ['role', 'active', 'must_reset_password'];
+    const fields = isAdminRequest ? baseFields.concat(adminFields) : baseFields;
+    const members = await query(`SELECT ${fields.join(', ')} FROM members ORDER BY name`);
     success(res, { members });
   } catch (error) {
     fail(res, error.message);
@@ -411,15 +408,26 @@ app.get('/api/members', requireAuth, async (req, res) => {
 
 app.post('/api/members', requireAdmin, async (req, res) => {
   try {
-    const { name, email, nickname } = req.body;
-    if (!name) {
-      return fail(res, 'Nome é obrigatório');
+    const { name, email, nickname } = req.body || {};
+    if (!name || !email) {
+      return fail(res, 'Nome e email são obrigatórios');
     }
-    const [member] = await query(
-      'INSERT INTO members (name, email, nickname) VALUES (?, ?, ?) RETURNING *',
-      [name, email, nickname]
-    );
-    success(res, { member });
+    const normalizedEmail = normalizeEmail(email);
+    const existing = await queryOne('SELECT id FROM members WHERE LOWER(email) = ?', [normalizedEmail]);
+    if (existing) {
+      return fail(res, 'Email já cadastrado', 409);
+    }
+    const setupToken = crypto.randomBytes(24).toString('hex');
+    const tempPassword = crypto.randomBytes(18).toString('base64url');
+    const member = await createMemberUser({
+      name,
+      email: normalizedEmail,
+      nickname,
+      password: tempPassword,
+      mustResetPassword: true,
+      setupTokenHash: hashSetupToken(setupToken)
+    });
+    success(res, { member, setupToken });
   } catch (error) {
     fail(res, error.message);
   }
@@ -428,12 +436,53 @@ app.post('/api/members', requireAdmin, async (req, res) => {
 app.put('/api/members/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, nickname } = req.body;
+    const { name, email, nickname } = req.body || {};
+    if (!name || !email) {
+      return fail(res, 'Nome e email são obrigatórios', 400);
+    }
+    const normalizedEmail = normalizeEmail(email);
+    const existing = await queryOne('SELECT id FROM members WHERE LOWER(email) = ? AND id <> ?', [
+      normalizedEmail,
+      Number(id)
+    ]);
+    if (existing) {
+      return fail(res, 'Email já cadastrado', 409);
+    }
     const [member] = await query(
-      'UPDATE members SET name = ?, email = ?, nickname = ? WHERE id = ? RETURNING *',
-      [name, email, nickname, id]
+      'UPDATE members SET name = ?, email = ?, nickname = ? WHERE id = ? RETURNING id, name, email, nickname, role, active, must_reset_password, joined_at',
+      [name, normalizedEmail, nickname, id]
     );
     success(res, { member });
+  } catch (error) {
+    fail(res, error.message);
+  }
+});
+
+app.post('/api/members/:id/invite', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const member = await queryOne(
+      'SELECT id, name, email, nickname, role, active, must_reset_password, joined_at FROM members WHERE id = ?',
+      [id]
+    );
+    if (!member) {
+      return fail(res, 'Membro não encontrado', 404);
+    }
+    if (!member.email) {
+      return fail(res, 'Informe um email para gerar o link de acesso', 400);
+    }
+    const setupToken = crypto.randomBytes(24).toString('hex');
+    const tempPassword = crypto.randomBytes(18).toString('base64url');
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+    await execute(
+      'UPDATE members SET password_hash = ?, must_reset_password = 1, setup_token_hash = ?, setup_token_created_at = ? WHERE id = ?',
+      [passwordHash, hashSetupToken(setupToken), new Date().toISOString(), id]
+    );
+    const refreshed = await queryOne(
+      'SELECT id, name, email, nickname, role, active, must_reset_password, joined_at FROM members WHERE id = ?',
+      [id]
+    );
+    success(res, { member: refreshed || member, setupToken });
   } catch (error) {
     fail(res, error.message);
   }
@@ -828,7 +877,7 @@ app.get('/api/members/delinquent', requireAuth, async (req, res) => {
     if (!month || !year) {
       return fail(res, 'Informe mês e ano');
     }
-    let sql = `SELECT m.*
+    let sql = `SELECT m.id, m.name, m.email, m.nickname, m.joined_at
        FROM members m
        LEFT JOIN payments p ON p.member_id = m.id AND p.month = ? AND p.year = ?
        WHERE (p.id IS NULL OR p.paid IS NOT TRUE)`;

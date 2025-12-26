@@ -3,8 +3,21 @@ CREATE TABLE IF NOT EXISTS members (
   name TEXT NOT NULL,
   email TEXT,
   nickname TEXT,
+  password_hash TEXT,
+  role TEXT NOT NULL DEFAULT 'viewer',
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  must_reset_password BOOLEAN NOT NULL DEFAULT FALSE,
+  setup_token_hash TEXT,
+  setup_token_created_at TIMESTAMPTZ,
   joined_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );
+
+ALTER TABLE members ADD COLUMN IF NOT EXISTS password_hash TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'viewer';
+ALTER TABLE members ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS must_reset_password BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS setup_token_hash TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS setup_token_created_at TIMESTAMPTZ;
 
 CREATE TABLE IF NOT EXISTS goals (
   id SERIAL PRIMARY KEY,
@@ -45,17 +58,4 @@ CREATE TABLE IF NOT EXISTS expenses (
   category TEXT,
   notes TEXT,
   event_id INTEGER REFERENCES events(id) ON DELETE SET NULL
-);
-
-CREATE TABLE IF NOT EXISTS users (
-  id SERIAL PRIMARY KEY,
-  name TEXT,
-  email TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL,
-  role TEXT NOT NULL DEFAULT 'viewer',
-  active BOOLEAN NOT NULL DEFAULT TRUE,
-  must_reset_password BOOLEAN NOT NULL DEFAULT FALSE,
-  setup_token_hash TEXT,
-  setup_token_created_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );

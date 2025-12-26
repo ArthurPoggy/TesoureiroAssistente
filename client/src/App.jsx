@@ -70,7 +70,7 @@ const formatCurrency = (value = 0) => BRL.format(value || 0);
 
 function App() {
   const [authToken, setAuthToken] = useState(() => localStorage.getItem('tesoureiro_token'));
-  const [authUser, setAuthUser] = useState({ role: null, email: '', name: '' });
+  const [authUser, setAuthUser] = useState({ role: null, email: '', name: '', memberId: null });
   const [authChecked, setAuthChecked] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [registerForm, setRegisterForm] = useState({
@@ -139,36 +139,34 @@ function App() {
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
-  const [viewers, setViewers] = useState([]);
-  const [viewerForm, setViewerForm] = useState({ name: '', email: '' });
-  const [usersLoading, setUsersLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState('');
-  const [selectedViewer, setSelectedViewer] = useState(null);
+  const [selectedMemberDetail, setSelectedMemberDetail] = useState(null);
   const [selectedUserFilter, setSelectedUserFilter] = useState('all');
   const isAdmin = authUser.role === 'admin';
   const canEdit = isAdmin;
 
   const userFilterOptions = useMemo(() => {
-    const options = [{ id: 'all', label: 'Todos', email: null }];
+    const options = [{ id: 'all', label: 'Todos', memberId: null }];
     if (isAdmin) {
-      viewers.forEach((user) => {
+      members.forEach((member) => {
         options.push({
-          id: `user-${user.id}`,
-          label: user.name || user.email,
-          email: user.email
+          id: `member-${member.id}`,
+          label: member.name || member.email,
+          memberId: member.id
         });
       });
       return options;
     }
-    if (authUser.email) {
+    if (authUser.memberId) {
+      const member = members.find((item) => item.id === authUser.memberId);
       options.push({
         id: 'me',
-        label: authUser.name || authUser.email,
-        email: authUser.email
+        label: member?.name || authUser.name || authUser.email,
+        memberId: authUser.memberId
       });
     }
     return options;
-  }, [isAdmin, viewers, authUser]);
+  }, [isAdmin, members, authUser]);
 
   useEffect(() => {
     if (!userFilterOptions.some((option) => option.id === selectedUserFilter)) {
@@ -181,12 +179,7 @@ function App() {
     [userFilterOptions, selectedUserFilter]
   );
 
-  const selectedMemberId = useMemo(() => {
-    if (!selectedUser?.email) return null;
-    const email = selectedUser.email.toLowerCase();
-    const member = members.find((item) => (item.email || '').toLowerCase() === email);
-    return member ? member.id : -1;
-  }, [members, selectedUser]);
+  const selectedMemberId = useMemo(() => selectedUser?.memberId || null, [selectedUser]);
 
   const visibleMembers = useMemo(
     () => (selectedMemberId ? members.filter((member) => member.id === selectedMemberId) : members),
@@ -230,7 +223,12 @@ function App() {
       const data = await fetchJSON('/api/login', { method: 'POST', body: loginForm });
       setAuthToken(data.token);
       localStorage.setItem('tesoureiro_token', data.token);
-      setAuthUser({ role: data.role, email: loginForm.email, name: '' });
+      setAuthUser({
+        role: data.role,
+        email: data.email || loginForm.email,
+        name: data.name || '',
+        memberId: data.memberId ?? null
+      });
       setAuthChecked(true);
       setLoginForm({ email: '', password: '' });
       setAuthMode('login');
@@ -244,7 +242,7 @@ function App() {
 
   const handleLogout = () => {
     setAuthToken(null);
-    setAuthUser({ role: null, email: '', name: '' });
+    setAuthUser({ role: null, email: '', name: '', memberId: null });
     setAuthChecked(true);
     localStorage.removeItem('tesoureiro_token');
     setAuthMode('login');
@@ -269,7 +267,12 @@ function App() {
       const data = await fetchJSON('/api/register', { method: 'POST', body: payload });
       setAuthToken(data.token);
       localStorage.setItem('tesoureiro_token', data.token);
-      setAuthUser({ role: data.role, email: registerForm.email, name: registerForm.name });
+      setAuthUser({
+        role: data.role,
+        email: data.email || registerForm.email,
+        name: registerForm.name,
+        memberId: data.memberId ?? null
+      });
       setAuthChecked(true);
       setRegisterForm({ name: '', email: '', password: '', confirmPassword: '' });
       showToast('Conta criada com sucesso');
@@ -296,7 +299,12 @@ function App() {
       const data = await fetchJSON('/api/setup-password', { method: 'POST', body: payload });
       setAuthToken(data.token);
       localStorage.setItem('tesoureiro_token', data.token);
-      setAuthUser({ role: data.role, email: data.email, name: data.name || '' });
+      setAuthUser({
+        role: data.role,
+        email: data.email,
+        name: data.name || '',
+        memberId: data.memberId ?? null
+      });
       setAuthChecked(true);
       setRegisterForm({ name: '', email: '', password: '', confirmPassword: '' });
       setAuthMode('login');
@@ -309,59 +317,15 @@ function App() {
     }
   };
 
-  const loadUsers = async () => {
-    if (!isAdmin) {
-      return;
-    }
-    try {
-      setUsersLoading(true);
-      const data = await apiFetch('/api/users');
-      setViewers(data.users || []);
-    } catch (error) {
-      handleError(error);
-    } finally {
-      setUsersLoading(false);
-    }
-  };
-
-  const handleViewerSubmit = async (event) => {
-    event.preventDefault();
-    try {
-      const payload = {
-        name: viewerForm.name,
-        email: viewerForm.email
-      };
-      const data = await apiFetch('/api/users', { method: 'POST', body: payload });
-      setViewerForm({ name: '', email: '' });
-      if (data.setupToken) {
-        const link = `${window.location.origin}/?setup=${data.setupToken}`;
-        setInviteLink(link);
-      }
-      await loadUsers();
-      showToast('Usuário visualizador criado');
-    } catch (error) {
-      handleError(error);
-    }
-  };
-
-  const handleViewerDelete = async (id) => {
-    if (!window.confirm('Remover este usuário?')) return;
-    try {
-      await apiFetch(`/api/users/${id}`, { method: 'DELETE' });
-      if (selectedViewer?.id === id) {
-        setSelectedViewer(null);
-      }
-      await loadUsers();
-      showToast('Usuário removido');
-    } catch (error) {
-      handleError(error);
-    }
-  };
-
   const loadMembers = async () => {
     try {
       const data = await apiFetch('/api/members');
-      setMembers(data.members || []);
+      const list = data.members || [];
+      setMembers(list);
+      if (selectedMemberDetail) {
+        const updated = list.find((member) => member.id === selectedMemberDetail.id);
+        setSelectedMemberDetail(updated || null);
+      }
     } catch (error) {
       handleError(error);
     }
@@ -454,7 +418,7 @@ function App() {
 
   useEffect(() => {
     if (!authToken) {
-      setAuthUser({ role: null, email: '', name: '' });
+      setAuthUser({ role: null, email: '', name: '', memberId: null });
       setAuthChecked(true);
       return;
     }
@@ -462,13 +426,18 @@ function App() {
     apiFetch('/api/me')
       .then((data) => {
         if (!canceled) {
-          setAuthUser({ role: data.role, email: data.email, name: data.name || '' });
+          setAuthUser({
+            role: data.role,
+            email: data.email,
+            name: data.name || '',
+            memberId: data.memberId ?? null
+          });
           setAuthChecked(true);
         }
       })
       .catch(() => {
         if (!canceled) {
-          setAuthUser({ role: null, email: '', name: '' });
+          setAuthUser({ role: null, email: '', name: '', memberId: null });
           setAuthToken(null);
           localStorage.removeItem('tesoureiro_token');
           setAuthChecked(true);
@@ -498,14 +467,6 @@ function App() {
     loadRanking();
     loadDashboard();
   }, [selectedMonth, selectedYear, selectedMemberId, authToken, authChecked]);
-
-  useEffect(() => {
-    if (!authToken || !authChecked || !isAdmin) {
-      setViewers([]);
-      return;
-    }
-    loadUsers();
-  }, [authToken, authChecked, isAdmin]);
 
   const resetMemberForm = () => {
     setMemberForm({ name: '', email: '', nickname: '' });
@@ -548,12 +509,37 @@ function App() {
         email: memberForm.email,
         nickname: memberForm.nickname
       };
-      const endpoint = editingMemberId ? `/api/members/${editingMemberId}` : '/api/members';
-      const method = editingMemberId ? 'PUT' : 'POST';
-      await apiFetch(endpoint, { method, body: JSON.stringify(payload) });
+      const isEditing = Boolean(editingMemberId);
+      const endpoint = isEditing ? `/api/members/${editingMemberId}` : '/api/members';
+      const method = isEditing ? 'PUT' : 'POST';
+      const data = await apiFetch(endpoint, { method, body: payload });
       await loadMembers();
       resetMemberForm();
+      if (!isEditing && data?.setupToken) {
+        const link = `${window.location.origin}/?setup=${data.setupToken}`;
+        setInviteLink(link);
+        setSelectedMemberDetail(data.member || null);
+      } else if (isEditing) {
+        setInviteLink('');
+        setSelectedMemberDetail(data.member || null);
+      }
       showToast('Membro salvo com sucesso');
+    } catch (error) {
+      handleError(error);
+    }
+  };
+
+  const handleMemberInvite = async (id) => {
+    try {
+      const data = await apiFetch(`/api/members/${id}/invite`, { method: 'POST' });
+      if (data?.setupToken) {
+        const link = `${window.location.origin}/?setup=${data.setupToken}`;
+        setInviteLink(link);
+      }
+      if (data?.member) {
+        setSelectedMemberDetail(data.member);
+      }
+      showToast('Link de acesso gerado');
     } catch (error) {
       handleError(error);
     }
@@ -563,6 +549,9 @@ function App() {
     if (!window.confirm('Remover este membro?')) return;
     try {
       await apiFetch(`/api/members/${id}`, { method: 'DELETE' });
+      if (selectedMemberDetail?.id === id) {
+        setSelectedMemberDetail(null);
+      }
       await loadMembers();
       showToast('Membro removido');
     } catch (error) {
@@ -796,7 +785,7 @@ function App() {
                 className="link-button"
                 onClick={() => setAuthMode('register')}
               >
-                Criar conta de visualização
+                Criar conta de membro
               </button>
               <button
                 type="button"
@@ -808,12 +797,13 @@ function App() {
             </>
           ) : authMode === 'register' ? (
             <>
-              <p>Crie um login apenas para visualização.</p>
+              <p>Crie seu acesso como membro.</p>
               <form className="login-form" onSubmit={handleRegister}>
                 <input
                   placeholder="Nome"
                   value={registerForm.name}
                   onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
+                  required
                 />
                 <input
                   type="email"
@@ -937,9 +927,6 @@ function App() {
               {option.label}
             </button>
           ))}
-          {selectedUser?.email && selectedMemberId === -1 && (
-            <span className="filter-hint">Sem membro vinculado a este email.</span>
-          )}
         </div>
         <div className="auth-panel">
           <div className="auth-status">
@@ -1013,129 +1000,10 @@ function App() {
         </div>
       </section>
 
-      {isAdmin && (
-        <section className="panel">
-          <div className="panel-header">
-            <h2>Usuários visualizadores</h2>
-            <p>Crie logins com permissão apenas de leitura.</p>
-          </div>
-          <form className="form-grid" onSubmit={handleViewerSubmit}>
-            <input
-              placeholder="Nome"
-              value={viewerForm.name}
-              onChange={(e) => setViewerForm({ ...viewerForm, name: e.target.value })}
-            />
-            <input
-              type="email"
-              placeholder="Email"
-              value={viewerForm.email}
-              onChange={(e) => setViewerForm({ ...viewerForm, email: e.target.value })}
-              required
-            />
-            <div className="form-actions">
-              <button type="submit">Criar usuário</button>
-            </div>
-          </form>
-          {inviteLink && (
-            <div className="invite-link">
-              <p>Link de primeiro acesso:</p>
-              <div className="invite-row">
-                <input readOnly value={inviteLink} />
-                <button
-                  type="button"
-                  className="ghost"
-                  onClick={() => {
-                    navigator.clipboard.writeText(inviteLink);
-                    showToast('Link copiado');
-                  }}
-                >
-                  Copiar
-                </button>
-              </div>
-              <small>Compartilhe este link com o usuário para ele criar a senha.</small>
-            </div>
-          )}
-          <div className="table-wrapper">
-            {usersLoading ? (
-              <p>Carregando usuários...</p>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Nome</th>
-                    <th>Email</th>
-                    <th>Status</th>
-                    <th>Senha</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {viewers.length === 0 && (
-                    <tr>
-                      <td colSpan="5">Nenhum usuário criado ainda.</td>
-                    </tr>
-                  )}
-                  {viewers.map((user) => (
-                    <tr
-                      key={user.id}
-                      className={selectedViewer?.id === user.id ? 'selected' : ''}
-                      onClick={() => setSelectedViewer(user)}
-                    >
-                      <td>{user.name || '-'}</td>
-                      <td>{user.email}</td>
-                      <td>{user.active ? 'Ativo' : 'Inativo'}</td>
-                      <td>{user.must_reset_password ? 'Aguardando senha' : 'Ativo'}</td>
-                      <td>
-                        <button
-                          className="ghost"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleViewerDelete(user.id);
-                          }}
-                        >
-                          Remover
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-          {selectedViewer && (
-            <div className="user-detail">
-              <h3>Detalhes do usuário</h3>
-              <p>
-                <strong>Nome:</strong> {selectedViewer.name || '-'}
-              </p>
-              <p>
-                <strong>Email:</strong> {selectedViewer.email}
-              </p>
-              <p>
-                <strong>Permissão:</strong> {selectedViewer.role}
-              </p>
-              <p>
-                <strong>Status:</strong> {selectedViewer.active ? 'Ativo' : 'Inativo'}
-              </p>
-              <p>
-                <strong>Primeiro acesso:</strong>{' '}
-                {selectedViewer.must_reset_password ? 'Pendente' : 'Concluído'}
-              </p>
-              <p>
-                <strong>Criado em:</strong> {selectedViewer.created_at || '-'}
-              </p>
-              <button className="ghost" onClick={() => handleViewerDelete(selectedViewer.id)}>
-                Remover usuário
-              </button>
-            </div>
-          )}
-        </section>
-      )}
-
       <section className="panel">
         <div className="panel-header">
           <h2>Membros</h2>
-          <p>Cadastre, edite ou remova membros do clã.</p>
+          <p>Todo membro possui acesso de visualização. Gere o link de primeiro acesso ao criar.</p>
         </div>
         {canEdit ? (
           <form className="form-grid" onSubmit={handleMemberSubmit}>
@@ -1146,9 +1014,11 @@ function App() {
               required
             />
             <input
-              placeholder="Email"
+              type="email"
+              placeholder="Email (login)"
               value={memberForm.email}
               onChange={(e) => setMemberForm({ ...memberForm, email: e.target.value })}
+              required
             />
             <input
               placeholder="Apelido"
@@ -1156,7 +1026,7 @@ function App() {
               onChange={(e) => setMemberForm({ ...memberForm, nickname: e.target.value })}
             />
             <div className="form-actions">
-              <button type="submit">{editingMemberId ? 'Atualizar' : 'Adicionar'}</button>
+              <button type="submit">{editingMemberId ? 'Atualizar' : 'Adicionar membro'}</button>
               {editingMemberId && (
                 <button type="button" className="ghost" onClick={resetMemberForm}>
                   Cancelar
@@ -1166,6 +1036,25 @@ function App() {
           </form>
         ) : (
           <p className="lock-hint">Faça login como tesoureiro para cadastrar ou editar membros.</p>
+        )}
+        {inviteLink && (
+          <div className="invite-link">
+            <p>Link de primeiro acesso:</p>
+            <div className="invite-row">
+              <input readOnly value={inviteLink} />
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => {
+                  navigator.clipboard.writeText(inviteLink);
+                  showToast('Link copiado');
+                }}
+              >
+                Copiar
+              </button>
+            </div>
+            <small>Compartilhe este link para o membro criar a senha.</small>
+          </div>
         )}
         <div className="table-wrapper">
           <table>
@@ -1179,25 +1068,41 @@ function App() {
             </thead>
             <tbody>
               {visibleMembers.map((member) => (
-                <tr key={member.id}>
+                <tr
+                  key={member.id}
+                  className={selectedMemberDetail?.id === member.id ? 'selected' : ''}
+                  onClick={() => {
+                    if (isAdmin) {
+                      setSelectedMemberDetail(member);
+                    }
+                  }}
+                >
                   <td>{member.name}</td>
                   <td>{member.email}</td>
                   <td>{member.nickname}</td>
                   {canEdit && (
                     <td>
                       <button
-                        onClick={() => {
+                        onClick={(event) => {
+                          event.stopPropagation();
                           setMemberForm({
                             name: member.name,
                             email: member.email || '',
                             nickname: member.nickname || ''
                           });
                           setEditingMemberId(member.id);
+                          setInviteLink('');
                         }}
                       >
                         Editar
                       </button>
-                      <button className="ghost" onClick={() => handleMemberDelete(member.id)}>
+                      <button
+                        className="ghost"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleMemberDelete(member.id);
+                        }}
+                      >
                         Remover
                       </button>
                     </td>
@@ -1207,6 +1112,41 @@ function App() {
             </tbody>
           </table>
         </div>
+        {isAdmin && selectedMemberDetail && (
+          <div className="user-detail">
+            <h3>Detalhes do membro</h3>
+            <p>
+              <strong>Nome:</strong> {selectedMemberDetail.name || '-'}
+            </p>
+            <p>
+              <strong>Email:</strong> {selectedMemberDetail.email || '-'}
+            </p>
+            <p>
+              <strong>Apelido:</strong> {selectedMemberDetail.nickname || '-'}
+            </p>
+            <p>
+              <strong>Permissão:</strong> {selectedMemberDetail.role || 'viewer'}
+            </p>
+            <p>
+              <strong>Status:</strong> {selectedMemberDetail.active ? 'Ativo' : 'Inativo'}
+            </p>
+            <p>
+              <strong>Primeiro acesso:</strong>{' '}
+              {selectedMemberDetail.must_reset_password ? 'Pendente' : 'Concluído'}
+            </p>
+            <p>
+              <strong>Criado em:</strong> {selectedMemberDetail.joined_at || '-'}
+            </p>
+            <div className="form-actions">
+              <button type="button" onClick={() => handleMemberInvite(selectedMemberDetail.id)}>
+                Gerar link de acesso
+              </button>
+              <button className="ghost" onClick={() => handleMemberDelete(selectedMemberDetail.id)}>
+                Remover membro
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="panel">

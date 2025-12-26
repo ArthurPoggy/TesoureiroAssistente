@@ -54,10 +54,6 @@ header h1 {
   color: #fff;
 }
 
-.filter-hint {
-  font-size: 0.8rem;
-  color: #b45309;
-}
 
 .auth-panel {
   display: flex;
