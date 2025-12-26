@@ -1,0 +1,154 @@
+const express = require('express');
+const config = require('../config');
+const { query, queryOne, execute } = require('../db/query');
+const { success, fail } = require('../utils/response');
+const {
+  normalizeEmail,
+  signToken,
+  hashSetupToken,
+  hashPassword,
+  comparePassword,
+  createMemberUser,
+  getTokenFromRequest,
+  verifyToken
+} = require('../utils/auth');
+
+const router = express.Router();
+
+router.get('/health', (req, res) => success(res, { status: 'running' }));
+
+router.post('/login', async (req, res) => {
+  try {
+    if (!config.jwtConfigured) {
+      return fail(res, 'Autenticação não configurada', 500);
+    }
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      return fail(res, 'Informe email e senha', 400);
+    }
+    const normalizedEmail = normalizeEmail(email);
+    if (
+      config.adminConfigured &&
+      normalizedEmail === normalizeEmail(config.ADMIN_EMAIL) &&
+      password === config.ADMIN_PASSWORD
+    ) {
+      const token = signToken({ role: 'admin', email: config.ADMIN_EMAIL, memberId: null });
+      return success(res, { token, role: 'admin', email: config.ADMIN_EMAIL, memberId: null });
+    }
+    const member = await queryOne(
+      'SELECT id, name, email, password_hash, role, active, must_reset_password FROM members WHERE LOWER(email) = ?',
+      [normalizedEmail]
+    );
+    if (!member || member.active === 0 || member.active === false || !member.password_hash) {
+      return fail(res, 'Credenciais inválidas', 401);
+    }
+    if (member.must_reset_password) {
+      return fail(res, 'Defina sua senha pelo link de primeiro acesso', 403);
+    }
+    const matches = await comparePassword(password, member.password_hash);
+    if (!matches) {
+      return fail(res, 'Credenciais inválidas', 401);
+    }
+    const role = member.role || 'viewer';
+    const token = signToken({ role, email: member.email, memberId: member.id, name: member.name || '' });
+    return success(res, {
+      token,
+      role,
+      email: member.email,
+      name: member.name || '',
+      memberId: member.id
+    });
+  } catch (error) {
+    fail(res, error.message);
+  }
+});
+
+router.post('/register', async (req, res) => {
+  try {
+    if (!config.jwtConfigured) {
+      return fail(res, 'Autenticação não configurada', 500);
+    }
+    const { name, email, password } = req.body || {};
+    if (!name || !email || !password) {
+      return fail(res, 'Informe nome, email e senha', 400);
+    }
+    const normalizedEmail = normalizeEmail(email);
+    const existing = await queryOne('SELECT id FROM members WHERE LOWER(email) = ?', [normalizedEmail]);
+    if (existing) {
+      return fail(res, 'Email já cadastrado', 409);
+    }
+    const member = await createMemberUser({ name, email: normalizedEmail, password });
+    if (!member) {
+      return fail(res, 'Email já cadastrado', 409);
+    }
+    const token = signToken({ role: 'viewer', email: member.email, memberId: member.id, name: member.name || '' });
+    return success(res, {
+      token,
+      role: 'viewer',
+      memberId: member.id,
+      name: member.name || '',
+      email: member.email
+    });
+  } catch (error) {
+    if (error.message && error.message.toLowerCase().includes('unique')) {
+      return fail(res, 'Email já cadastrado', 409);
+    }
+    fail(res, error.message);
+  }
+});
+
+router.post('/setup-password', async (req, res) => {
+  try {
+    if (!config.jwtConfigured) {
+      return fail(res, 'Autenticação não configurada', 500);
+    }
+    const { token, password } = req.body || {};
+    if (!token || !password) {
+      return fail(res, 'Informe token e senha', 400);
+    }
+    const tokenHash = hashSetupToken(token);
+    const member = await queryOne(
+      'SELECT id, name, email, role, active FROM members WHERE setup_token_hash = ?',
+      [tokenHash]
+    );
+    if (!member || member.active === 0 || member.active === false) {
+      return fail(res, 'Token inválido', 400);
+    }
+    const passwordHash = await hashPassword(password);
+    await execute(
+      'UPDATE members SET password_hash = ?, must_reset_password = 0, setup_token_hash = NULL, setup_token_created_at = NULL WHERE id = ?',
+      [passwordHash, member.id]
+    );
+    const authToken = signToken({ role: member.role || 'viewer', email: member.email, memberId: member.id, name: member.name || '' });
+    return success(res, {
+      token: authToken,
+      role: member.role || 'viewer',
+      email: member.email,
+      name: member.name || '',
+      memberId: member.id
+    });
+  } catch (error) {
+    fail(res, error.message);
+  }
+});
+
+router.get('/me', (req, res) => {
+  try {
+    const token = getTokenFromRequest(req);
+    if (!token) {
+      return fail(res, 'Não autorizado', 401);
+    }
+    const payload = verifyToken(token);
+    success(res, {
+      role: payload.role,
+      email: payload.email,
+      name: payload.name || '',
+      memberId: payload.memberId ?? null
+    });
+  } catch (error) {
+    const status = error.message === 'Autenticação não configurada' ? 500 : 401;
+    fail(res, error.message === 'Autenticação não configurada' ? error.message : 'Não autorizado', status);
+  }
+});
+
+module.exports = router;

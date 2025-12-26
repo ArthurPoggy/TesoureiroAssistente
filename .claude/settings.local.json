@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(git -C \"C:\\\\programation\\\\TesoureiroAssistente\" log --oneline -10)"
+    ]
+  }
+}

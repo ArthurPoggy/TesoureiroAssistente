@@ -1,0 +1,9 @@
+export function Toast({ message, type = 'success' }) {
+  if (!message) return null;
+
+  return (
+    <div className={`toast ${type}`}>
+      {message}
+    </div>
+  );
+}

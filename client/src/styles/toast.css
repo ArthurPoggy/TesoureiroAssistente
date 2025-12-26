@@ -1,0 +1,13 @@
+.toast {
+  position: sticky;
+  top: var(--spacing-sm);
+  background: var(--color-success);
+  color: var(--color-text-white);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.toast.error {
+  background: var(--color-error);
+}

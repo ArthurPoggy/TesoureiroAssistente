@@ -1,0 +1,11 @@
+/* Arquivo principal de estilos - importa todos os módulos */
+@import './variables.css';
+@import './base.css';
+@import './auth.css';
+@import './header.css';
+@import './panels.css';
+@import './forms.css';
+@import './tables.css';
+@import './cards.css';
+@import './dashboard.css';
+@import './toast.css';
