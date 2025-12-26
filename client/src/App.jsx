@@ -67,6 +67,22 @@ const downloadBinary = async (url, filename, token) => {
 
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const formatCurrency = (value = 0) => BRL.format(value || 0);
+const formatFileSize = (bytes) => {
+  if (!bytes && bytes !== 0) return '-';
+  const size = Number(bytes);
+  if (Number.isNaN(size)) return '-';
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+};
+
+const formatDateTime = (value) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString('pt-BR');
+};
 
 function App() {
   const [authToken, setAuthToken] = useState(() => localStorage.getItem('tesoureiro_token'));
@@ -136,6 +152,11 @@ function App() {
   });
   const [delinquent, setDelinquent] = useState([]);
   const [ranking, setRanking] = useState([]);
+  const [files, setFiles] = useState([]);
+  const [filesLoading, setFilesLoading] = useState(false);
+  const [fileForm, setFileForm] = useState({ name: '', file: null });
+  const [fileUploading, setFileUploading] = useState(false);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
@@ -402,6 +423,18 @@ function App() {
     }
   };
 
+  const loadFiles = async () => {
+    try {
+      setFilesLoading(true);
+      const data = await apiFetch('/api/files');
+      setFiles(data.files || []);
+    } catch (error) {
+      handleError(error);
+    } finally {
+      setFilesLoading(false);
+    }
+  };
+
   const loadDashboard = async () => {
     try {
       const params = new URLSearchParams({
@@ -456,6 +489,7 @@ function App() {
     loadGoals();
     loadExpenses();
     loadEvents();
+    loadFiles();
   }, [authToken, authChecked]);
 
   useEffect(() => {
@@ -691,6 +725,48 @@ function App() {
       showToast('Evento removido');
     } catch (error) {
       handleError(error);
+    }
+  };
+
+  const handleFileUpload = async (event) => {
+    event.preventDefault();
+    if (!fileForm.file) {
+      showToast('Selecione um arquivo', 'error');
+      return;
+    }
+    try {
+      setFileUploading(true);
+      const formData = new FormData();
+      formData.append('file', fileForm.file);
+      if (fileForm.name) {
+        formData.append('name', fileForm.name);
+      }
+      const headers = authToken ? { Authorization: `Bearer ${authToken}` } : undefined;
+      const response = await fetch('/api/files/upload', {
+        method: 'POST',
+        headers,
+        body: formData
+      });
+      if (!response.ok) {
+        const message = await response.text();
+        let errorMessage = message;
+        try {
+          const parsed = JSON.parse(message);
+          errorMessage = parsed.message || message;
+        } catch (err) {
+          // keep raw message
+        }
+        throw new Error(errorMessage || 'Falha ao enviar arquivo');
+      }
+      const data = await response.json();
+      setFiles((prev) => (data.file ? [data.file, ...prev] : prev));
+      setFileForm({ name: '', file: null });
+      setFileInputKey((value) => value + 1);
+      showToast('Arquivo enviado');
+    } catch (error) {
+      handleError(error);
+    } finally {
+      setFileUploading(false);
     }
   };
 
@@ -1489,6 +1565,86 @@ function App() {
             </ol>
           </div>
         </div>
+      </section>
+
+      <section className="panel">
+        <div className="panel-header">
+          <h2>Arquivos no Google Drive</h2>
+          <p>Envie comprovantes e documentos para a pasta compartilhada do Drive.</p>
+        </div>
+        {canEdit ? (
+          <form className="form-grid" onSubmit={handleFileUpload}>
+            <input
+              placeholder="Nome do arquivo (opcional)"
+              value={fileForm.name}
+              onChange={(e) => setFileForm({ ...fileForm, name: e.target.value })}
+            />
+            <input
+              key={fileInputKey}
+              type="file"
+              onChange={(e) =>
+                setFileForm({ ...fileForm, file: e.target.files ? e.target.files[0] : null })
+              }
+              required
+            />
+            <div className="form-actions">
+              <button type="submit" disabled={fileUploading}>
+                {fileUploading ? 'Enviando...' : 'Enviar arquivo'}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <p className="lock-hint">Somente o tesoureiro pode enviar arquivos.</p>
+        )}
+        <div className="table-wrapper">
+          {filesLoading ? (
+            <p>Carregando arquivos...</p>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Tipo</th>
+                  <th>Tamanho</th>
+                  <th>Atualizado</th>
+                  <th>Acesso</th>
+                </tr>
+              </thead>
+              <tbody>
+                {files.length === 0 && (
+                  <tr>
+                    <td colSpan="5">Nenhum arquivo enviado ainda.</td>
+                  </tr>
+                )}
+                {files.map((file) => (
+                  <tr key={file.id}>
+                    <td>{file.name}</td>
+                    <td>{file.mimeType}</td>
+                    <td>{formatFileSize(file.size)}</td>
+                    <td>{formatDateTime(file.modifiedTime)}</td>
+                    <td>
+                      {file.webViewLink || file.webContentLink ? (
+                        <a
+                          className="file-link"
+                          href={file.webViewLink || file.webContentLink}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Abrir
+                        </a>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        <small className="hint">
+          Limite recomendado por envio: 4 MB (por restrição do ambiente serverless).
+        </small>
       </section>
 
       <section className="panel">

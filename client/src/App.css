@@ -272,6 +272,16 @@ button.ghost {
   border: 1px solid #cbd5f5;
 }
 
+.file-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.file-link:hover {
+  text-decoration: underline;
+}
+
 .checkbox {
   display: flex;
   align-items: center;
@@ -367,6 +377,13 @@ table th {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.hint {
+  display: block;
+  margin-top: 0.75rem;
+  color: #64748b;
+  font-size: 0.85rem;
 }
 
 footer {

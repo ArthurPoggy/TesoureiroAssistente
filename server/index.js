@@ -7,6 +7,9 @@ const { Pool, types } = require('pg');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const multer = require('multer');
+const { google } = require('googleapis');
+const { Readable } = require('stream');
 
 const NUMERIC_OID = 1700;
 const BIGINT_OID = 20;
@@ -162,6 +165,54 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const JWT_SECRET = process.env.JWT_SECRET || 'tesoureiroassistente-secret';
 const adminConfigured = Boolean(ADMIN_EMAIL && ADMIN_PASSWORD);
 const jwtConfigured = Boolean(JWT_SECRET);
+const GOOGLE_DRIVE_FOLDER_ID =
+  process.env.GOOGLE_DRIVE_FOLDER_ID || '1PkF3uJF1s_q9bCgmoFUIuWByGzKRnHYD';
+const GOOGLE_DRIVE_SHARED_DRIVE_ID = process.env.GOOGLE_DRIVE_SHARED_DRIVE_ID;
+
+const loadServiceAccount = () => {
+  if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
+    const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+    const parsed = JSON.parse(raw);
+    if (parsed.private_key) {
+      parsed.private_key = parsed.private_key.replace(/\\n/g, '\n');
+    }
+    return parsed;
+  }
+  if (process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) {
+    return {
+      client_email: process.env.GOOGLE_CLIENT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
+    };
+  }
+  return null;
+};
+
+const getDriveClient = () => {
+  const credentials = loadServiceAccount();
+  if (!credentials) {
+    throw new Error('Google Drive não configurado');
+  }
+  const auth = new google.auth.GoogleAuth({
+    credentials,
+    scopes: ['https://www.googleapis.com/auth/drive']
+  });
+  return google.drive({ version: 'v3', auth });
+};
+
+const getDriveContext = () => {
+  if (!GOOGLE_DRIVE_FOLDER_ID) {
+    throw new Error('Google Drive não configurado');
+  }
+  return {
+    folderId: GOOGLE_DRIVE_FOLDER_ID,
+    sharedDriveId: GOOGLE_DRIVE_SHARED_DRIVE_ID || null
+  };
+};
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 4 * 1024 * 1024 }
+});
 
 const getTokenFromRequest = (req) => {
   const authHeader = req.headers.authorization || '';
@@ -796,6 +847,57 @@ app.delete('/api/events/:id', requireAdmin, async (req, res) => {
   }
 });
 
+// Files (Google Drive) --------------------------------------
+app.get('/api/files', requireAuth, async (req, res) => {
+  try {
+    const drive = getDriveClient();
+    const { folderId, sharedDriveId } = getDriveContext();
+    const params = {
+      q: `'${folderId}' in parents and trashed = false`,
+      fields: 'files(id, name, mimeType, size, modifiedTime, webViewLink, webContentLink)',
+      orderBy: 'modifiedTime desc',
+      pageSize: 50
+    };
+    if (sharedDriveId) {
+      params.driveId = sharedDriveId;
+      params.corpora = 'drive';
+      params.includeItemsFromAllDrives = true;
+      params.supportsAllDrives = true;
+    }
+    const response = await drive.files.list(params);
+    success(res, { files: response.data.files || [] });
+  } catch (error) {
+    fail(res, error.message);
+  }
+});
+
+app.post('/api/files/upload', requireAdmin, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return fail(res, 'Selecione um arquivo', 400);
+    }
+    const drive = getDriveClient();
+    const { folderId, sharedDriveId } = getDriveContext();
+    const fileMetadata = {
+      name: req.body?.name || req.file.originalname,
+      parents: [folderId]
+    };
+    const media = {
+      mimeType: req.file.mimetype,
+      body: Readable.from(req.file.buffer)
+    };
+    const response = await drive.files.create({
+      requestBody: fileMetadata,
+      media,
+      fields: 'id, name, mimeType, size, modifiedTime, webViewLink, webContentLink',
+      supportsAllDrives: Boolean(sharedDriveId)
+    });
+    success(res, { file: response.data });
+  } catch (error) {
+    fail(res, error.message);
+  }
+});
+
 // Reports & dashboard ----------------------------------------
 const sumPayments = async (filters = {}) => {
   let sql = 'SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE paid';
@@ -1129,6 +1231,19 @@ app.post('/api/seed', requireAdmin, async (req, res) => {
   } catch (error) {
     fail(res, error.message);
   }
+});
+
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return fail(res, 'Arquivo acima de 4 MB', 400);
+    }
+    return fail(res, err.message || 'Erro ao processar arquivo', 400);
+  }
+  if (err) {
+    return fail(res, err.message || 'Erro interno', 500);
+  }
+  return next();
 });
 
 app.use((req, res) => fail(res, 'Rota não encontrada', 404));
