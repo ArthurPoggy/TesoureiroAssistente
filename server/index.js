@@ -168,6 +168,12 @@ const jwtConfigured = Boolean(JWT_SECRET);
 const GOOGLE_DRIVE_FOLDER_ID =
   process.env.GOOGLE_DRIVE_FOLDER_ID || '1PkF3uJF1s_q9bCgmoFUIuWByGzKRnHYD';
 const GOOGLE_DRIVE_SHARED_DRIVE_ID = process.env.GOOGLE_DRIVE_SHARED_DRIVE_ID;
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const GOOGLE_REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN;
+const GOOGLE_REDIRECT_URI =
+  process.env.GOOGLE_REDIRECT_URI || 'https://developers.google.com/oauthplayground';
+const hasOauth = Boolean(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET && GOOGLE_REFRESH_TOKEN);
 
 const loadServiceAccount = () => {
   if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
@@ -188,6 +194,15 @@ const loadServiceAccount = () => {
 };
 
 const getDriveClient = () => {
+  if (hasOauth) {
+    const oauth2Client = new google.auth.OAuth2(
+      GOOGLE_CLIENT_ID,
+      GOOGLE_CLIENT_SECRET,
+      GOOGLE_REDIRECT_URI
+    );
+    oauth2Client.setCredentials({ refresh_token: GOOGLE_REFRESH_TOKEN });
+    return google.drive({ version: 'v3', auth: oauth2Client });
+  }
   const credentials = loadServiceAccount();
   if (!credentials) {
     throw new Error('Google Drive não configurado');
