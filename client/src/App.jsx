@@ -832,6 +832,87 @@ function App() {
     }
   };
 
+  const renderAttachments = (variant = 'inline') => (
+    <div className={`attachments-block ${variant === 'column' ? 'standalone' : ''}`.trim()}>
+      <div className="panel-header">
+        <h3>Anexos do Drive</h3>
+        <p>Use para comprovantes de pagamentos, despesas e eventos.</p>
+      </div>
+      {canEdit ? (
+        <form className="form-grid" onSubmit={handleFileUpload}>
+          <input
+            placeholder="Nome do arquivo (opcional)"
+            value={fileForm.name}
+            onChange={(e) => setFileForm({ ...fileForm, name: e.target.value })}
+          />
+          <input
+            key={`${fileInputKey}-${variant}`}
+            type="file"
+            onChange={(e) =>
+              setFileForm({ ...fileForm, file: e.target.files ? e.target.files[0] : null })
+            }
+          />
+          <div className="form-actions">
+            <button type="submit" disabled={fileUploading}>
+              {fileUploading ? 'Enviando...' : 'Enviar arquivo'}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <p className="lock-hint">Somente o tesoureiro pode enviar arquivos.</p>
+      )}
+      <div className="table-wrapper">
+        {filesLoading ? (
+          <p>Carregando arquivos...</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Tipo</th>
+                <th>Tamanho</th>
+                <th>Atualizado</th>
+                <th>Acesso</th>
+              </tr>
+            </thead>
+            <tbody>
+              {files.length === 0 && (
+                <tr>
+                  <td colSpan="5">Nenhum arquivo enviado ainda.</td>
+                </tr>
+              )}
+              {files.map((file) => (
+                <tr key={file.id}>
+                  <td>{file.name}</td>
+                  <td>{file.mimeType}</td>
+                  <td>{formatFileSize(file.size)}</td>
+                  <td>{formatDateTime(file.modifiedTime)}</td>
+                  <td>
+                    {file.webViewLink || file.webContentLink ? (
+                      <a
+                        className="file-link"
+                        href={file.webViewLink || file.webContentLink}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Abrir
+                      </a>
+                    ) : (
+                      '-'
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      <small className="hint">
+        Limite recomendado por envio: 4 MB (por restrição do ambiente serverless).
+      </small>
+    </div>
+  );
+
   const chartData = useMemo(() => {
     const dataset = months.map((monthItem) => {
       const record = dashboard.monthlyCollections?.find(
@@ -1377,6 +1458,8 @@ function App() {
             </table>
           )}
         </div>
+
+        {renderAttachments('inline')}
       </section>
 
       <section className="panel two-column">
@@ -1571,6 +1654,7 @@ function App() {
             ))}
           </div>
         </div>
+        <div>{renderAttachments('column')}</div>
       </section>
 
       <section className="panel">
@@ -1600,86 +1684,6 @@ function App() {
             </ol>
           </div>
         </div>
-      </section>
-
-      <section className="panel">
-        <div className="panel-header">
-          <h2>Arquivos no Google Drive</h2>
-          <p>Envie comprovantes e documentos para a pasta compartilhada do Drive.</p>
-        </div>
-        {canEdit ? (
-          <form className="form-grid" onSubmit={handleFileUpload}>
-            <input
-              placeholder="Nome do arquivo (opcional)"
-              value={fileForm.name}
-              onChange={(e) => setFileForm({ ...fileForm, name: e.target.value })}
-            />
-            <input
-              key={fileInputKey}
-              type="file"
-              onChange={(e) =>
-                setFileForm({ ...fileForm, file: e.target.files ? e.target.files[0] : null })
-              }
-              required
-            />
-            <div className="form-actions">
-              <button type="submit" disabled={fileUploading}>
-                {fileUploading ? 'Enviando...' : 'Enviar arquivo'}
-              </button>
-            </div>
-          </form>
-        ) : (
-          <p className="lock-hint">Somente o tesoureiro pode enviar arquivos.</p>
-        )}
-        <div className="table-wrapper">
-          {filesLoading ? (
-            <p>Carregando arquivos...</p>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>Tipo</th>
-                  <th>Tamanho</th>
-                  <th>Atualizado</th>
-                  <th>Acesso</th>
-                </tr>
-              </thead>
-              <tbody>
-                {files.length === 0 && (
-                  <tr>
-                    <td colSpan="5">Nenhum arquivo enviado ainda.</td>
-                  </tr>
-                )}
-                {files.map((file) => (
-                  <tr key={file.id}>
-                    <td>{file.name}</td>
-                    <td>{file.mimeType}</td>
-                    <td>{formatFileSize(file.size)}</td>
-                    <td>{formatDateTime(file.modifiedTime)}</td>
-                    <td>
-                      {file.webViewLink || file.webContentLink ? (
-                        <a
-                          className="file-link"
-                          href={file.webViewLink || file.webContentLink}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Abrir
-                        </a>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-        <small className="hint">
-          Limite recomendado por envio: 4 MB (por restrição do ambiente serverless).
-        </small>
       </section>
 
       <section className="panel">

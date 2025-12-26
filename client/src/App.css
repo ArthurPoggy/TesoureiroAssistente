@@ -386,6 +386,18 @@ table th {
   font-size: 0.85rem;
 }
 
+.attachments-block {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.attachments-block.standalone {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
 footer {
   text-align: center;
   color: #94a3b8;
