@@ -991,14 +991,25 @@ app.get('/api/reports/balance', requireAuth, async (req, res) => {
 app.get('/api/members/delinquent', requireAuth, async (req, res) => {
   try {
     const { month, year, memberId } = req.query;
-    if (!month || !year) {
-      return fail(res, 'Informe mês e ano');
-    }
-    let sql = `SELECT m.id, m.name, m.email, m.nickname, m.joined_at
+    const monthValue = month ? Number(month) : null;
+    const yearValue = year ? Number(year) : null;
+    let sql = `SELECT DISTINCT m.id, m.name, m.email, m.nickname, m.joined_at
        FROM members m
-       LEFT JOIN payments p ON p.member_id = m.id AND p.month = ? AND p.year = ?
-       WHERE (p.id IS NULL OR p.paid IS NOT TRUE)`;
-    const params = [Number(month), Number(year)];
+       LEFT JOIN payments p ON p.member_id = m.id`;
+    const params = [];
+    const joinFilters = [];
+    if (monthValue) {
+      joinFilters.push('p.month = ?');
+      params.push(monthValue);
+    }
+    if (yearValue) {
+      joinFilters.push('p.year = ?');
+      params.push(yearValue);
+    }
+    if (joinFilters.length) {
+      sql += ` AND ${joinFilters.join(' AND ')}`;
+    }
+    sql += ' WHERE (p.id IS NULL OR p.paid IS NOT TRUE)';
     if (memberId) {
       sql += ' AND m.id = ?';
       params.push(Number(memberId));
@@ -1040,19 +1051,23 @@ app.get('/api/ranking', requireAuth, async (req, res) => {
 
 app.get('/api/dashboard', requireAuth, async (req, res) => {
   try {
-    const year = Number(req.query.year) || new Date().getFullYear();
-    const month = req.query.month ? Number(req.query.month) : new Date().getMonth() + 1;
+    const year = req.query.year ? Number(req.query.year) : null;
+    const month = req.query.month ? Number(req.query.month) : null;
     const memberId = req.query.memberId ? Number(req.query.memberId) : null;
 
-    let monthlySql = `SELECT year, month, SUM(amount) AS total 
-       FROM payments 
-       WHERE paid AND year = ?`;
-    const monthlyParams = [year];
+    let monthlySql = year
+      ? `SELECT year, month, SUM(amount) AS total FROM payments WHERE paid`
+      : `SELECT month, SUM(amount) AS total FROM payments WHERE paid`;
+    const monthlyParams = [];
+    if (year) {
+      monthlySql += ' AND year = ?';
+      monthlyParams.push(year);
+    }
     if (memberId) {
       monthlySql += ' AND member_id = ?';
       monthlyParams.push(memberId);
     }
-    monthlySql += ' GROUP BY year, month ORDER BY month';
+    monthlySql += year ? ' GROUP BY year, month ORDER BY month' : ' GROUP BY month ORDER BY month';
     const monthly = await query(monthlySql, monthlyParams);
 
     const totalRaised = await sumPayments({ year, memberId });
@@ -1072,11 +1087,23 @@ app.get('/api/dashboard', requireAuth, async (req, res) => {
       progress: goal.target_amount ? Math.min(100, (goal.raised / goal.target_amount) * 100) : 0
     }));
 
-    let delinquentSql = `SELECT m.name
+    let delinquentSql = `SELECT DISTINCT m.name
          FROM members m
-         LEFT JOIN payments p ON p.member_id = m.id AND p.month = ? AND p.year = ?
-         WHERE (p.id IS NULL OR p.paid IS NOT TRUE)`;
-    const delinquentParams = [month, year];
+         LEFT JOIN payments p ON p.member_id = m.id`;
+    const delinquentParams = [];
+    const delinquentJoin = [];
+    if (month) {
+      delinquentJoin.push('p.month = ?');
+      delinquentParams.push(month);
+    }
+    if (year) {
+      delinquentJoin.push('p.year = ?');
+      delinquentParams.push(year);
+    }
+    if (delinquentJoin.length) {
+      delinquentSql += ` AND ${delinquentJoin.join(' AND ')}`;
+    }
+    delinquentSql += ' WHERE (p.id IS NULL OR p.paid IS NOT TRUE)';
     if (memberId) {
       delinquentSql += ' AND m.id = ?';
       delinquentParams.push(memberId);
@@ -1086,8 +1113,12 @@ app.get('/api/dashboard', requireAuth, async (req, res) => {
 
     let rankingSql = `SELECT m.name, COUNT(p.id) AS payments
        FROM members m
-       LEFT JOIN payments p ON p.member_id = m.id AND p.paid AND p.year = ?`;
-    const rankingParams = [year];
+       LEFT JOIN payments p ON p.member_id = m.id AND p.paid`;
+    const rankingParams = [];
+    if (year) {
+      rankingSql += ' AND p.year = ?';
+      rankingParams.push(year);
+    }
     if (memberId) {
       rankingSql += ' WHERE m.id = ?';
       rankingParams.push(memberId);

@@ -84,6 +84,18 @@ const formatDateTime = (value) => {
   return date.toLocaleString('pt-BR');
 };
 
+const parseMonthFilter = (value) => {
+  if (value === 'all' || value === '') return null;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
+const parseYearFilter = (value) => {
+  if (value === 'all' || value === '') return null;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
 function App() {
   const [authToken, setAuthToken] = useState(() => localStorage.getItem('tesoureiro_token'));
   const [authUser, setAuthUser] = useState({ role: null, email: '', name: '', memberId: null });
@@ -112,8 +124,8 @@ function App() {
     notes: '',
     goalId: ''
   });
-  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
-  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState(String(currentMonth));
+  const [selectedYear, setSelectedYear] = useState(String(currentYear));
   const [goals, setGoals] = useState([]);
   const [goalForm, setGoalForm] = useState({
     title: '',
@@ -355,9 +367,11 @@ function App() {
   const loadPayments = async () => {
     try {
       setLoading(true);
+      const monthFilter = parseMonthFilter(selectedMonth);
+      const yearFilter = parseYearFilter(selectedYear);
       const params = new URLSearchParams({
-        month: selectedMonth,
-        year: selectedYear,
+        ...(monthFilter !== null ? { month: monthFilter } : {}),
+        ...(yearFilter !== null ? { year: yearFilter } : {}),
         ...(selectedMemberId ? { memberId: selectedMemberId } : {})
       });
       const data = await apiFetch(`/api/payments?${params.toString()}`);
@@ -398,9 +412,11 @@ function App() {
 
   const loadDelinquent = async () => {
     try {
+      const monthFilter = parseMonthFilter(selectedMonth);
+      const yearFilter = parseYearFilter(selectedYear);
       const params = new URLSearchParams({
-        month: selectedMonth,
-        year: selectedYear,
+        ...(monthFilter !== null ? { month: monthFilter } : {}),
+        ...(yearFilter !== null ? { year: yearFilter } : {}),
         ...(selectedMemberId ? { memberId: selectedMemberId } : {})
       });
       const data = await apiFetch(`/api/members/delinquent?${params.toString()}`);
@@ -412,8 +428,9 @@ function App() {
 
   const loadRanking = async () => {
     try {
+      const yearFilter = parseYearFilter(selectedYear);
       const params = new URLSearchParams({
-        year: selectedYear,
+        ...(yearFilter !== null ? { year: yearFilter } : {}),
         ...(selectedMemberId ? { memberId: selectedMemberId } : {})
       });
       const data = await apiFetch(`/api/ranking?${params.toString()}`);
@@ -437,9 +454,11 @@ function App() {
 
   const loadDashboard = async () => {
     try {
+      const monthFilter = parseMonthFilter(selectedMonth);
+      const yearFilter = parseYearFilter(selectedYear);
       const params = new URLSearchParams({
-        month: selectedMonth,
-        year: selectedYear,
+        ...(monthFilter !== null ? { month: monthFilter } : {}),
+        ...(yearFilter !== null ? { year: yearFilter } : {}),
         ...(selectedMemberId ? { memberId: selectedMemberId } : {})
       });
       const data = await apiFetch(`/api/dashboard?${params.toString()}`);
@@ -782,11 +801,13 @@ function App() {
   const handleExport = async (format, type) => {
     try {
       setReportLoading(true);
+      const monthFilter = parseMonthFilter(selectedMonth);
+      const yearFilter = parseYearFilter(selectedYear);
       const params = new URLSearchParams({
         format,
         type,
-        month: selectedMonth,
-        year: selectedYear
+        ...(monthFilter !== null ? { month: monthFilter } : {}),
+        ...(yearFilter !== null ? { year: yearFilter } : {})
       });
       const headers = authToken ? { Authorization: `Bearer ${authToken}` } : undefined;
       const res = await fetch(`/api/reports/export?${params.toString()}`, { headers });
@@ -794,7 +815,9 @@ function App() {
         throw new Error('Falha ao exportar');
       }
       const blob = await res.blob();
-      const filename = `relatorio-${type}-${selectedMonth}-${selectedYear}.${format}`;
+      const monthLabel = monthFilter !== null ? String(monthFilter).padStart(2, '0') : 'todos';
+      const yearLabel = yearFilter !== null ? String(yearFilter) : 'todos';
+      const filename = `relatorio-${type}-${monthLabel}-${yearLabel}.${format}`;
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -978,7 +1001,8 @@ function App() {
           <p>Controle completo de membros, pagamentos, metas e eventos do clã.</p>
         </div>
         <div className="filters">
-          <select value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))}>
+          <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
+            <option value="all">Todos os meses</option>
             {months.map((monthOption) => (
               <option value={monthOption.value} key={monthOption.value}>
                 {monthOption.label}
@@ -989,8 +1013,19 @@ function App() {
             type="number"
             value={selectedYear}
             min="2020"
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            placeholder="Todos os anos"
+            onChange={(e) => setSelectedYear(e.target.value)}
           />
+          <button
+            type="button"
+            className="ghost"
+            onClick={() => {
+              setSelectedMonth('all');
+              setSelectedYear('');
+            }}
+          >
+            Ver tudo
+          </button>
         </div>
         <div className="user-filters">
           {userFilterOptions.map((option) => (
