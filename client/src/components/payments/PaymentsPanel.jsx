@@ -11,6 +11,7 @@ export function PaymentsPanel({
   onSubmit,
   onDelete,
   onReceipt,
+  fileInputKey,
   children
 }) {
   const { canEdit } = useAuth();
@@ -85,6 +86,22 @@ export function PaymentsPanel({
             placeholder="Observações"
             value={paymentForm.notes}
             onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
+          />
+          <input
+            placeholder="Nome do anexo (opcional)"
+            value={paymentForm.attachmentName}
+            onChange={(e) => setPaymentForm({ ...paymentForm, attachmentName: e.target.value })}
+          />
+          <input
+            key={fileInputKey}
+            type="file"
+            onChange={(e) =>
+              setPaymentForm({
+                ...paymentForm,
+                attachmentFile: e.target.files ? e.target.files[0] : null
+              })
+            }
+            required
           />
           <div className="form-actions">
             <button type="submit">Registrar pagamento</button>

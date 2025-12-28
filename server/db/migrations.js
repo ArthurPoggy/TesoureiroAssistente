@@ -41,6 +41,9 @@ const migrations = [
       paid_at TEXT,
       notes TEXT,
       goal_id INTEGER,
+      attachment_id TEXT,
+      attachment_name TEXT,
+      attachment_url TEXT,
       UNIQUE(member_id, month, year),
       FOREIGN KEY(member_id) REFERENCES members(id) ON DELETE CASCADE,
       FOREIGN KEY(goal_id) REFERENCES goals(id) ON DELETE SET NULL
@@ -53,6 +56,9 @@ const migrations = [
       category TEXT,
       notes TEXT,
       event_id INTEGER,
+      attachment_id TEXT,
+      attachment_name TEXT,
+      attachment_url TEXT,
       FOREIGN KEY(event_id) REFERENCES events(id) ON DELETE SET NULL
     )`,
   `ALTER TABLE members ADD COLUMN password_hash TEXT`,
@@ -60,7 +66,13 @@ const migrations = [
   `ALTER TABLE members ADD COLUMN active INTEGER NOT NULL DEFAULT 1`,
   `ALTER TABLE members ADD COLUMN must_reset_password INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE members ADD COLUMN setup_token_hash TEXT`,
-  `ALTER TABLE members ADD COLUMN setup_token_created_at TEXT`
+  `ALTER TABLE members ADD COLUMN setup_token_created_at TEXT`,
+  `ALTER TABLE payments ADD COLUMN attachment_id TEXT`,
+  `ALTER TABLE payments ADD COLUMN attachment_name TEXT`,
+  `ALTER TABLE payments ADD COLUMN attachment_url TEXT`,
+  `ALTER TABLE expenses ADD COLUMN attachment_id TEXT`,
+  `ALTER TABLE expenses ADD COLUMN attachment_name TEXT`,
+  `ALTER TABLE expenses ADD COLUMN attachment_url TEXT`
 ];
 
 function runMigrations() {

@@ -47,6 +47,9 @@ CREATE TABLE IF NOT EXISTS payments (
   paid_at DATE,
   notes TEXT,
   goal_id INTEGER REFERENCES goals(id) ON DELETE SET NULL,
+  attachment_id TEXT,
+  attachment_name TEXT,
+  attachment_url TEXT,
   UNIQUE(member_id, month, year)
 );
 
@@ -57,5 +60,16 @@ CREATE TABLE IF NOT EXISTS expenses (
   expense_date DATE NOT NULL,
   category TEXT,
   notes TEXT,
-  event_id INTEGER REFERENCES events(id) ON DELETE SET NULL
+  event_id INTEGER REFERENCES events(id) ON DELETE SET NULL,
+  attachment_id TEXT,
+  attachment_name TEXT,
+  attachment_url TEXT
 );
+
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS attachment_id TEXT;
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS attachment_name TEXT;
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS attachment_url TEXT;
+
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS attachment_id TEXT;
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS attachment_name TEXT;
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS attachment_url TEXT;

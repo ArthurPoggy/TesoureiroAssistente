@@ -35,6 +35,32 @@ export const downloadBinary = async (url, filename, token) => {
   window.URL.revokeObjectURL(fileUrl);
 };
 
+export const uploadDriveFile = async (file, name, token) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (name) {
+    formData.append('name', name);
+  }
+  const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+  const response = await fetch('/api/files/upload', {
+    method: 'POST',
+    headers,
+    body: formData
+  });
+  if (!response.ok) {
+    const message = await response.text();
+    let errorMessage = message;
+    try {
+      const parsed = JSON.parse(message);
+      errorMessage = parsed.message || message;
+    } catch {
+      // keep raw message
+    }
+    throw new Error(errorMessage || 'Falha ao enviar arquivo');
+  }
+  return response.json();
+};
+
 // Cria uma instância de API com token
 export const createApiClient = (token) => {
   return async (url, options = {}) => {

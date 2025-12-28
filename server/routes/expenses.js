@@ -16,13 +16,34 @@ router.get('/', requireAuth, async (req, res) => {
 
 router.post('/', requireAdmin, async (req, res) => {
   try {
-    const { title, amount, expenseDate, category, notes, eventId } = req.body;
+    const {
+      title,
+      amount,
+      expenseDate,
+      category,
+      notes,
+      eventId,
+      attachmentId,
+      attachmentName,
+      attachmentUrl
+    } = req.body;
     if (!title || !amount || !expenseDate) {
       return fail(res, 'Título, valor e data são obrigatórios');
     }
     const [expense] = await query(
-      'INSERT INTO expenses (title, amount, expense_date, category, notes, event_id) VALUES (?, ?, ?, ?, ?, ?) RETURNING *',
-      [title, amount, expenseDate, category, notes, eventId || null]
+      `INSERT INTO expenses (title, amount, expense_date, category, notes, event_id, attachment_id, attachment_name, attachment_url)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
+      [
+        title,
+        amount,
+        expenseDate,
+        category,
+        notes,
+        eventId || null,
+        attachmentId || null,
+        attachmentName || null,
+        attachmentUrl || null
+      ]
     );
     success(res, { expense });
   } catch (error) {
@@ -33,10 +54,36 @@ router.post('/', requireAdmin, async (req, res) => {
 router.put('/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, amount, expenseDate, category, notes, eventId } = req.body;
+    const {
+      title,
+      amount,
+      expenseDate,
+      category,
+      notes,
+      eventId,
+      attachmentId,
+      attachmentName,
+      attachmentUrl
+    } = req.body;
     const [expense] = await query(
-      'UPDATE expenses SET title = ?, amount = ?, expense_date = ?, category = ?, notes = ?, event_id = ? WHERE id = ? RETURNING *',
-      [title, amount, expenseDate, category, notes, eventId || null, id]
+      `UPDATE expenses
+       SET title = ?, amount = ?, expense_date = ?, category = ?, notes = ?, event_id = ?,
+           attachment_id = COALESCE(?, attachment_id),
+           attachment_name = COALESCE(?, attachment_name),
+           attachment_url = COALESCE(?, attachment_url)
+       WHERE id = ? RETURNING *`,
+      [
+        title,
+        amount,
+        expenseDate,
+        category,
+        notes,
+        eventId || null,
+        attachmentId || null,
+        attachmentName || null,
+        attachmentUrl || null,
+        id
+      ]
     );
     success(res, { expense });
   } catch (error) {

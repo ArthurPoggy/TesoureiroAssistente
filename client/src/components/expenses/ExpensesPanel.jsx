@@ -6,6 +6,7 @@ export function ExpensesPanel({
   expenseForm,
   setExpenseForm,
   editingExpenseId,
+  fileInputKey,
   events,
   onSubmit,
   onDelete,
@@ -62,6 +63,22 @@ export function ExpensesPanel({
             placeholder="Observações"
             value={expenseForm.notes}
             onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })}
+          />
+          <input
+            placeholder="Nome do anexo (opcional)"
+            value={expenseForm.attachmentName}
+            onChange={(e) => setExpenseForm({ ...expenseForm, attachmentName: e.target.value })}
+          />
+          <input
+            key={fileInputKey}
+            type="file"
+            onChange={(e) =>
+              setExpenseForm({
+                ...expenseForm,
+                attachmentFile: e.target.files ? e.target.files[0] : null
+              })
+            }
+            required={!editingExpenseId}
           />
           <div className="form-actions">
             <button type="submit">{editingExpenseId ? 'Atualizar' : 'Salvar despesa'}</button>

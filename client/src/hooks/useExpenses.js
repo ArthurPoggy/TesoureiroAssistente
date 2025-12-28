@@ -1,8 +1,9 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { uploadDriveFile } from '../services/api';
 
 export function useExpenses(showToast, handleError) {
-  const { apiFetch } = useAuth();
+  const { apiFetch, authToken } = useAuth();
   const [expenses, setExpenses] = useState([]);
   const [expenseForm, setExpenseForm] = useState({
     title: '',
@@ -10,9 +11,14 @@ export function useExpenses(showToast, handleError) {
     expenseDate: new Date().toISOString().slice(0, 10),
     category: '',
     notes: '',
-    eventId: ''
+    eventId: '',
+    attachmentName: '',
+    attachmentFile: null,
+    attachmentId: null,
+    attachmentUrl: null
   });
   const [editingExpenseId, setEditingExpenseId] = useState(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
 
   const loadExpenses = useCallback(async () => {
     try {
@@ -30,21 +36,48 @@ export function useExpenses(showToast, handleError) {
       expenseDate: new Date().toISOString().slice(0, 10),
       category: '',
       notes: '',
-      eventId: ''
+      eventId: '',
+      attachmentName: '',
+      attachmentFile: null,
+      attachmentId: null,
+      attachmentUrl: null
     });
+    setFileInputKey((value) => value + 1);
     setEditingExpenseId(null);
   }, []);
 
   const handleExpenseSubmit = useCallback(async (event, refreshCallbacks = []) => {
     event.preventDefault();
+    if (!editingExpenseId && !expenseForm.attachmentFile) {
+      showToast('Anexo é obrigatório', 'error');
+      return;
+    }
     try {
+      let attachmentId = expenseForm.attachmentId;
+      let attachmentName = expenseForm.attachmentName || null;
+      let attachmentUrl = expenseForm.attachmentUrl;
+
+      if (expenseForm.attachmentFile) {
+        const uploadResponse = await uploadDriveFile(
+          expenseForm.attachmentFile,
+          expenseForm.attachmentName,
+          authToken
+        );
+        const uploadedFile = uploadResponse?.file;
+        attachmentId = uploadedFile?.id || null;
+        attachmentName = uploadedFile?.name || expenseForm.attachmentName || null;
+        attachmentUrl = uploadedFile?.webViewLink || uploadedFile?.webContentLink || null;
+      }
       const payload = {
         title: expenseForm.title,
         amount: Number(expenseForm.amount),
         expenseDate: expenseForm.expenseDate,
         category: expenseForm.category,
         notes: expenseForm.notes,
-        eventId: expenseForm.eventId ? Number(expenseForm.eventId) : null
+        eventId: expenseForm.eventId ? Number(expenseForm.eventId) : null,
+        attachmentId,
+        attachmentName,
+        attachmentUrl
       };
       const endpoint = editingExpenseId ? `/api/expenses/${editingExpenseId}` : '/api/expenses';
       const method = editingExpenseId ? 'PUT' : 'POST';
@@ -55,7 +88,7 @@ export function useExpenses(showToast, handleError) {
     } catch (error) {
       handleError(error);
     }
-  }, [apiFetch, editingExpenseId, expenseForm, handleError, loadExpenses, resetExpenseForm, showToast]);
+  }, [apiFetch, authToken, editingExpenseId, expenseForm, handleError, loadExpenses, resetExpenseForm, showToast]);
 
   const handleExpenseDelete = useCallback(async (id, refreshCallbacks = []) => {
     if (!window.confirm('Remover esta despesa?')) return;
@@ -75,9 +108,14 @@ export function useExpenses(showToast, handleError) {
       expenseDate: expense.expense_date,
       category: expense.category || '',
       notes: expense.notes || '',
-      eventId: expense.event_id || ''
+      eventId: expense.event_id || '',
+      attachmentName: expense.attachment_name || '',
+      attachmentFile: null,
+      attachmentId: expense.attachment_id || null,
+      attachmentUrl: expense.attachment_url || null
     });
     setEditingExpenseId(expense.id);
+    setFileInputKey((value) => value + 1);
   }, []);
 
   return {
@@ -85,6 +123,7 @@ export function useExpenses(showToast, handleError) {
     expenseForm,
     setExpenseForm,
     editingExpenseId,
+    fileInputKey,
     loadExpenses,
     resetExpenseForm,
     handleExpenseSubmit,

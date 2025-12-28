@@ -51,24 +51,51 @@ router.get('/history/:memberId', requireAuth, async (req, res) => {
 
 router.post('/', requireAdmin, async (req, res) => {
   try {
-    const { memberId, month, year, amount, paid, paidAt, notes, goalId } = req.body;
+    const {
+      memberId,
+      month,
+      year,
+      amount,
+      paid,
+      paidAt,
+      notes,
+      goalId,
+      attachmentId,
+      attachmentName,
+      attachmentUrl
+    } = req.body;
     if (!memberId || !month || !year || !amount) {
       return fail(res, 'Campos obrigatórios não preenchidos');
     }
     const paidValue = Boolean(paid);
     const [payment] = await query(
       `
-      INSERT INTO payments (member_id, month, year, amount, paid, paid_at, notes, goal_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO payments (member_id, month, year, amount, paid, paid_at, notes, goal_id, attachment_id, attachment_name, attachment_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(member_id, month, year) DO UPDATE SET
         amount = excluded.amount,
         paid = excluded.paid,
         paid_at = excluded.paid_at,
         notes = excluded.notes,
-        goal_id = excluded.goal_id
+        goal_id = excluded.goal_id,
+        attachment_id = COALESCE(excluded.attachment_id, payments.attachment_id),
+        attachment_name = COALESCE(excluded.attachment_name, payments.attachment_name),
+        attachment_url = COALESCE(excluded.attachment_url, payments.attachment_url)
       RETURNING *
     `,
-      [memberId, month, year, amount, paidValue, paidAt, notes, goalId || null]
+      [
+        memberId,
+        month,
+        year,
+        amount,
+        paidValue,
+        paidAt,
+        notes,
+        goalId || null,
+        attachmentId || null,
+        attachmentName || null,
+        attachmentUrl || null
+      ]
     );
     success(res, { payment });
   } catch (error) {
@@ -79,11 +106,26 @@ router.post('/', requireAdmin, async (req, res) => {
 router.put('/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { amount, paid, paidAt, notes, goalId } = req.body;
+    const { amount, paid, paidAt, notes, goalId, attachmentId, attachmentName, attachmentUrl } = req.body;
     const paidValue = Boolean(paid);
     const [payment] = await query(
-      'UPDATE payments SET amount = ?, paid = ?, paid_at = ?, notes = ?, goal_id = ? WHERE id = ? RETURNING *',
-      [amount, paidValue, paidAt, notes, goalId || null, id]
+      `UPDATE payments
+       SET amount = ?, paid = ?, paid_at = ?, notes = ?, goal_id = ?,
+           attachment_id = COALESCE(?, attachment_id),
+           attachment_name = COALESCE(?, attachment_name),
+           attachment_url = COALESCE(?, attachment_url)
+       WHERE id = ? RETURNING *`,
+      [
+        amount,
+        paidValue,
+        paidAt,
+        notes,
+        goalId || null,
+        attachmentId || null,
+        attachmentName || null,
+        attachmentUrl || null,
+        id
+      ]
     );
     success(res, { payment });
   } catch (error) {

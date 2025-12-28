@@ -9,7 +9,7 @@ import {
 } from 'chart.js';
 import { useAuth } from './contexts/AuthContext';
 import { parseMonthFilter, parseYearFilter, currentMonth, currentYear } from './utils/formatters';
-import { useMembers, usePayments, useGoals, useExpenses, useEvents, useFiles, useDashboard } from './hooks';
+import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard } from './hooks';
 import {
   LoginScreen,
   AuthCheckingScreen,
@@ -19,7 +19,6 @@ import {
   PaymentsPanel,
   ExpensesPanel,
   EventsPanel,
-  AttachmentsBlock,
   DelinquencyRanking,
   ReportsSection,
   Toast
@@ -68,8 +67,6 @@ function App() {
   const { goals, goalForm, setGoalForm, editingGoalId, loadGoals, resetGoalForm, handleGoalSubmit, handleGoalDelete, startEditGoal } = useGoals(showToast, handleError);
 
   const { events, eventForm, setEventForm, editingEventId, loadEvents, resetEventForm, handleEventSubmit, handleEventDelete, startEditEvent } = useEvents(showToast, handleError);
-
-  const { files, filesLoading, fileForm, setFileForm, fileUploading, fileInputKey, loadFiles, handleFileUpload } = useFiles(showToast, handleError);
 
   // Filtros computados
   const monthFilter = useMemo(() => parseMonthFilter(selectedMonth), [selectedMonth]);
@@ -122,6 +119,7 @@ function App() {
     paymentForm,
     setPaymentForm,
     loading,
+    fileInputKey: paymentFileInputKey,
     loadPayments,
     handlePaymentSubmit,
     handlePaymentDelete,
@@ -133,6 +131,7 @@ function App() {
     expenseForm,
     setExpenseForm,
     editingExpenseId,
+    fileInputKey: expenseFileInputKey,
     loadExpenses,
     resetExpenseForm,
     handleExpenseSubmit,
@@ -158,8 +157,7 @@ function App() {
     loadGoals();
     loadExpenses();
     loadEvents();
-    loadFiles();
-  }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents, loadFiles]);
+  }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents]);
 
   // Recarregar dados filtrados
   useEffect(() => {
@@ -238,18 +236,8 @@ function App() {
         onSubmit={(e) => handlePaymentSubmit(e, refreshAfterPayment)}
         onDelete={(id) => handlePaymentDelete(id, refreshAfterPayment)}
         onReceipt={handleReceipt}
-      >
-        <AttachmentsBlock
-          files={files}
-          filesLoading={filesLoading}
-          fileForm={fileForm}
-          setFileForm={setFileForm}
-          fileUploading={fileUploading}
-          fileInputKey={fileInputKey}
-          onSubmit={handleFileUpload}
-          variant="inline"
-        />
-      </PaymentsPanel>
+        fileInputKey={paymentFileInputKey}
+      />
 
       <section className="panel two-column">
         <ExpensesPanel
@@ -257,6 +245,7 @@ function App() {
           expenseForm={expenseForm}
           setExpenseForm={setExpenseForm}
           editingExpenseId={editingExpenseId}
+          fileInputKey={expenseFileInputKey}
           events={events}
           onSubmit={(e) => handleExpenseSubmit(e, refreshAfterExpense)}
           onDelete={(id) => handleExpenseDelete(id, refreshAfterExpense)}
@@ -272,16 +261,6 @@ function App() {
           onDelete={handleEventDelete}
           onEdit={startEditEvent}
           onReset={resetEventForm}
-        />
-        <AttachmentsBlock
-          files={files}
-          filesLoading={filesLoading}
-          fileForm={fileForm}
-          setFileForm={setFileForm}
-          fileUploading={fileUploading}
-          fileInputKey={fileInputKey}
-          onSubmit={handleFileUpload}
-          variant="column"
         />
       </section>
 

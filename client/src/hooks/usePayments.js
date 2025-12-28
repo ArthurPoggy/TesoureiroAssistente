@@ -1,12 +1,13 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { downloadBinary } from '../services/api';
+import { downloadBinary, uploadDriveFile } from '../services/api';
 import { currentMonth, currentYear } from '../utils/formatters';
 
 export function usePayments(showToast, handleError, monthFilter, yearFilter, selectedMemberId) {
   const { apiFetch, authToken } = useAuth();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [paymentForm, setPaymentForm] = useState({
     memberId: '',
     month: currentMonth,
@@ -15,7 +16,9 @@ export function usePayments(showToast, handleError, monthFilter, yearFilter, sel
     paid: true,
     paidAt: new Date().toISOString().slice(0, 10),
     notes: '',
-    goalId: ''
+    goalId: '',
+    attachmentName: '',
+    attachmentFile: null
   });
 
   const loadPayments = useCallback(async () => {
@@ -41,7 +44,20 @@ export function usePayments(showToast, handleError, monthFilter, yearFilter, sel
       showToast('Selecione um membro', 'error');
       return;
     }
+    if (!paymentForm.attachmentFile) {
+      showToast('Anexo é obrigatório', 'error');
+      return;
+    }
     try {
+      const uploadResponse = await uploadDriveFile(
+        paymentForm.attachmentFile,
+        paymentForm.attachmentName,
+        authToken
+      );
+      const uploadedFile = uploadResponse?.file;
+      const attachmentName = uploadedFile?.name || paymentForm.attachmentName || null;
+      const attachmentUrl = uploadedFile?.webViewLink || uploadedFile?.webContentLink || null;
+      const attachmentId = uploadedFile?.id || null;
       const payload = {
         memberId: Number(paymentForm.memberId),
         month: Number(paymentForm.month),
@@ -50,18 +66,27 @@ export function usePayments(showToast, handleError, monthFilter, yearFilter, sel
         paid: paymentForm.paid,
         paidAt: paymentForm.paidAt,
         notes: paymentForm.notes,
-        goalId: paymentForm.goalId ? Number(paymentForm.goalId) : null
+        goalId: paymentForm.goalId ? Number(paymentForm.goalId) : null,
+        attachmentId,
+        attachmentName,
+        attachmentUrl
       };
       await apiFetch('/api/payments', {
         method: 'POST',
         body: JSON.stringify(payload)
       });
       await Promise.all([loadPayments(), ...refreshCallbacks.map(cb => cb())]);
+      setPaymentForm((prev) => ({
+        ...prev,
+        attachmentName: '',
+        attachmentFile: null
+      }));
+      setFileInputKey((value) => value + 1);
       showToast('Pagamento registrado');
     } catch (error) {
       handleError(error);
     }
-  }, [apiFetch, handleError, loadPayments, paymentForm, showToast]);
+  }, [apiFetch, authToken, handleError, loadPayments, paymentForm, showToast]);
 
   const handlePaymentDelete = useCallback(async (id, refreshCallbacks = []) => {
     if (!window.confirm('Remover este pagamento?')) return;
@@ -91,6 +116,7 @@ export function usePayments(showToast, handleError, monthFilter, yearFilter, sel
     loadPayments,
     handlePaymentSubmit,
     handlePaymentDelete,
-    handleReceipt
+    handleReceipt,
+    fileInputKey
   };
 }
