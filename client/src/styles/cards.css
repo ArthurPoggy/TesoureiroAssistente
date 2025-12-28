@@ -83,15 +83,108 @@
   padding: 0.4rem 0.75rem;
 }
 
-.ranking {
+.pill-list .pill-empty {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.delinquent-list li {
+  background: var(--color-bg-warning);
+  color: var(--color-text-warning);
+  border: 1px solid #fed7aa;
+}
+
+.ranking-card {
+  background: var(--color-bg-info);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+}
+
+.ranking-subtitle {
+  margin: 0 0 var(--spacing-md);
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.ranking-board {
   list-style: none;
   padding: 0;
   margin: 0;
+  display: grid;
+  gap: var(--spacing-sm);
 }
 
-.ranking li {
-  display: flex;
-  justify-content: space-between;
-  border-bottom: 1px dashed var(--color-border-light);
-  padding: var(--spacing-xs) 0;
+.ranking-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: 0.65rem 0.75rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+}
+
+.ranking-position {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: var(--radius-full);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  background: #e2e8f0;
+  color: var(--color-text-primary);
+}
+
+.ranking-name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.ranking-score {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.ranking-item.rank-1 {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.ranking-item.rank-1 .ranking-position {
+  background: #f59e0b;
+  color: #fff;
+}
+
+.ranking-item.rank-2 {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.ranking-item.rank-2 .ranking-position {
+  background: #94a3b8;
+  color: #fff;
+}
+
+.ranking-item.rank-3 {
+  border-color: #f97316;
+  background: #fff7ed;
+}
+
+.ranking-item.rank-3 .ranking-position {
+  background: #f97316;
+  color: #fff;
+}
+
+.ranking-empty {
+  padding: var(--spacing-md);
+  text-align: center;
+  color: var(--color-text-muted);
+  border: 1px dashed var(--color-border-light);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
 }
