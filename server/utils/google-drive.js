@@ -50,8 +50,74 @@ const getDriveContext = () => {
   };
 };
 
+const folderCache = new Map();
+
+const sanitizeFolderName = (name) => {
+  if (!name) return '';
+  return String(name).trim().replace(/[\\/]+/g, '-');
+};
+
+const escapeQueryValue = (value) => String(value).replace(/'/g, "\\'");
+
+const ensureFolder = async (drive, parentId, name, sharedDriveId) => {
+  const safeName = sanitizeFolderName(name);
+  if (!safeName) return parentId;
+  const cacheKey = `${parentId}:${safeName}`;
+  if (folderCache.has(cacheKey)) {
+    return folderCache.get(cacheKey);
+  }
+  const queryParts = [
+    `'${parentId}' in parents`,
+    "mimeType = 'application/vnd.google-apps.folder'",
+    `name = '${escapeQueryValue(safeName)}'`,
+    'trashed = false'
+  ];
+  const listParams = {
+    q: queryParts.join(' and '),
+    fields: 'files(id, name)',
+    pageSize: 1
+  };
+  if (sharedDriveId) {
+    listParams.driveId = sharedDriveId;
+    listParams.corpora = 'drive';
+    listParams.includeItemsFromAllDrives = true;
+    listParams.supportsAllDrives = true;
+  }
+  const listResponse = await drive.files.list(listParams);
+  const existingFolder = listResponse.data.files?.[0];
+  if (existingFolder?.id) {
+    folderCache.set(cacheKey, existingFolder.id);
+    return existingFolder.id;
+  }
+  const createParams = {
+    requestBody: {
+      name: safeName,
+      mimeType: 'application/vnd.google-apps.folder',
+      parents: [parentId]
+    },
+    fields: 'id, name'
+  };
+  if (sharedDriveId) {
+    createParams.supportsAllDrives = true;
+  }
+  const createResponse = await drive.files.create(createParams);
+  const createdFolder = createResponse.data;
+  folderCache.set(cacheKey, createdFolder.id);
+  return createdFolder.id;
+};
+
+const resolveFolderPath = async (drive, rootFolderId, segments, sharedDriveId) => {
+  let currentFolderId = rootFolderId;
+  for (const segment of segments) {
+    if (!segment) continue;
+    currentFolderId = await ensureFolder(drive, currentFolderId, segment, sharedDriveId);
+  }
+  return currentFolderId;
+};
+
 module.exports = {
   loadServiceAccount,
   getDriveClient,
-  getDriveContext
+  getDriveContext,
+  resolveFolderPath
 };

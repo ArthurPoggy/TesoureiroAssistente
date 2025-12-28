@@ -124,7 +124,7 @@ function App() {
     handlePaymentSubmit,
     handlePaymentDelete,
     handleReceipt
-  } = usePayments(showToast, handleError, monthFilter, yearFilter, selectedMemberId);
+  } = usePayments(showToast, handleError, monthFilter, yearFilter, selectedMemberId, members);
 
   const {
     expenses,
@@ -137,7 +137,7 @@ function App() {
     handleExpenseSubmit,
     handleExpenseDelete,
     startEditExpense
-  } = useExpenses(showToast, handleError);
+  } = useExpenses(showToast, handleError, events);
 
   const {
     dashboard,

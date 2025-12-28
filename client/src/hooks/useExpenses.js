@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { uploadDriveFile } from '../services/api';
 
-export function useExpenses(showToast, handleError) {
+export function useExpenses(showToast, handleError, events = []) {
   const { apiFetch, authToken } = useAuth();
   const [expenses, setExpenses] = useState([]);
   const [expenseForm, setExpenseForm] = useState({
@@ -58,10 +58,26 @@ export function useExpenses(showToast, handleError) {
       let attachmentUrl = expenseForm.attachmentUrl;
 
       if (expenseForm.attachmentFile) {
+        const expenseDateValue = expenseForm.expenseDate || new Date().toISOString().slice(0, 10);
+        const [yearPart, monthPart] = expenseDateValue.split('-');
+        const now = new Date();
+        const yearFolder = yearPart || String(now.getFullYear());
+        const monthFolder = (monthPart || String(now.getMonth() + 1)).padStart(2, '0');
+        const eventLabel = expenseForm.eventId
+          ? events.find((item) => item.id === Number(expenseForm.eventId))?.name || `evento-${expenseForm.eventId}`
+          : '';
+        const categoryLabel = expenseForm.category?.trim();
+        const label = eventLabel || categoryLabel || 'Sem categoria';
         const uploadResponse = await uploadDriveFile(
           expenseForm.attachmentFile,
           expenseForm.attachmentName,
-          authToken
+          authToken,
+          {
+            module: 'Despesas',
+            year: yearFolder,
+            month: monthFolder,
+            label
+          }
         );
         const uploadedFile = uploadResponse?.file;
         attachmentId = uploadedFile?.id || null;
@@ -88,7 +104,7 @@ export function useExpenses(showToast, handleError) {
     } catch (error) {
       handleError(error);
     }
-  }, [apiFetch, authToken, editingExpenseId, expenseForm, handleError, loadExpenses, resetExpenseForm, showToast]);
+  }, [apiFetch, authToken, editingExpenseId, events, expenseForm, handleError, loadExpenses, resetExpenseForm, showToast]);
 
   const handleExpenseDelete = useCallback(async (id, refreshCallbacks = []) => {
     if (!window.confirm('Remover esta despesa?')) return;

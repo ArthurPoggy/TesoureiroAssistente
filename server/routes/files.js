@@ -3,7 +3,7 @@ const { Readable } = require('stream');
 const { success, fail } = require('../utils/response');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
-const { getDriveClient, getDriveContext } = require('../utils/google-drive');
+const { getDriveClient, getDriveContext, resolveFolderPath } = require('../utils/google-drive');
 
 const router = express.Router();
 
@@ -37,9 +37,12 @@ router.post('/upload', requireAdmin, upload.single('file'), async (req, res) => 
     }
     const drive = getDriveClient();
     const { folderId, sharedDriveId } = getDriveContext();
+    const { module: moduleName, year, month, label } = req.body || {};
+    const folderSegments = [moduleName, year, month, label].filter(Boolean);
+    const targetFolderId = await resolveFolderPath(drive, folderId, folderSegments, sharedDriveId);
     const fileMetadata = {
       name: req.body?.name || req.file.originalname,
-      parents: [folderId]
+      parents: [targetFolderId]
     };
     const media = {
       mimeType: req.file.mimetype,

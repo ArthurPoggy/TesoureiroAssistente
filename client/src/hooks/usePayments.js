@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { downloadBinary, uploadDriveFile } from '../services/api';
 import { currentMonth, currentYear } from '../utils/formatters';
 
-export function usePayments(showToast, handleError, monthFilter, yearFilter, selectedMemberId) {
+export function usePayments(showToast, handleError, monthFilter, yearFilter, selectedMemberId, members = []) {
   const { apiFetch, authToken } = useAuth();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -49,19 +49,31 @@ export function usePayments(showToast, handleError, monthFilter, yearFilter, sel
       return;
     }
     try {
+      const memberIdValue = Number(paymentForm.memberId);
+      const member = members.find((item) => item.id === memberIdValue);
+      const memberLabel = member?.name || member?.email || `membro-${memberIdValue}`;
+      const monthValue = Number(paymentForm.month);
+      const yearValue = Number(paymentForm.year);
+      const monthFolder = String(monthValue).padStart(2, '0');
       const uploadResponse = await uploadDriveFile(
         paymentForm.attachmentFile,
         paymentForm.attachmentName,
-        authToken
+        authToken,
+        {
+          module: 'Pagamentos',
+          year: yearValue,
+          month: monthFolder,
+          label: memberLabel
+        }
       );
       const uploadedFile = uploadResponse?.file;
       const attachmentName = uploadedFile?.name || paymentForm.attachmentName || null;
       const attachmentUrl = uploadedFile?.webViewLink || uploadedFile?.webContentLink || null;
       const attachmentId = uploadedFile?.id || null;
       const payload = {
-        memberId: Number(paymentForm.memberId),
-        month: Number(paymentForm.month),
-        year: Number(paymentForm.year),
+        memberId: memberIdValue,
+        month: monthValue,
+        year: yearValue,
         amount: Number(paymentForm.amount),
         paid: paymentForm.paid,
         paidAt: paymentForm.paidAt,
@@ -86,7 +98,7 @@ export function usePayments(showToast, handleError, monthFilter, yearFilter, sel
     } catch (error) {
       handleError(error);
     }
-  }, [apiFetch, authToken, handleError, loadPayments, paymentForm, showToast]);
+  }, [apiFetch, authToken, handleError, loadPayments, members, paymentForm, showToast]);
 
   const handlePaymentDelete = useCallback(async (id, refreshCallbacks = []) => {
     if (!window.confirm('Remover este pagamento?')) return;

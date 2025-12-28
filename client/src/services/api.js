@@ -35,11 +35,23 @@ export const downloadBinary = async (url, filename, token) => {
   window.URL.revokeObjectURL(fileUrl);
 };
 
-export const uploadDriveFile = async (file, name, token) => {
+export const uploadDriveFile = async (file, name, token, context = {}) => {
   const formData = new FormData();
   formData.append('file', file);
   if (name) {
     formData.append('name', name);
+  }
+  if (context.module) {
+    formData.append('module', context.module);
+  }
+  if (context.year) {
+    formData.append('year', String(context.year));
+  }
+  if (context.month) {
+    formData.append('month', String(context.month));
+  }
+  if (context.label) {
+    formData.append('label', context.label);
   }
   const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
   const response = await fetch('/api/files/upload', {
