@@ -8,9 +8,16 @@ const router = express.Router();
 router.get('/', requireAuth, async (req, res) => {
   try {
     const goals = await query('SELECT * FROM goals ORDER BY deadline');
-    const totalsRows = await query(
-      'SELECT goal_id, SUM(amount) as total FROM payments WHERE goal_id IS NOT NULL GROUP BY goal_id'
-    );
+    const isAdminRequest = req.user?.role === 'admin';
+    const params = [];
+    let totalsSql =
+      'SELECT goal_id, SUM(amount) as total FROM payments WHERE goal_id IS NOT NULL';
+    if (!isAdminRequest && req.user?.memberId) {
+      totalsSql += ' AND member_id = ?';
+      params.push(req.user.memberId);
+    }
+    totalsSql += ' GROUP BY goal_id';
+    const totalsRows = await query(totalsSql, params);
     const goalTotals = totalsRows.reduce(
       (acc, curr) => ({ ...acc, [curr.goal_id]: Number(curr.total) || 0 }),
       {}

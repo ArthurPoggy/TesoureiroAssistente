@@ -42,9 +42,23 @@ const sumExpenses = async (filters = {}) => {
 
 router.get('/', requireAuth, async (req, res) => {
   try {
+    const isAdminRequest = req.user?.role === 'admin';
     const year = req.query.year ? Number(req.query.year) : null;
     const month = req.query.month ? Number(req.query.month) : null;
-    const memberId = req.query.memberId ? Number(req.query.memberId) : null;
+    const memberId = isAdminRequest
+      ? (req.query.memberId ? Number(req.query.memberId) : null)
+      : req.user?.memberId || null;
+    if (!isAdminRequest && !memberId) {
+      return success(res, {
+        totalRaised: 0,
+        totalExpenses: 0,
+        balance: 0,
+        monthlyCollections: [],
+        goals: [],
+        delinquentMembers: [],
+        ranking: []
+      });
+    }
 
     let monthlySql = year
       ? `SELECT year, month, SUM(amount) AS total FROM payments WHERE paid`
@@ -134,15 +148,20 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/ranking', requireAuth, async (req, res) => {
   try {
     const { year, memberId } = req.query;
+    const isAdminRequest = req.user?.role === 'admin';
+    const effectiveMemberId = isAdminRequest ? memberId : req.user?.memberId;
+    if (!isAdminRequest && !effectiveMemberId) {
+      return success(res, { ranking: [] });
+    }
     const params = [];
     let filter = '';
     if (year) {
       filter = 'AND p.year = ?';
       params.push(Number(year));
     }
-    if (memberId) {
+    if (effectiveMemberId) {
       filter = `${filter} AND m.id = ?`;
-      params.push(Number(memberId));
+      params.push(Number(effectiveMemberId));
     }
     const ranking = await query(
       `SELECT m.name, COUNT(p.id) AS payments

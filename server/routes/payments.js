@@ -9,6 +9,11 @@ const router = express.Router();
 router.get('/', requireAuth, async (req, res) => {
   try {
     const { month, year, memberId } = req.query;
+    const isAdminRequest = req.user?.role === 'admin';
+    const effectiveMemberId = isAdminRequest ? memberId : req.user?.memberId;
+    if (!isAdminRequest && !effectiveMemberId) {
+      return success(res, { payments: [] });
+    }
     let sql = `
       SELECT p.*, m.name AS member_name
       FROM payments p
@@ -24,9 +29,9 @@ router.get('/', requireAuth, async (req, res) => {
       sql += ' AND p.year = ?';
       params.push(Number(year));
     }
-    if (memberId) {
+    if (effectiveMemberId) {
       sql += ' AND p.member_id = ?';
-      params.push(Number(memberId));
+      params.push(Number(effectiveMemberId));
     }
     sql += ' ORDER BY p.year DESC, p.month DESC';
     const payments = await query(sql, params);
@@ -39,9 +44,14 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/history/:memberId', requireAuth, async (req, res) => {
   try {
     const { memberId } = req.params;
+    const isAdminRequest = req.user?.role === 'admin';
+    const effectiveMemberId = isAdminRequest ? memberId : req.user?.memberId;
+    if (!effectiveMemberId) {
+      return success(res, { payments: [] });
+    }
     const payments = await query(
       'SELECT * FROM payments WHERE member_id = ? ORDER BY year DESC, month DESC',
-      [memberId]
+      [Number(effectiveMemberId)]
     );
     success(res, { payments });
   } catch (error) {
@@ -149,7 +159,7 @@ router.get('/:id/receipt', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const payment = await queryOne(
-      `SELECT p.*, m.name AS member_name, m.email
+      `SELECT p.*, p.member_id, m.name AS member_name, m.email
        FROM payments p
        JOIN members m ON m.id = p.member_id
        WHERE p.id = ?`,
@@ -157,6 +167,9 @@ router.get('/:id/receipt', requireAuth, async (req, res) => {
     );
     if (!payment) {
       return fail(res, 'Pagamento não encontrado', 404);
+    }
+    if (req.user?.role !== 'admin' && payment.member_id !== req.user?.memberId) {
+      return fail(res, 'Acesso restrito', 403);
     }
 
     const reportTimeZone = process.env.REPORT_TIMEZONE || 'America/Sao_Paulo';

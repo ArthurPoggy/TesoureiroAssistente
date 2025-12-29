@@ -426,7 +426,15 @@ router.get('/monthly', requireAuth, async (req, res) => {
     if (!month || !year) {
       return fail(res, 'Informe mês e ano');
     }
-    const total = await sumPayments({ month: Number(month), year: Number(year) });
+    const isAdminRequest = req.user?.role === 'admin';
+    if (!isAdminRequest && !req.user?.memberId) {
+      return success(res, { month: Number(month), year: Number(year), total: 0 });
+    }
+    const total = await sumPayments({
+      month: Number(month),
+      year: Number(year),
+      ...(isAdminRequest ? {} : { memberId: req.user?.memberId })
+    });
     success(res, { month: Number(month), year: Number(year), total });
   } catch (error) {
     fail(res, error.message);
@@ -439,7 +447,14 @@ router.get('/annual', requireAuth, async (req, res) => {
     if (!year) {
       return fail(res, 'Informe o ano');
     }
-    const total = await sumPayments({ year: Number(year) });
+    const isAdminRequest = req.user?.role === 'admin';
+    if (!isAdminRequest && !req.user?.memberId) {
+      return success(res, { year: Number(year), total: 0 });
+    }
+    const total = await sumPayments({
+      year: Number(year),
+      ...(isAdminRequest ? {} : { memberId: req.user?.memberId })
+    });
     success(res, { year: Number(year), total });
   } catch (error) {
     fail(res, error.message);
@@ -449,10 +464,14 @@ router.get('/annual', requireAuth, async (req, res) => {
 router.get('/balance', requireAuth, async (req, res) => {
   try {
     const { year } = req.query;
+    const isAdminRequest = req.user?.role === 'admin';
     const yearNum = year ? Number(year) : undefined;
+    if (!isAdminRequest && !req.user?.memberId) {
+      return success(res, { totalRaised: 0, totalExpenses: 0, balance: 0 });
+    }
     const [totalRaised, totalExpenses] = await Promise.all([
-      sumPayments({ year: yearNum }),
-      sumExpenses({ year: yearNum })
+      sumPayments({ year: yearNum, ...(isAdminRequest ? {} : { memberId: req.user?.memberId }) }),
+      isAdminRequest ? sumExpenses({ year: yearNum }) : Promise.resolve(0)
     ]);
     success(res, { totalRaised, totalExpenses, balance: totalRaised - totalExpenses });
   } catch (error) {
@@ -463,6 +482,13 @@ router.get('/balance', requireAuth, async (req, res) => {
 router.get('/export', requireAuth, async (req, res) => {
   try {
     const { format = 'csv', type = 'payments', month, year } = req.query;
+    const isAdminRequest = req.user?.role === 'admin';
+    if (!isAdminRequest && type === 'expenses') {
+      return fail(res, 'Acesso restrito', 403);
+    }
+    if (!isAdminRequest && !req.user?.memberId) {
+      return fail(res, 'Acesso restrito', 403);
+    }
     const monthValue = month ? Number(month) : null;
     const yearValue = year ? Number(year) : null;
     let rows = [];
@@ -507,6 +533,10 @@ router.get('/export', requireAuth, async (req, res) => {
         WHERE 1 = 1
       `;
       const params = [];
+      if (!isAdminRequest && req.user?.memberId) {
+        sql += ' AND p.member_id = ?';
+        params.push(req.user.memberId);
+      }
       if (yearValue) {
         sql += ' AND year = ?';
         params.push(yearValue);

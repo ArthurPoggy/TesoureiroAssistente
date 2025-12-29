@@ -74,8 +74,8 @@ function App() {
   const yearFilter = useMemo(() => parseYearFilter(selectedYear), [selectedYear]);
 
   const userFilterOptions = useMemo(() => {
-    const options = [{ id: 'all', label: 'Todos', memberId: null }];
     if (isAdmin) {
+      const options = [{ id: 'all', label: 'Todos', memberId: null }];
       members.forEach((member) => {
         options.push({
           id: `member-${member.id}`,
@@ -87,18 +87,21 @@ function App() {
     }
     if (authUser.memberId) {
       const member = members.find((item) => item.id === authUser.memberId);
-      options.push({
-        id: 'me',
-        label: member?.name || authUser.name || authUser.email,
-        memberId: authUser.memberId
-      });
+      return [
+        {
+          id: 'me',
+          label: member?.name || authUser.name || authUser.email,
+          memberId: authUser.memberId
+        }
+      ];
     }
-    return options;
+    return [];
   }, [isAdmin, members, authUser]);
 
   useEffect(() => {
+    if (!userFilterOptions.length) return;
     if (!userFilterOptions.some((option) => option.id === selectedUserFilter)) {
-      setSelectedUserFilter('all');
+      setSelectedUserFilter(userFilterOptions[0].id);
     }
   }, [userFilterOptions, selectedUserFilter]);
 
@@ -275,10 +278,12 @@ function App() {
 
       <DelinquencyRanking delinquent={delinquent} ranking={ranking} />
 
-      <ReportsSection
-        reportLoading={reportLoading}
-        onExport={(format, type) => handleExport(format, type, showToast)}
-      />
+      {isAdmin && (
+        <ReportsSection
+          reportLoading={reportLoading}
+          onExport={(format, type) => handleExport(format, type, showToast)}
+        />
+      )}
 
       <footer>
         <p>RF01-RF12 atendidos com dashboard visual, recibos, exportação e ranking.</p>

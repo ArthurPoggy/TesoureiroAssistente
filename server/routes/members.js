@@ -19,7 +19,17 @@ router.get('/', requireAuth, async (req, res) => {
     const baseFields = ['id', 'name', 'email', 'nickname', 'joined_at'];
     const adminFields = ['role', 'active', 'must_reset_password'];
     const fields = isAdminRequest ? baseFields.concat(adminFields) : baseFields;
-    const members = await query(`SELECT ${fields.join(', ')} FROM members ORDER BY name`);
+    let sql = `SELECT ${fields.join(', ')} FROM members`;
+    const params = [];
+    if (!isAdminRequest) {
+      if (!req.user?.memberId) {
+        return success(res, { members: [] });
+      }
+      sql += ' WHERE id = ?';
+      params.push(req.user.memberId);
+    }
+    sql += ' ORDER BY name';
+    const members = await query(sql, params);
     success(res, { members });
   } catch (error) {
     fail(res, error.message);
@@ -121,6 +131,11 @@ router.delete('/:id', requireAdmin, async (req, res) => {
 router.get('/delinquent', requireAuth, async (req, res) => {
   try {
     const { month, year, memberId } = req.query;
+    const isAdminRequest = req.user?.role === 'admin';
+    const effectiveMemberId = isAdminRequest ? memberId : req.user?.memberId;
+    if (!isAdminRequest && !effectiveMemberId) {
+      return success(res, { members: [] });
+    }
     const monthValue = month ? Number(month) : null;
     const yearValue = year ? Number(year) : null;
     let sql = `SELECT DISTINCT m.id, m.name, m.email, m.nickname, m.joined_at
@@ -140,9 +155,9 @@ router.get('/delinquent', requireAuth, async (req, res) => {
       sql += ` AND ${joinFilters.join(' AND ')}`;
     }
     sql += ' WHERE (p.id IS NULL OR p.paid IS NOT TRUE)';
-    if (memberId) {
+    if (effectiveMemberId) {
       sql += ' AND m.id = ?';
-      params.push(Number(memberId));
+      params.push(Number(effectiveMemberId));
     }
     sql += ' ORDER BY m.name';
     const members = await query(sql, params);

@@ -7,7 +7,7 @@ const { getDriveClient, getDriveContext, resolveFolderPath } = require('../utils
 
 const router = express.Router();
 
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', requireAdmin, async (req, res) => {
   try {
     const drive = getDriveClient();
     const { folderId, sharedDriveId } = getDriveContext();
