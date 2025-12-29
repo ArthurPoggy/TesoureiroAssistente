@@ -157,26 +157,116 @@ router.get('/:id/receipt', requireAuth, async (req, res) => {
       return fail(res, 'Pagamento não encontrado', 404);
     }
 
-    const doc = new PDFDocument();
+    const formatDate = (value) => {
+      if (!value) return 'não informado';
+      const parts = String(value).split('-');
+      if (parts.length === 3) {
+        const [year, month, day] = parts;
+        return `${day}/${month}/${year}`;
+      }
+      return value;
+    };
+    const formatCurrency = (value) =>
+      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value || 0));
+    const months = [
+      '',
+      'Janeiro',
+      'Fevereiro',
+      'Março',
+      'Abril',
+      'Maio',
+      'Junho',
+      'Julho',
+      'Agosto',
+      'Setembro',
+      'Outubro',
+      'Novembro',
+      'Dezembro'
+    ];
+    const competenceLabel = `${months[Number(payment.month)] || payment.month}/${payment.year}`;
+    const issueDate = new Date().toLocaleDateString('pt-BR');
+    const statusLabel = payment.paid ? 'Pago' : 'Pendente';
+    const statusColor = payment.paid ? '#16a34a' : '#f97316';
+
+    const doc = new PDFDocument({ size: 'A4', margin: 40 });
     const filename = `recibo-${payment.id}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     doc.pipe(res);
 
-    doc.fontSize(20).text('Recibo de Pagamento', { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(12).text(`Membro: ${payment.member_name}`);
-    doc.text(`Email: ${payment.email || 'não informado'}`);
-    doc.text(`Referente: ${payment.month}/${payment.year}`);
-    doc.text(`Valor: R$ ${payment.amount.toFixed(2)}`);
-    doc.text(`Status: ${payment.paid ? 'Pago' : 'Pendente'}`);
-    doc.text(`Data de pagamento: ${payment.paid_at || 'não informado'}`);
+    const pageWidth = doc.page.width;
+    const margin = doc.page.margins.left;
+    const contentWidth = pageWidth - margin * 2;
+
+    doc.rect(0, 0, pageWidth, 110).fill('#0f172a');
+    doc.fillColor('#fff').font('Helvetica-Bold').fontSize(22).text('Recibo de Pagamento', margin, 28);
+    doc.font('Helvetica').fontSize(10).text('Tesoureiro Assistente', margin, 58);
+    doc.text('Documento gerado automaticamente', margin, 74);
+
+    doc.fillColor('#0f172a');
+    let currentY = 130;
+    doc.font('Helvetica-Bold').fontSize(13).text('Resumo do pagamento', margin, currentY);
+    currentY += 24;
+
+    const colGap = 24;
+    const colWidth = (contentWidth - colGap) / 2;
+    const leftX = margin;
+    const rightX = margin + colWidth + colGap;
+    const rowHeight = 38;
+
+    const drawField = (x, y, label, value) => {
+      doc.font('Helvetica').fontSize(9).fillColor('#64748b').text(label.toUpperCase(), x, y);
+      doc.font('Helvetica-Bold').fontSize(12).fillColor('#0f172a').text(value, x, y + 12, {
+        width: colWidth
+      });
+    };
+
+    const drawBadge = (x, y, label, color) => {
+      doc.font('Helvetica-Bold').fontSize(9);
+      const paddingX = 10;
+      const textWidth = doc.widthOfString(label);
+      const badgeWidth = textWidth + paddingX * 2;
+      const badgeHeight = 18;
+      doc.roundedRect(x, y, badgeWidth, badgeHeight, 6).fill(color);
+      doc.fillColor('#fff').text(label, x, y + 4, { width: badgeWidth, align: 'center' });
+    };
+
+    drawField(leftX, currentY, 'Membro', payment.member_name);
+    drawField(leftX, currentY + rowHeight, 'Email', payment.email || 'não informado');
+
+    drawField(rightX, currentY, 'Recibo', `#${payment.id}`);
+    drawField(rightX, currentY + rowHeight, 'Competência', competenceLabel);
+    drawField(rightX, currentY + rowHeight * 2, 'Pagamento em', formatDate(payment.paid_at));
+    doc.font('Helvetica').fontSize(9).fillColor('#64748b').text('STATUS', rightX, currentY + rowHeight * 3);
+    drawBadge(rightX, currentY + rowHeight * 3 + 12, statusLabel, statusColor);
+
+    currentY += rowHeight * 4 + 12;
+
+    doc.roundedRect(margin, currentY, contentWidth, 70, 10).fill('#eff6ff');
+    doc.fillColor('#1d4ed8').font('Helvetica-Bold').fontSize(12).text('Valor recebido', margin + 16, currentY + 14);
+    doc.fillColor('#0f172a').fontSize(24).text(formatCurrency(payment.amount), margin + 16, currentY + 34);
+    doc.font('Helvetica').fontSize(10).fillColor('#64748b').text(`Emitido em ${issueDate}`, margin + 16, currentY + 52);
+
+    currentY += 90;
+
     if (payment.notes) {
-      doc.moveDown();
-      doc.text(`Observações: ${payment.notes}`);
+      doc.roundedRect(margin, currentY, contentWidth, 70, 10).stroke('#e2e8f0');
+      doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(11).text('Observações', margin + 12, currentY + 10);
+      doc.font('Helvetica').fontSize(10).fillColor('#475569').text(payment.notes, margin + 12, currentY + 28, {
+        width: contentWidth - 24,
+        height: 40
+      });
+      currentY += 86;
     }
-    doc.moveDown();
-    doc.text('Obrigado pela contribuição!', { align: 'center' });
+
+    const footerY = doc.page.height - 70;
+    doc.moveTo(margin, footerY).lineTo(pageWidth - margin, footerY).strokeColor('#e2e8f0').stroke();
+    doc.fillColor('#64748b').fontSize(9).text(
+      'Guarde este recibo para referência. Em caso de dúvidas, procure o tesoureiro responsável.',
+      margin,
+      footerY + 12,
+      { width: contentWidth, align: 'center' }
+    );
     doc.end();
   } catch (error) {
     fail(res, error.message);

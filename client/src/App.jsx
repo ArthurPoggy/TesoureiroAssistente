@@ -15,6 +15,7 @@ import {
   AuthCheckingScreen,
   Header,
   DashboardSection,
+  GoalsPanel,
   MembersPanel,
   PaymentsPanel,
   ExpensesPanel,
@@ -207,6 +208,14 @@ function App() {
         goals={goals}
         onEditGoal={startEditGoal}
         onDeleteGoal={handleGoalDelete}
+      />
+
+      <GoalsPanel
+        goalForm={goalForm}
+        setGoalForm={setGoalForm}
+        editingGoalId={editingGoalId}
+        onSubmit={handleGoalSubmit}
+        onReset={resetGoalForm}
       />
 
       <MembersPanel

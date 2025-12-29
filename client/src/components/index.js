@@ -10,6 +10,9 @@ export { DashboardSection } from './dashboard/DashboardSection';
 export { StatsGrid } from './dashboard/StatsGrid';
 export { GoalsGrid } from './dashboard/GoalsGrid';
 
+// Goals
+export { GoalsPanel } from './goals/GoalsPanel';
+
 // Members
 export { MembersPanel } from './members/MembersPanel';
 export { MemberDetailView } from './members/MemberDetailView';
