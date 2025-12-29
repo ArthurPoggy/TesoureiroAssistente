@@ -39,6 +39,7 @@ const migrations = [
       amount REAL NOT NULL,
       paid INTEGER NOT NULL DEFAULT 1,
       paid_at TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       notes TEXT,
       goal_id INTEGER,
       attachment_id TEXT,
@@ -70,9 +71,11 @@ const migrations = [
   `ALTER TABLE payments ADD COLUMN attachment_id TEXT`,
   `ALTER TABLE payments ADD COLUMN attachment_name TEXT`,
   `ALTER TABLE payments ADD COLUMN attachment_url TEXT`,
+  `ALTER TABLE payments ADD COLUMN created_at TEXT`,
   `ALTER TABLE expenses ADD COLUMN attachment_id TEXT`,
   `ALTER TABLE expenses ADD COLUMN attachment_name TEXT`,
-  `ALTER TABLE expenses ADD COLUMN attachment_url TEXT`
+  `ALTER TABLE expenses ADD COLUMN attachment_url TEXT`,
+  `UPDATE payments SET created_at = COALESCE(created_at, paid_at, CURRENT_TIMESTAMP) WHERE created_at IS NULL`
 ];
 
 function runMigrations() {

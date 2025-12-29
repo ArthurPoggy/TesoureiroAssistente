@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS payments (
   amount NUMERIC NOT NULL,
   paid BOOLEAN NOT NULL DEFAULT TRUE,
   paid_at DATE,
+  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
   notes TEXT,
   goal_id INTEGER REFERENCES goals(id) ON DELETE SET NULL,
   attachment_id TEXT,
@@ -69,6 +70,11 @@ CREATE TABLE IF NOT EXISTS expenses (
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS attachment_id TEXT;
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS attachment_name TEXT;
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS attachment_url TEXT;
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ;
+ALTER TABLE payments ALTER COLUMN created_at SET DEFAULT TIMEZONE('utc', NOW());
+UPDATE payments
+SET created_at = COALESCE(created_at, paid_at, TIMEZONE('utc', NOW()))
+WHERE created_at IS NULL;
 
 ALTER TABLE expenses ADD COLUMN IF NOT EXISTS attachment_id TEXT;
 ALTER TABLE expenses ADD COLUMN IF NOT EXISTS attachment_name TEXT;

@@ -68,10 +68,11 @@ router.post('/', requireAdmin, async (req, res) => {
       return fail(res, 'Campos obrigatórios não preenchidos');
     }
     const paidValue = Boolean(paid);
+    const createdAt = new Date().toISOString();
     const [payment] = await query(
       `
-      INSERT INTO payments (member_id, month, year, amount, paid, paid_at, notes, goal_id, attachment_id, attachment_name, attachment_url)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO payments (member_id, month, year, amount, paid, paid_at, created_at, notes, goal_id, attachment_id, attachment_name, attachment_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(member_id, month, year) DO UPDATE SET
         amount = excluded.amount,
         paid = excluded.paid,
@@ -90,6 +91,7 @@ router.post('/', requireAdmin, async (req, res) => {
         amount,
         paidValue,
         paidAt,
+        createdAt,
         notes,
         goalId || null,
         attachmentId || null,
@@ -157,14 +159,50 @@ router.get('/:id/receipt', requireAuth, async (req, res) => {
       return fail(res, 'Pagamento não encontrado', 404);
     }
 
-    const formatDate = (value) => {
+    const reportTimeZone = process.env.REPORT_TIMEZONE || 'America/Sao_Paulo';
+    const dateOnlyPattern = /^\d{4}-\d{2}-\d{2}$/;
+    const parseDateValue = (value) => {
+      if (!value) return null;
+      if (value instanceof Date) {
+        return value;
+      }
+      if (typeof value === 'string' && dateOnlyPattern.test(value)) {
+        const [year, month, day] = value.split('-');
+        return new Date(Number(year), Number(month) - 1, Number(day));
+      }
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+    const formatDateOnly = (value) => {
       if (!value) return 'não informado';
-      const parts = String(value).split('-');
-      if (parts.length === 3) {
-        const [year, month, day] = parts;
+      if (typeof value === 'string' && dateOnlyPattern.test(value)) {
+        const [year, month, day] = value.split('-');
         return `${day}/${month}/${year}`;
       }
-      return value;
+      const date = parseDateValue(value);
+      if (!date) return 'não informado';
+      return new Intl.DateTimeFormat('pt-BR', {
+        timeZone: reportTimeZone,
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      }).format(date);
+    };
+    const formatDateTime = (value) => {
+      if (typeof value === 'string' && dateOnlyPattern.test(value)) {
+        return formatDateOnly(value);
+      }
+      const date = parseDateValue(value);
+      if (!date) return 'não informado';
+      return new Intl.DateTimeFormat('pt-BR', {
+        timeZone: reportTimeZone,
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).format(date);
     };
     const formatCurrency = (value) =>
       new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value || 0));
@@ -184,7 +222,7 @@ router.get('/:id/receipt', requireAuth, async (req, res) => {
       'Dezembro'
     ];
     const competenceLabel = `${months[Number(payment.month)] || payment.month}/${payment.year}`;
-    const issueDate = new Date().toLocaleDateString('pt-BR');
+    const issueDate = formatDateTime(new Date());
     const statusLabel = payment.paid ? 'Pago' : 'Pendente';
     const statusColor = payment.paid ? '#16a34a' : '#f97316';
 
@@ -236,11 +274,13 @@ router.get('/:id/receipt', requireAuth, async (req, res) => {
 
     drawField(rightX, currentY, 'Recibo', `#${payment.id}`);
     drawField(rightX, currentY + rowHeight, 'Competência', competenceLabel);
-    drawField(rightX, currentY + rowHeight * 2, 'Pagamento em', formatDate(payment.paid_at));
-    doc.font('Helvetica').fontSize(9).fillColor('#64748b').text('STATUS', rightX, currentY + rowHeight * 3);
-    drawBadge(rightX, currentY + rowHeight * 3 + 12, statusLabel, statusColor);
+    drawField(rightX, currentY + rowHeight * 2, 'Pagamento em', formatDateOnly(payment.paid_at));
+    const registeredAt = payment.created_at ? formatDateTime(payment.created_at) : 'não informado';
+    drawField(rightX, currentY + rowHeight * 3, 'Registrado em', registeredAt);
+    doc.font('Helvetica').fontSize(9).fillColor('#64748b').text('STATUS', rightX, currentY + rowHeight * 4);
+    drawBadge(rightX, currentY + rowHeight * 4 + 12, statusLabel, statusColor);
 
-    currentY += rowHeight * 4 + 12;
+    currentY += rowHeight * 5 + 12;
 
     doc.roundedRect(margin, currentY, contentWidth, 70, 10).fill('#eff6ff');
     doc.fillColor('#1d4ed8').font('Helvetica-Bold').fontSize(12).text('Valor recebido', margin + 16, currentY + 14);
