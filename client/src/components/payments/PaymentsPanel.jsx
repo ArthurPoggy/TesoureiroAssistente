@@ -108,7 +108,12 @@ export function PaymentsPanel({
             <button type="submit" disabled={submitting}>
               {submitting ? 'Registrando...' : 'Registrar pagamento'}
             </button>
-            {submitting && <span className="hint">Processando pagamento e upload do anexo.</span>}
+            {submitting && (
+              <div className="loading-indicator" role="status" aria-live="polite">
+                <span className="spinner" aria-hidden="true" />
+                <span>Processando pagamento e upload do anexo.</span>
+              </div>
+            )}
           </div>
         </form>
       ) : (
