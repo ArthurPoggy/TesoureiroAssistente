@@ -24,6 +24,21 @@ textarea {
   align-items: center;
 }
 
+.goals-panel .goals-form {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--spacing-sm);
+  max-width: 720px;
+}
+
+.goals-panel input,
+.goals-panel textarea {
+  padding: 0.5rem 0.6rem;
+}
+
+.goals-panel textarea {
+  min-height: 60px;
+}
+
 button {
   border: none;
   background: var(--color-primary);

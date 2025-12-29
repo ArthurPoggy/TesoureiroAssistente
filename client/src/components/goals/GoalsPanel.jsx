@@ -8,13 +8,13 @@ export function GoalsPanel({ goalForm, setGoalForm, editingGoalId, onSubmit, onR
   }
 
   return (
-    <section className="panel">
+    <section className="panel goals-panel">
       <div className="panel-header">
         <h2>Definição de metas</h2>
         <p>Crie metas financeiras para acompanhar o progresso.</p>
       </div>
 
-      <form className="form-grid" onSubmit={onSubmit}>
+      <form className="form-grid goals-form" onSubmit={onSubmit}>
         <input
           placeholder="Título da meta"
           value={goalForm.title}
