@@ -7,6 +7,7 @@ export function usePayments(showToast, handleError, monthFilter, yearFilter, sel
   const { apiFetch, authToken } = useAuth();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [paymentForm, setPaymentForm] = useState({
     memberId: '',
@@ -40,6 +41,9 @@ export function usePayments(showToast, handleError, monthFilter, yearFilter, sel
 
   const handlePaymentSubmit = useCallback(async (event, refreshCallbacks = []) => {
     event.preventDefault();
+    if (submitting) {
+      return;
+    }
     if (!paymentForm.memberId) {
       showToast('Selecione um membro', 'error');
       return;
@@ -49,6 +53,7 @@ export function usePayments(showToast, handleError, monthFilter, yearFilter, sel
       return;
     }
     try {
+      setSubmitting(true);
       const memberIdValue = Number(paymentForm.memberId);
       const member = members.find((item) => item.id === memberIdValue);
       const memberLabel = member?.name || member?.email || `membro-${memberIdValue}`;
@@ -97,8 +102,10 @@ export function usePayments(showToast, handleError, monthFilter, yearFilter, sel
       showToast('Pagamento registrado');
     } catch (error) {
       handleError(error);
+    } finally {
+      setSubmitting(false);
     }
-  }, [apiFetch, authToken, handleError, loadPayments, members, paymentForm, showToast]);
+  }, [apiFetch, authToken, handleError, loadPayments, members, paymentForm, showToast, submitting]);
 
   const handlePaymentDelete = useCallback(async (id, refreshCallbacks = []) => {
     if (!window.confirm('Remover este pagamento?')) return;
@@ -125,6 +132,7 @@ export function usePayments(showToast, handleError, monthFilter, yearFilter, sel
     paymentForm,
     setPaymentForm,
     loading,
+    submitting,
     loadPayments,
     handlePaymentSubmit,
     handlePaymentDelete,

@@ -123,6 +123,7 @@ function App() {
     paymentForm,
     setPaymentForm,
     loading,
+    submitting: paymentSubmitting,
     fileInputKey: paymentFileInputKey,
     loadPayments,
     handlePaymentSubmit,
@@ -243,6 +244,7 @@ function App() {
         paymentForm={paymentForm}
         setPaymentForm={setPaymentForm}
         loading={loading}
+        submitting={paymentSubmitting}
         members={members}
         goals={goals}
         onSubmit={(e) => handlePaymentSubmit(e, refreshAfterPayment)}

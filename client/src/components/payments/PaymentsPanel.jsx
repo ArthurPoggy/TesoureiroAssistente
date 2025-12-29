@@ -6,6 +6,7 @@ export function PaymentsPanel({
   paymentForm,
   setPaymentForm,
   loading,
+  submitting,
   members,
   goals,
   onSubmit,
@@ -24,7 +25,7 @@ export function PaymentsPanel({
       </div>
 
       {canEdit ? (
-        <form className="form-grid" onSubmit={onSubmit}>
+        <form className="form-grid" onSubmit={onSubmit} aria-busy={submitting}>
           <select
             value={paymentForm.memberId}
             onChange={(e) => setPaymentForm({ ...paymentForm, memberId: e.target.value })}
@@ -104,7 +105,10 @@ export function PaymentsPanel({
             required
           />
           <div className="form-actions">
-            <button type="submit">Registrar pagamento</button>
+            <button type="submit" disabled={submitting}>
+              {submitting ? 'Registrando...' : 'Registrar pagamento'}
+            </button>
+            {submitting && <span className="hint">Processando pagamento e upload do anexo.</span>}
           </div>
         </form>
       ) : (
