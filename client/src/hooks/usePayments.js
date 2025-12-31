@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { downloadBinary, uploadDriveFile } from '../services/api';
 import { currentMonth, currentYear } from '../utils/formatters';
 
-export function usePayments(showToast, handleError, monthFilter, yearFilter, selectedMemberId, members = []) {
+export function usePayments(showToast, handleError, selectedMemberId, members = []) {
   const { apiFetch, authToken } = useAuth();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -26,18 +26,17 @@ export function usePayments(showToast, handleError, monthFilter, yearFilter, sel
     try {
       setLoading(true);
       const params = new URLSearchParams({
-        ...(monthFilter !== null ? { month: monthFilter } : {}),
-        ...(yearFilter !== null ? { year: yearFilter } : {}),
         ...(selectedMemberId ? { memberId: selectedMemberId } : {})
       });
-      const data = await apiFetch(`/api/payments?${params.toString()}`);
+      const query = params.toString();
+      const data = await apiFetch(query ? `/api/payments?${query}` : '/api/payments');
       setPayments(data.payments || []);
     } catch (error) {
       handleError(error);
     } finally {
       setLoading(false);
     }
-  }, [apiFetch, handleError, monthFilter, yearFilter, selectedMemberId]);
+  }, [apiFetch, handleError, selectedMemberId]);
 
   const handlePaymentSubmit = useCallback(async (event, refreshCallbacks = []) => {
     event.preventDefault();

@@ -129,7 +129,7 @@ function App() {
     handlePaymentSubmit,
     handlePaymentDelete,
     handleReceipt
-  } = usePayments(showToast, handleError, monthFilter, yearFilter, selectedMemberId, members);
+  } = usePayments(showToast, handleError, selectedMemberId, members);
 
   const {
     expenses,
