@@ -7,6 +7,7 @@ export function useDashboard(handleError, monthFilter, yearFilter, selectedMembe
     totalRaised: 0,
     totalExpenses: 0,
     balance: 0,
+    currentBalance: null,
     monthlyCollections: [],
     goals: [],
     delinquentMembers: [],

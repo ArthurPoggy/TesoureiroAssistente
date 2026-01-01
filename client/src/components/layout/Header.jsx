@@ -9,7 +9,9 @@ export function Header({
   userFilterOptions,
   selectedUserFilter,
   setSelectedUserFilter,
-  resetFilters
+  resetFilters,
+  settingsOpen,
+  onToggleSettings
 }) {
   const { authUser, isAdmin, logout } = useAuth();
 
@@ -55,6 +57,11 @@ export function Header({
         <div className="auth-status">
           <span>{isAdmin ? 'Tesoureiro' : 'Visualização'}</span>
           <span>{authUser.email}</span>
+          {isAdmin && (
+            <button type="button" className="ghost" onClick={onToggleSettings}>
+              {settingsOpen ? 'Fechar configurações' : 'Configurações'}
+            </button>
+          )}
           <button type="button" onClick={logout}>
             Sair
           </button>

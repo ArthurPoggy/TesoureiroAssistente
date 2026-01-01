@@ -37,6 +37,12 @@ CREATE TABLE IF NOT EXISTS events (
   description TEXT
 );
 
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT,
+  updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+);
+
 CREATE TABLE IF NOT EXISTS payments (
   id SERIAL PRIMARY KEY,
   member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
@@ -75,6 +81,14 @@ ALTER TABLE payments ALTER COLUMN created_at SET DEFAULT TIMEZONE('utc', NOW());
 UPDATE payments
 SET created_at = COALESCE(created_at, paid_at, TIMEZONE('utc', NOW()))
 WHERE created_at IS NULL;
+
+INSERT INTO settings (key, value, updated_at)
+SELECT
+  'current_balance',
+  ((SELECT COALESCE(SUM(amount), 0) FROM payments WHERE paid)
+   - (SELECT COALESCE(SUM(amount), 0) FROM expenses))::TEXT,
+  TIMEZONE('utc', NOW())
+ON CONFLICT (key) DO NOTHING;
 
 ALTER TABLE expenses ADD COLUMN IF NOT EXISTS attachment_id TEXT;
 ALTER TABLE expenses ADD COLUMN IF NOT EXISTS attachment_name TEXT;

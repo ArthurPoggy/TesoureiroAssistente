@@ -62,6 +62,26 @@ textarea {
   min-height: 60px;
 }
 
+.settings-panel .settings-form {
+  grid-template-columns: minmax(220px, 360px);
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.settings-field label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.settings-field small {
+  color: var(--color-text-light);
+  font-size: 0.75rem;
+}
+
 button {
   border: none;
   background: var(--color-primary);

@@ -9,6 +9,7 @@ const filesRoutes = require('./files');
 const reportsRoutes = require('./reports');
 const dashboardRoutes = require('./dashboard');
 const seedRoutes = require('./seed');
+const settingsRoutes = require('./settings');
 
 const router = express.Router();
 
@@ -26,5 +27,6 @@ router.use('/reports', reportsRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/ranking', dashboardRoutes);
 router.use('/seed', seedRoutes);
+router.use('/settings', settingsRoutes);
 
 module.exports = router;

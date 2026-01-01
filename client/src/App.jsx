@@ -9,12 +9,13 @@ import {
 } from 'chart.js';
 import { useAuth } from './contexts/AuthContext';
 import { parseMonthFilter, parseYearFilter, currentMonth, currentYear } from './utils/formatters';
-import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard } from './hooks';
+import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard, useSettings } from './hooks';
 import {
   LoginScreen,
   AuthCheckingScreen,
   Header,
   DashboardSection,
+  SettingsPanel,
   GoalsPanel,
   MembersPanel,
   PaymentsPanel,
@@ -36,6 +37,7 @@ function App() {
   const [selectedMonth, setSelectedMonth] = useState(String(currentMonth));
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
   const [selectedUserFilter, setSelectedUserFilter] = useState('all');
+  const [showSettings, setShowSettings] = useState(false);
 
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type });
@@ -155,6 +157,15 @@ function App() {
     handleExport
   } = useDashboard(handleError, monthFilter, yearFilter, selectedMemberId);
 
+  const {
+    balanceInput,
+    setBalanceInput,
+    loading: settingsLoading,
+    saving: settingsSaving,
+    loadSettings,
+    saveBalance
+  } = useSettings(showToast, handleError);
+
   // Carregar dados iniciais
   useEffect(() => {
     if (!authToken || !authChecked) return;
@@ -163,6 +174,11 @@ function App() {
     loadExpenses();
     loadEvents();
   }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents]);
+
+  useEffect(() => {
+    if (!authToken || !authChecked || !isAdmin || !showSettings) return;
+    loadSettings();
+  }, [authToken, authChecked, isAdmin, loadSettings, showSettings]);
 
   // Recarregar dados filtrados
   useEffect(() => {
@@ -203,6 +219,8 @@ function App() {
         selectedUserFilter={selectedUserFilter}
         setSelectedUserFilter={setSelectedUserFilter}
         resetFilters={resetFilters}
+        settingsOpen={showSettings}
+        onToggleSettings={() => setShowSettings((value) => !value)}
       />
 
       {toast && <Toast message={toast.message} type={toast.type} />}
@@ -213,6 +231,22 @@ function App() {
         onEditGoal={startEditGoal}
         onDeleteGoal={handleGoalDelete}
       />
+
+      {showSettings && isAdmin && (
+        <SettingsPanel
+          balanceInput={balanceInput}
+          setBalanceInput={setBalanceInput}
+          loading={settingsLoading}
+          saving={settingsSaving}
+          onSave={async () => {
+            const saved = await saveBalance();
+            if (saved) {
+              loadDashboard();
+            }
+          }}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
 
       <GoalsPanel
         goalForm={goalForm}

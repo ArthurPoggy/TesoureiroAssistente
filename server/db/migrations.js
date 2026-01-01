@@ -31,6 +31,11 @@ const migrations = [
       spent_amount REAL DEFAULT 0,
       description TEXT
     )`,
+  `CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )`,
   `CREATE TABLE IF NOT EXISTS payments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       member_id INTEGER NOT NULL,
@@ -75,7 +80,12 @@ const migrations = [
   `ALTER TABLE expenses ADD COLUMN attachment_id TEXT`,
   `ALTER TABLE expenses ADD COLUMN attachment_name TEXT`,
   `ALTER TABLE expenses ADD COLUMN attachment_url TEXT`,
-  `UPDATE payments SET created_at = COALESCE(created_at, paid_at, CURRENT_TIMESTAMP) WHERE created_at IS NULL`
+  `UPDATE payments SET created_at = COALESCE(created_at, paid_at, CURRENT_TIMESTAMP) WHERE created_at IS NULL`,
+  `INSERT OR IGNORE INTO settings (key, value, updated_at)
+   SELECT 'current_balance',
+          (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE paid)
+          - (SELECT COALESCE(SUM(amount), 0) FROM expenses),
+          CURRENT_TIMESTAMP`
 ];
 
 function runMigrations() {

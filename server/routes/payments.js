@@ -3,6 +3,7 @@ const PDFDocument = require('pdfkit');
 const { query, queryOne, execute } = require('../db/query');
 const { success, fail } = require('../utils/response');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { adjustCurrentBalance } = require('../utils/settings');
 
 const router = express.Router();
 
@@ -78,6 +79,10 @@ router.post('/', requireAdmin, async (req, res) => {
       return fail(res, 'Campos obrigatórios não preenchidos');
     }
     const paidValue = Boolean(paid);
+    const existingPayment = await queryOne(
+      'SELECT id, amount, paid FROM payments WHERE member_id = ? AND month = ? AND year = ?',
+      [memberId, month, year]
+    );
     const createdAt = new Date().toISOString();
     const [payment] = await query(
       `
@@ -109,6 +114,18 @@ router.post('/', requireAdmin, async (req, res) => {
         attachmentUrl || null
       ]
     );
+    const previousAmount = existingPayment ? Number(existingPayment.amount || 0) : 0;
+    const previousPaid = existingPayment ? Boolean(existingPayment.paid) : false;
+    const nextAmount = Number(amount || 0);
+    const nextPaid = paidValue;
+    let delta = 0;
+    if (previousPaid) {
+      delta -= previousAmount;
+    }
+    if (nextPaid) {
+      delta += nextAmount;
+    }
+    await adjustCurrentBalance(delta);
     success(res, { payment });
   } catch (error) {
     fail(res, error.message);
@@ -120,6 +137,10 @@ router.put('/:id', requireAdmin, async (req, res) => {
     const { id } = req.params;
     const { amount, paid, paidAt, notes, goalId, attachmentId, attachmentName, attachmentUrl } = req.body;
     const paidValue = Boolean(paid);
+    const existingPayment = await queryOne(
+      'SELECT amount, paid FROM payments WHERE id = ?',
+      [id]
+    );
     const [payment] = await query(
       `UPDATE payments
        SET amount = ?, paid = ?, paid_at = ?, notes = ?, goal_id = ?,
@@ -139,6 +160,21 @@ router.put('/:id', requireAdmin, async (req, res) => {
         id
       ]
     );
+    if (!payment) {
+      return fail(res, 'Pagamento não encontrado', 404);
+    }
+    const previousAmount = existingPayment ? Number(existingPayment.amount || 0) : 0;
+    const previousPaid = existingPayment ? Boolean(existingPayment.paid) : false;
+    const nextAmount = Number(amount || 0);
+    const nextPaid = paidValue;
+    let delta = 0;
+    if (previousPaid) {
+      delta -= previousAmount;
+    }
+    if (nextPaid) {
+      delta += nextAmount;
+    }
+    await adjustCurrentBalance(delta);
     success(res, { payment });
   } catch (error) {
     fail(res, error.message);
@@ -148,7 +184,11 @@ router.put('/:id', requireAdmin, async (req, res) => {
 router.delete('/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
+    const existingPayment = await queryOne('SELECT amount, paid FROM payments WHERE id = ?', [id]);
     await execute('DELETE FROM payments WHERE id = ?', [id]);
+    if (existingPayment?.paid) {
+      await adjustCurrentBalance(-Number(existingPayment.amount || 0));
+    }
     success(res);
   } catch (error) {
     fail(res, error.message);

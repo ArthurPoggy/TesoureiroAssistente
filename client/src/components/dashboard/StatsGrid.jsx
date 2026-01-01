@@ -1,6 +1,12 @@
 import { formatCurrency } from '../../utils/formatters';
+import { useAuth } from '../../contexts/AuthContext';
 
 export function StatsGrid({ dashboard }) {
+  const { isAdmin } = useAuth();
+  const showCurrentBalance = isAdmin && dashboard.currentBalance !== null && dashboard.currentBalance !== undefined;
+  const balanceLabel = showCurrentBalance ? 'Saldo atual' : 'Saldo';
+  const balanceValue = showCurrentBalance ? dashboard.currentBalance : dashboard.balance;
+
   return (
     <div className="stats-grid">
       <article className="stat-card">
@@ -12,8 +18,8 @@ export function StatsGrid({ dashboard }) {
         <strong>{formatCurrency(dashboard.totalExpenses)}</strong>
       </article>
       <article className="stat-card">
-        <span>Saldo</span>
-        <strong>{formatCurrency(dashboard.balance)}</strong>
+        <span>{balanceLabel}</span>
+        <strong>{formatCurrency(balanceValue)}</strong>
       </article>
     </div>
   );

@@ -2,6 +2,7 @@ const express = require('express');
 const config = require('../config');
 const { query, queryOne } = require('../db/query');
 const { success, fail } = require('../utils/response');
+const { getCurrentBalance } = require('../utils/settings');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -53,6 +54,7 @@ router.get('/', requireAuth, async (req, res) => {
         totalRaised: 0,
         totalExpenses: 0,
         balance: 0,
+        currentBalance: null,
         monthlyCollections: [],
         goals: [],
         delinquentMembers: [],
@@ -77,6 +79,7 @@ router.get('/', requireAuth, async (req, res) => {
 
     const totalRaised = await sumPayments({ year, memberId });
     const totalExpenses = memberId ? 0 : await sumExpenses({ year });
+    const currentBalance = isAdminRequest ? await getCurrentBalance() : null;
     let goalSql = `SELECT g.*, COALESCE(SUM(p.amount), 0) AS raised
        FROM goals g
        LEFT JOIN payments p ON p.goal_id = g.id AND p.paid`;
@@ -135,6 +138,7 @@ router.get('/', requireAuth, async (req, res) => {
       totalRaised,
       totalExpenses,
       balance: totalRaised - totalExpenses,
+      currentBalance,
       monthlyCollections: monthly,
       goals: goalData,
       delinquentMembers,
