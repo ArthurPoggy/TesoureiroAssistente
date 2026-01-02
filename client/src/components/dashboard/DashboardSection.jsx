@@ -4,7 +4,7 @@ import { months } from '../../utils/formatters';
 import { StatsGrid } from './StatsGrid';
 import { GoalsGrid } from './GoalsGrid';
 
-export function DashboardSection({ dashboard, goals, onEditGoal, onDeleteGoal }) {
+export function DashboardSection({ dashboard, goals, onEditGoal, onDeleteGoal, dashboardNote }) {
   const chartData = useMemo(() => {
     const dataset = months.map((monthItem) => {
       const record = dashboard.monthlyCollections?.find(
@@ -27,6 +27,12 @@ export function DashboardSection({ dashboard, goals, onEditGoal, onDeleteGoal })
   return (
     <section className="panel">
       <h2>Visão geral financeira</h2>
+      {dashboardNote && (
+        <div className="panel-note">
+          <h3>Aviso do tesoureiro</h3>
+          <p>{dashboardNote}</p>
+        </div>
+      )}
       <StatsGrid dashboard={dashboard} />
       <div className="chart-wrapper">
         <Bar

@@ -1,19 +1,20 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { downloadBinary, uploadDriveFile } from '../services/api';
 import { currentMonth, currentYear } from '../utils/formatters';
 
-export function usePayments(showToast, handleError, selectedMemberId, members = []) {
+export function usePayments(showToast, handleError, selectedMemberId, members = [], defaultAmount = 100) {
   const { apiFetch, authToken } = useAuth();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
+  const [lastDefaultAmount, setLastDefaultAmount] = useState(defaultAmount);
   const [paymentForm, setPaymentForm] = useState({
     memberId: '',
     month: currentMonth,
     year: currentYear,
-    amount: 100,
+    amount: defaultAmount,
     paid: true,
     paidAt: new Date().toISOString().slice(0, 10),
     notes: '',
@@ -21,6 +22,19 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
     attachmentName: '',
     attachmentFile: null
   });
+
+  useEffect(() => {
+    const currentAmount = Number(paymentForm.amount);
+    const previousDefault = Number(lastDefaultAmount);
+    const nextDefault = Number(defaultAmount);
+    if (Number.isNaN(nextDefault)) {
+      return;
+    }
+    if (!paymentForm.amount || currentAmount === previousDefault) {
+      setPaymentForm((prev) => ({ ...prev, amount: nextDefault }));
+    }
+    setLastDefaultAmount(nextDefault);
+  }, [defaultAmount, lastDefaultAmount, paymentForm.amount]);
 
   const loadPayments = useCallback(async () => {
     try {

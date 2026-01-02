@@ -71,6 +71,17 @@ function App() {
 
   const { events, eventForm, setEventForm, editingEventId, loadEvents, resetEventForm, handleEventSubmit, handleEventDelete, startEditEvent } = useEvents(showToast, handleError);
 
+  const {
+    publicSettings,
+    settingsForm,
+    setSettingsForm,
+    loading: settingsLoading,
+    saving: settingsSaving,
+    loadPublicSettings,
+    loadSettings,
+    saveSettings
+  } = useSettings(showToast, handleError);
+
   // Filtros computados
   const monthFilter = useMemo(() => parseMonthFilter(selectedMonth), [selectedMonth]);
   const yearFilter = useMemo(() => parseYearFilter(selectedYear), [selectedYear]);
@@ -131,7 +142,7 @@ function App() {
     handlePaymentSubmit,
     handlePaymentDelete,
     handleReceipt
-  } = usePayments(showToast, handleError, selectedMemberId, members);
+  } = usePayments(showToast, handleError, selectedMemberId, members, publicSettings.defaultPaymentAmount);
 
   const {
     expenses,
@@ -157,15 +168,6 @@ function App() {
     handleExport
   } = useDashboard(handleError, monthFilter, yearFilter, selectedMemberId);
 
-  const {
-    balanceInput,
-    setBalanceInput,
-    loading: settingsLoading,
-    saving: settingsSaving,
-    loadSettings,
-    saveBalance
-  } = useSettings(showToast, handleError);
-
   // Carregar dados iniciais
   useEffect(() => {
     if (!authToken || !authChecked) return;
@@ -174,6 +176,11 @@ function App() {
     loadExpenses();
     loadEvents();
   }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents]);
+
+  useEffect(() => {
+    if (!authToken || !authChecked) return;
+    loadPublicSettings();
+  }, [authToken, authChecked, loadPublicSettings]);
 
   useEffect(() => {
     if (!authToken || !authChecked || !isAdmin || !showSettings) return;
@@ -211,6 +218,8 @@ function App() {
   return (
     <div className="app-shell">
       <Header
+        orgName={publicSettings.orgName}
+        orgTagline={publicSettings.orgTagline}
         selectedMonth={selectedMonth}
         setSelectedMonth={setSelectedMonth}
         selectedYear={selectedYear}
@@ -230,16 +239,17 @@ function App() {
         goals={goals}
         onEditGoal={startEditGoal}
         onDeleteGoal={handleGoalDelete}
+        dashboardNote={publicSettings.dashboardNote}
       />
 
       {showSettings && isAdmin && (
         <SettingsPanel
-          balanceInput={balanceInput}
-          setBalanceInput={setBalanceInput}
+          settingsForm={settingsForm}
+          setSettingsForm={setSettingsForm}
           loading={settingsLoading}
           saving={settingsSaving}
           onSave={async () => {
-            const saved = await saveBalance();
+            const saved = await saveSettings();
             if (saved) {
               loadDashboard();
             }
@@ -281,6 +291,7 @@ function App() {
         submitting={paymentSubmitting}
         members={members}
         goals={goals}
+        paymentSettings={publicSettings}
         onSubmit={(e) => handlePaymentSubmit(e, refreshAfterPayment)}
         onDelete={(id) => handlePaymentDelete(id, refreshAfterPayment)}
         onReceipt={handleReceipt}

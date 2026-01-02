@@ -4,6 +4,7 @@ const config = require('../config');
 const { query, queryOne } = require('../db/query');
 const { success, fail } = require('../utils/response');
 const { requireAuth } = require('../middleware/auth');
+const { getSettings, DEFAULT_SETTINGS } = require('../utils/settings');
 
 const router = express.Router();
 
@@ -116,13 +117,16 @@ const truncateText = (doc, text, width) => {
   return `${output}${ellipsis}`;
 };
 
-const drawHeader = (doc, title, subtitle) => {
+const drawHeader = (doc, title, subtitle, orgName, orgTagline) => {
   const pageWidth = doc.page.width;
   const margin = doc.page.margins.left;
   doc.rect(0, 0, pageWidth, 100).fill('#0f172a');
   doc.fillColor('#fff').font('Helvetica-Bold').fontSize(20).text(title, margin, 28);
-  doc.font('Helvetica').fontSize(10).text(subtitle, margin, 58);
-  doc.text('Tesoureiro Assistente • relatório financeiro', margin, 74);
+  doc.font('Helvetica').fontSize(10).text(orgName || DEFAULT_SETTINGS.org_name, margin, 58);
+  if (orgTagline) {
+    doc.text(orgTagline, margin, 72);
+  }
+  doc.text(subtitle, margin, orgTagline ? 86 : 74);
   doc.fillColor('#0f172a');
   return 120;
 };
@@ -232,14 +236,31 @@ const drawTable = (doc, { title, columns, rows, rowHeight = 22 }) => {
   return doc.y;
 };
 
-const renderPaymentsReport = (doc, rows, filters = {}) => {
+const drawFooterNote = (doc, text) => {
+  if (!text) return doc.y;
+  const margin = doc.page.margins.left;
+  const contentWidth = doc.page.width - margin * 2;
+  let y = ensureSpace(doc, doc.y, 40);
+  doc.moveTo(margin, y).lineTo(margin + contentWidth, y).strokeColor('#e2e8f0').stroke();
+  doc.fillColor('#64748b').fontSize(9).text(text, margin, y + 12, { width: contentWidth, align: 'center' });
+  doc.y = y + 34;
+  return doc.y;
+};
+
+const renderPaymentsReport = (doc, rows, filters = {}, settings = {}) => {
   const margin = doc.page.margins.left;
   const contentWidth = doc.page.width - margin * 2;
   const monthValue = filters.month ? Number(filters.month) : null;
   const yearValue = filters.year ? Number(filters.year) : null;
   const periodLabel = formatPeriodLabel(monthValue, yearValue);
 
-  let y = drawHeader(doc, 'Relatório de Pagamentos', periodLabel);
+  let y = drawHeader(
+    doc,
+    'Relatório de Pagamentos',
+    periodLabel,
+    settings.org_name || DEFAULT_SETTINGS.org_name,
+    settings.org_tagline ?? DEFAULT_SETTINGS.org_tagline
+  );
 
   const paidRows = rows.filter((row) => Boolean(row.paid));
   const pendingRows = rows.filter((row) => !Boolean(row.paid));
@@ -318,16 +339,23 @@ const renderPaymentsReport = (doc, rows, filters = {}) => {
     ],
     rows
   });
+  drawFooterNote(doc, settings.document_footer ?? DEFAULT_SETTINGS.document_footer);
 };
 
-const renderExpensesReport = (doc, rows, filters = {}) => {
+const renderExpensesReport = (doc, rows, filters = {}, settings = {}) => {
   const margin = doc.page.margins.left;
   const contentWidth = doc.page.width - margin * 2;
   const monthValue = filters.month ? Number(filters.month) : null;
   const yearValue = filters.year ? Number(filters.year) : null;
   const periodLabel = formatPeriodLabel(monthValue, yearValue);
 
-  let y = drawHeader(doc, 'Relatório de Despesas', periodLabel);
+  let y = drawHeader(
+    doc,
+    'Relatório de Despesas',
+    periodLabel,
+    settings.org_name || DEFAULT_SETTINGS.org_name,
+    settings.org_tagline ?? DEFAULT_SETTINGS.org_tagline
+  );
 
   const totalExpense = rows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
   const averageExpense = rows.length ? totalExpense / rows.length : 0;
@@ -418,6 +446,7 @@ const renderExpensesReport = (doc, rows, filters = {}) => {
     ],
     rows
   });
+  drawFooterNote(doc, settings.document_footer ?? DEFAULT_SETTINGS.document_footer);
 };
 
 router.get('/monthly', requireAuth, async (req, res) => {
@@ -554,10 +583,11 @@ router.get('/export', requireAuth, async (req, res) => {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="relatorio-${type}.pdf"`);
       doc.pipe(res);
+      const settings = await getSettings();
       if (type === 'expenses') {
-        renderExpensesReport(doc, rows, { month: monthValue, year: yearValue });
+        renderExpensesReport(doc, rows, { month: monthValue, year: yearValue }, settings);
       } else {
-        renderPaymentsReport(doc, rows, { month: monthValue, year: yearValue });
+        renderPaymentsReport(doc, rows, { month: monthValue, year: yearValue }, settings);
       }
       doc.end();
     } else {

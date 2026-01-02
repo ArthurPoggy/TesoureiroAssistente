@@ -85,9 +85,21 @@ WHERE created_at IS NULL;
 INSERT INTO settings (key, value, updated_at)
 SELECT
   'current_balance',
-  ((SELECT COALESCE(SUM(amount), 0) FROM payments WHERE paid)
+  ((SELECT COALESCE(SUM(amount), 0) FROM payments)
    - (SELECT COALESCE(SUM(amount), 0) FROM expenses))::TEXT,
   TIMEZONE('utc', NOW())
+ON CONFLICT (key) DO NOTHING;
+
+INSERT INTO settings (key, value, updated_at)
+VALUES
+  ('org_name', 'Tesoureiro Assistente', TIMEZONE('utc', NOW())),
+  ('org_tagline', 'Controle completo de membros, pagamentos, metas e eventos do clã.', TIMEZONE('utc', NOW())),
+  ('default_payment_amount', '100', TIMEZONE('utc', NOW())),
+  ('document_footer', 'Guarde este recibo para referência. Em caso de dúvidas, procure o tesoureiro responsável.', TIMEZONE('utc', NOW())),
+  ('payment_due_day', '', TIMEZONE('utc', NOW())),
+  ('pix_key', '', TIMEZONE('utc', NOW())),
+  ('pix_receiver', '', TIMEZONE('utc', NOW())),
+  ('dashboard_note', '', TIMEZONE('utc', NOW()))
 ON CONFLICT (key) DO NOTHING;
 
 ALTER TABLE expenses ADD COLUMN IF NOT EXISTS attachment_id TEXT;

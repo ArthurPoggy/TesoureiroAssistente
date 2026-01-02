@@ -83,9 +83,25 @@ const migrations = [
   `UPDATE payments SET created_at = COALESCE(created_at, paid_at, CURRENT_TIMESTAMP) WHERE created_at IS NULL`,
   `INSERT OR IGNORE INTO settings (key, value, updated_at)
    SELECT 'current_balance',
-          (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE paid)
+          (SELECT COALESCE(SUM(amount), 0) FROM payments)
           - (SELECT COALESCE(SUM(amount), 0) FROM expenses),
-          CURRENT_TIMESTAMP`
+          CURRENT_TIMESTAMP`,
+  `INSERT OR IGNORE INTO settings (key, value, updated_at)
+   VALUES ('org_name', 'Tesoureiro Assistente', CURRENT_TIMESTAMP)`,
+  `INSERT OR IGNORE INTO settings (key, value, updated_at)
+   VALUES ('org_tagline', 'Controle completo de membros, pagamentos, metas e eventos do clã.', CURRENT_TIMESTAMP)`,
+  `INSERT OR IGNORE INTO settings (key, value, updated_at)
+   VALUES ('default_payment_amount', '100', CURRENT_TIMESTAMP)`,
+  `INSERT OR IGNORE INTO settings (key, value, updated_at)
+   VALUES ('document_footer', 'Guarde este recibo para referência. Em caso de dúvidas, procure o tesoureiro responsável.', CURRENT_TIMESTAMP)`,
+  `INSERT OR IGNORE INTO settings (key, value, updated_at)
+   VALUES ('payment_due_day', '', CURRENT_TIMESTAMP)`,
+  `INSERT OR IGNORE INTO settings (key, value, updated_at)
+   VALUES ('pix_key', '', CURRENT_TIMESTAMP)`,
+  `INSERT OR IGNORE INTO settings (key, value, updated_at)
+   VALUES ('pix_receiver', '', CURRENT_TIMESTAMP)`,
+  `INSERT OR IGNORE INTO settings (key, value, updated_at)
+   VALUES ('dashboard_note', '', CURRENT_TIMESTAMP)`
 ];
 
 function runMigrations() {

@@ -3,7 +3,7 @@ const PDFDocument = require('pdfkit');
 const { query, queryOne, execute } = require('../db/query');
 const { success, fail } = require('../utils/response');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
-const { adjustCurrentBalance } = require('../utils/settings');
+const { adjustCurrentBalance, getSettings, DEFAULT_SETTINGS } = require('../utils/settings');
 
 const router = express.Router();
 
@@ -115,17 +115,8 @@ router.post('/', requireAdmin, async (req, res) => {
       ]
     );
     const previousAmount = existingPayment ? Number(existingPayment.amount || 0) : 0;
-    const previousPaid = existingPayment ? Boolean(existingPayment.paid) : false;
     const nextAmount = Number(amount || 0);
-    const nextPaid = paidValue;
-    let delta = 0;
-    if (previousPaid) {
-      delta -= previousAmount;
-    }
-    if (nextPaid) {
-      delta += nextAmount;
-    }
-    await adjustCurrentBalance(delta);
+    await adjustCurrentBalance(nextAmount - previousAmount);
     success(res, { payment });
   } catch (error) {
     fail(res, error.message);
@@ -164,17 +155,8 @@ router.put('/:id', requireAdmin, async (req, res) => {
       return fail(res, 'Pagamento não encontrado', 404);
     }
     const previousAmount = existingPayment ? Number(existingPayment.amount || 0) : 0;
-    const previousPaid = existingPayment ? Boolean(existingPayment.paid) : false;
     const nextAmount = Number(amount || 0);
-    const nextPaid = paidValue;
-    let delta = 0;
-    if (previousPaid) {
-      delta -= previousAmount;
-    }
-    if (nextPaid) {
-      delta += nextAmount;
-    }
-    await adjustCurrentBalance(delta);
+    await adjustCurrentBalance(nextAmount - previousAmount);
     success(res, { payment });
   } catch (error) {
     fail(res, error.message);
@@ -186,7 +168,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
     const { id } = req.params;
     const existingPayment = await queryOne('SELECT amount, paid FROM payments WHERE id = ?', [id]);
     await execute('DELETE FROM payments WHERE id = ?', [id]);
-    if (existingPayment?.paid) {
+    if (existingPayment) {
       await adjustCurrentBalance(-Number(existingPayment.amount || 0));
     }
     success(res);
@@ -279,6 +261,10 @@ router.get('/:id/receipt', requireAuth, async (req, res) => {
     const statusLabel = payment.paid ? 'Pago' : 'Pendente';
     const statusColor = payment.paid ? '#16a34a' : '#f97316';
 
+    const settings = await getSettings();
+    const orgName = settings.org_name || DEFAULT_SETTINGS.org_name;
+    const orgTagline = settings.org_tagline ?? DEFAULT_SETTINGS.org_tagline;
+    const footerNote = settings.document_footer ?? DEFAULT_SETTINGS.document_footer;
     const doc = new PDFDocument({ size: 'A4', margin: 40 });
     const filename = `recibo-${payment.id}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
@@ -291,8 +277,11 @@ router.get('/:id/receipt', requireAuth, async (req, res) => {
 
     doc.rect(0, 0, pageWidth, 110).fill('#0f172a');
     doc.fillColor('#fff').font('Helvetica-Bold').fontSize(22).text('Recibo de Pagamento', margin, 28);
-    doc.font('Helvetica').fontSize(10).text('Tesoureiro Assistente', margin, 58);
-    doc.text('Documento gerado automaticamente', margin, 74);
+    doc.font('Helvetica').fontSize(10).text(orgName, margin, 58);
+    if (orgTagline) {
+      doc.text(orgTagline, margin, 72);
+    }
+    doc.text('Documento gerado automaticamente', margin, orgTagline ? 86 : 74);
 
     doc.fillColor('#0f172a');
     let currentY = 130;
@@ -355,7 +344,7 @@ router.get('/:id/receipt', requireAuth, async (req, res) => {
     const footerY = doc.page.height - 70;
     doc.moveTo(margin, footerY).lineTo(pageWidth - margin, footerY).strokeColor('#e2e8f0').stroke();
     doc.fillColor('#64748b').fontSize(9).text(
-      'Guarde este recibo para referência. Em caso de dúvidas, procure o tesoureiro responsável.',
+      footerNote || 'Guarde este recibo para referência.',
       margin,
       footerY + 12,
       { width: contentWidth, align: 'center' }

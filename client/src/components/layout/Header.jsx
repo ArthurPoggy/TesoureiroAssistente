@@ -2,6 +2,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { months } from '../../utils/formatters';
 
 export function Header({
+  orgName,
+  orgTagline,
   selectedMonth,
   setSelectedMonth,
   selectedYear,
@@ -18,8 +20,8 @@ export function Header({
   return (
     <header>
       <div>
-        <h1>Tesoureiro Assistente</h1>
-        <p>Controle completo de membros, pagamentos, metas e eventos do clã.</p>
+        <h1>{orgName || 'Tesoureiro Assistente'}</h1>
+        <p>{orgTagline || 'Controle completo de membros, pagamentos, metas e eventos do clã.'}</p>
       </div>
       <div className="filters">
         <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>

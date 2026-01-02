@@ -63,7 +63,7 @@ textarea {
 }
 
 .settings-panel .settings-form {
-  grid-template-columns: minmax(220px, 360px);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .settings-field {
@@ -80,6 +80,10 @@ textarea {
 .settings-field small {
   color: var(--color-text-light);
   font-size: 0.75rem;
+}
+
+.settings-field-full {
+  grid-column: 1 / -1;
 }
 
 button {

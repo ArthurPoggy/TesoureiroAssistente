@@ -9,6 +9,7 @@ export function PaymentsPanel({
   submitting,
   members,
   goals,
+  paymentSettings,
   onSubmit,
   onDelete,
   onReceipt,
@@ -16,6 +17,25 @@ export function PaymentsPanel({
   children
 }) {
   const { canEdit } = useAuth();
+  const paymentInfoItems = [];
+  if (paymentSettings?.paymentDueDay) {
+    paymentInfoItems.push({
+      label: 'Vencimento padrão',
+      value: `dia ${paymentSettings.paymentDueDay}`
+    });
+  }
+  if (paymentSettings?.pixKey) {
+    paymentInfoItems.push({
+      label: 'Chave PIX',
+      value: paymentSettings.pixKey
+    });
+  }
+  if (paymentSettings?.pixReceiver) {
+    paymentInfoItems.push({
+      label: 'Recebedor',
+      value: paymentSettings.pixReceiver
+    });
+  }
 
   return (
     <section className="panel">
@@ -23,6 +43,19 @@ export function PaymentsPanel({
         <h2>Pagamentos mensais</h2>
         <p>Histórico completo e geração de recibos.</p>
       </div>
+
+      {paymentInfoItems.length > 0 && (
+        <div className="panel-note">
+          <h3>Informações para pagamento</h3>
+          <ul className="info-list">
+            {paymentInfoItems.map((item) => (
+              <li key={item.label}>
+                <strong>{item.label}:</strong> {item.value}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {canEdit ? (
         <form className="form-grid" onSubmit={onSubmit} aria-busy={submitting}>
