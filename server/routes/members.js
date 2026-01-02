@@ -4,6 +4,8 @@ const { success, fail } = require('../utils/response');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const {
   normalizeEmail,
+  normalizeCpf,
+  isValidCpf,
   hashSetupToken,
   hashPassword,
   generateToken,
@@ -16,7 +18,7 @@ const router = express.Router();
 router.get('/', requireAuth, async (req, res) => {
   try {
     const isAdminRequest = req.user?.role === 'admin';
-    const baseFields = ['id', 'name', 'email', 'nickname', 'joined_at'];
+    const baseFields = ['id', 'name', 'email', 'nickname', 'cpf', 'joined_at'];
     const adminFields = ['role', 'active', 'must_reset_password'];
     const fields = isAdminRequest ? baseFields.concat(adminFields) : baseFields;
     let sql = `SELECT ${fields.join(', ')} FROM members`;
@@ -38,14 +40,21 @@ router.get('/', requireAuth, async (req, res) => {
 
 router.post('/', requireAdmin, async (req, res) => {
   try {
-    const { name, email, nickname } = req.body || {};
-    if (!name || !email) {
-      return fail(res, 'Nome e email são obrigatórios');
+    const { name, email, nickname, cpf } = req.body || {};
+    if (!name || !email || !cpf) {
+      return fail(res, 'Nome, email e CPF são obrigatórios');
+    }
+    if (!isValidCpf(cpf)) {
+      return fail(res, 'Informe um CPF válido');
     }
     const normalizedEmail = normalizeEmail(email);
-    const existing = await queryOne('SELECT id FROM members WHERE LOWER(email) = ?', [normalizedEmail]);
+    const normalizedCpf = normalizeCpf(cpf);
+    const existing = await queryOne(
+      'SELECT id FROM members WHERE LOWER(email) = ? OR cpf = ?',
+      [normalizedEmail, normalizedCpf]
+    );
     if (existing) {
-      return fail(res, 'Email já cadastrado', 409);
+      return fail(res, 'Email ou CPF já cadastrado', 409);
     }
     const setupToken = generateToken();
     const tempPassword = generatePassword();
@@ -53,6 +62,7 @@ router.post('/', requireAdmin, async (req, res) => {
       name,
       email: normalizedEmail,
       nickname,
+      cpf: normalizedCpf,
       password: tempPassword,
       mustResetPassword: true,
       setupTokenHash: hashSetupToken(setupToken)
@@ -66,21 +76,25 @@ router.post('/', requireAdmin, async (req, res) => {
 router.put('/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, nickname } = req.body || {};
-    if (!name || !email) {
-      return fail(res, 'Nome e email são obrigatórios', 400);
+    const { name, email, nickname, cpf } = req.body || {};
+    if (!name || !email || !cpf) {
+      return fail(res, 'Nome, email e CPF são obrigatórios', 400);
+    }
+    if (!isValidCpf(cpf)) {
+      return fail(res, 'Informe um CPF válido', 400);
     }
     const normalizedEmail = normalizeEmail(email);
-    const existing = await queryOne('SELECT id FROM members WHERE LOWER(email) = ? AND id <> ?', [
-      normalizedEmail,
-      Number(id)
-    ]);
+    const normalizedCpf = normalizeCpf(cpf);
+    const existing = await queryOne(
+      'SELECT id FROM members WHERE (LOWER(email) = ? OR cpf = ?) AND id <> ?',
+      [normalizedEmail, normalizedCpf, Number(id)]
+    );
     if (existing) {
-      return fail(res, 'Email já cadastrado', 409);
+      return fail(res, 'Email ou CPF já cadastrado', 409);
     }
     const [member] = await query(
-      'UPDATE members SET name = ?, email = ?, nickname = ? WHERE id = ? RETURNING id, name, email, nickname, role, active, must_reset_password, joined_at',
-      [name, normalizedEmail, nickname, id]
+      'UPDATE members SET name = ?, email = ?, nickname = ?, cpf = ? WHERE id = ? RETURNING id, name, email, nickname, cpf, role, active, must_reset_password, joined_at',
+      [name, normalizedEmail, nickname, normalizedCpf, id]
     );
     success(res, { member });
   } catch (error) {
@@ -92,7 +106,7 @@ router.post('/:id/invite', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const member = await queryOne(
-      'SELECT id, name, email, nickname, role, active, must_reset_password, joined_at FROM members WHERE id = ?',
+      'SELECT id, name, email, nickname, cpf, role, active, must_reset_password, joined_at FROM members WHERE id = ?',
       [id]
     );
     if (!member) {
@@ -109,7 +123,7 @@ router.post('/:id/invite', requireAdmin, async (req, res) => {
       [passwordHash, hashSetupToken(setupToken), new Date().toISOString(), id]
     );
     const refreshed = await queryOne(
-      'SELECT id, name, email, nickname, role, active, must_reset_password, joined_at FROM members WHERE id = ?',
+      'SELECT id, name, email, nickname, cpf, role, active, must_reset_password, joined_at FROM members WHERE id = ?',
       [id]
     );
     success(res, { member: refreshed || member, setupToken });

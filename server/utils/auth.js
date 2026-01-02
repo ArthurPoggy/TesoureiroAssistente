@@ -26,6 +26,17 @@ const signToken = (payload, expiresIn = '12h') => {
 const hashSetupToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
+const normalizeCpf = (cpf) => String(cpf || '').replace(/\D/g, '');
+const isValidCpf = (cpf) => {
+  const digits = normalizeCpf(cpf);
+  if (digits.length !== 11) {
+    return false;
+  }
+  if (/^(\d)\1{10}$/.test(digits)) {
+    return false;
+  }
+  return true;
+};
 
 const hashPassword = async (password) => bcrypt.hash(password, 10);
 
@@ -41,19 +52,22 @@ const createMemberUser = async ({
   nickname,
   password,
   mustResetPassword = false,
-  setupTokenHash = null
+  setupTokenHash = null,
+  cpf,
+  role = 'viewer'
 }) => {
   const passwordHash = await hashPassword(password);
   const [member] = await query(
-    `INSERT INTO members (name, email, nickname, password_hash, role, active, must_reset_password, setup_token_hash, setup_token_created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-     RETURNING id, name, email, nickname, role, active, must_reset_password, joined_at`,
+    `INSERT INTO members (name, email, nickname, cpf, password_hash, role, active, must_reset_password, setup_token_hash, setup_token_created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     RETURNING id, name, email, nickname, cpf, role, active, must_reset_password, joined_at`,
     [
       name || '',
       email,
       nickname || null,
+      cpf || null,
       passwordHash,
-      'viewer',
+      role,
       1,
       mustResetPassword ? 1 : 0,
       setupTokenHash,
@@ -69,6 +83,8 @@ module.exports = {
   signToken,
   hashSetupToken,
   normalizeEmail,
+  normalizeCpf,
+  isValidCpf,
   hashPassword,
   comparePassword,
   generateToken,

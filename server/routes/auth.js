@@ -4,6 +4,8 @@ const { query, queryOne, execute } = require('../db/query');
 const { success, fail } = require('../utils/response');
 const {
   normalizeEmail,
+  normalizeCpf,
+  isValidCpf,
   signToken,
   hashSetupToken,
   hashPassword,
@@ -68,23 +70,39 @@ router.post('/register', async (req, res) => {
     if (!config.jwtConfigured) {
       return fail(res, 'Autenticação não configurada', 500);
     }
-    const { name, email, password } = req.body || {};
-    if (!name || !email || !password) {
-      return fail(res, 'Informe nome, email e senha', 400);
+    const { name, email, password, cpf } = req.body || {};
+    if (!name || !email || !password || !cpf) {
+      return fail(res, 'Informe nome, email, CPF e senha', 400);
+    }
+    if (!isValidCpf(cpf)) {
+      return fail(res, 'Informe um CPF válido', 400);
     }
     const normalizedEmail = normalizeEmail(email);
-    const existing = await queryOne('SELECT id FROM members WHERE LOWER(email) = ?', [normalizedEmail]);
+    const normalizedCpf = normalizeCpf(cpf);
+    const existing = await queryOne(
+      'SELECT id FROM members WHERE LOWER(email) = ? OR cpf = ?',
+      [normalizedEmail, normalizedCpf]
+    );
     if (existing) {
-      return fail(res, 'Email já cadastrado', 409);
+      return fail(res, 'Email ou CPF já cadastrado', 409);
     }
-    const member = await createMemberUser({ name, email: normalizedEmail, password });
+    const countRow = await queryOne('SELECT COUNT(*) as total FROM members');
+    const isFirstMember = Number(countRow?.total || 0) === 0;
+    const role = isFirstMember ? 'admin' : 'viewer';
+    const member = await createMemberUser({
+      name,
+      email: normalizedEmail,
+      password,
+      cpf: normalizedCpf,
+      role
+    });
     if (!member) {
       return fail(res, 'Email já cadastrado', 409);
     }
-    const token = signToken({ role: 'viewer', email: member.email, memberId: member.id, name: member.name || '' });
+    const token = signToken({ role, email: member.email, memberId: member.id, name: member.name || '' });
     return success(res, {
       token,
-      role: 'viewer',
+      role,
       memberId: member.id,
       name: member.name || '',
       email: member.email

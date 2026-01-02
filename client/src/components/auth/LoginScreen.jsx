@@ -10,6 +10,7 @@ export function LoginScreen() {
   const [registerForm, setRegisterForm] = useState({
     name: '',
     email: '',
+    cpf: '',
     password: '',
     confirmPassword: ''
   });
@@ -47,9 +48,9 @@ export function LoginScreen() {
       showToast('As senhas não conferem', 'error');
       return;
     }
-    const result = await register(registerForm.name, registerForm.email, registerForm.password);
+    const result = await register(registerForm.name, registerForm.email, registerForm.cpf, registerForm.password);
     if (result.success) {
-      setRegisterForm({ name: '', email: '', password: '', confirmPassword: '' });
+      setRegisterForm({ name: '', email: '', cpf: '', password: '', confirmPassword: '' });
       showToast('Conta criada com sucesso');
     } else {
       showToast(result.error || 'Erro ao criar conta', 'error');
@@ -68,7 +69,7 @@ export function LoginScreen() {
     }
     const result = await setupPassword(setupToken, registerForm.password);
     if (result.success) {
-      setRegisterForm({ name: '', email: '', password: '', confirmPassword: '' });
+      setRegisterForm({ name: '', email: '', cpf: '', password: '', confirmPassword: '' });
       setSetupToken('');
       showToast('Senha definida com sucesso');
     } else {
@@ -122,6 +123,7 @@ export function LoginScreen() {
         ) : authMode === 'register' ? (
           <>
             <p>Crie seu acesso como membro.</p>
+            <p className="auth-note">Se este for o primeiro cadastro, ele será o tesoureiro admin.</p>
             <form className="login-form" onSubmit={handleRegister}>
               <input
                 placeholder="Nome"
@@ -134,6 +136,13 @@ export function LoginScreen() {
                 placeholder="Email"
                 value={registerForm.email}
                 onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                required
+              />
+              <input
+                placeholder="CPF (somente números)"
+                value={registerForm.cpf}
+                onChange={(e) => setRegisterForm({ ...registerForm, cpf: e.target.value })}
+                inputMode="numeric"
                 required
               />
               <input

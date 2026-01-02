@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 export function useMembers(showToast, handleError) {
   const { apiFetch } = useAuth();
   const [members, setMembers] = useState([]);
-  const [memberForm, setMemberForm] = useState({ name: '', email: '', nickname: '' });
+  const [memberForm, setMemberForm] = useState({ name: '', email: '', cpf: '', nickname: '' });
   const [editingMemberId, setEditingMemberId] = useState(null);
   const [selectedMemberDetail, setSelectedMemberDetail] = useState(null);
   const [inviteLink, setInviteLink] = useState('');
@@ -24,7 +24,7 @@ export function useMembers(showToast, handleError) {
   }, [apiFetch, handleError, selectedMemberDetail]);
 
   const resetMemberForm = useCallback(() => {
-    setMemberForm({ name: '', email: '', nickname: '' });
+    setMemberForm({ name: '', email: '', cpf: '', nickname: '' });
     setEditingMemberId(null);
   }, []);
 
@@ -34,6 +34,7 @@ export function useMembers(showToast, handleError) {
       const payload = {
         name: memberForm.name,
         email: memberForm.email,
+        cpf: memberForm.cpf,
         nickname: memberForm.nickname
       };
       const isEditing = Boolean(editingMemberId);
@@ -90,6 +91,7 @@ export function useMembers(showToast, handleError) {
     setMemberForm({
       name: member.name,
       email: member.email || '',
+      cpf: member.cpf || '',
       nickname: member.nickname || ''
     });
     setEditingMemberId(member.id);

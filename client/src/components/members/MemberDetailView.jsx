@@ -9,6 +9,9 @@ export function MemberDetailView({ member, onInvite, onDelete }) {
         <strong>Email:</strong> {member.email || '-'}
       </p>
       <p>
+        <strong>CPF:</strong> {member.cpf || '-'}
+      </p>
+      <p>
         <strong>Apelido:</strong> {member.nickname || '-'}
       </p>
       <p>

@@ -42,6 +42,13 @@ export function MembersPanel({
             required
           />
           <input
+            placeholder="CPF (somente números)"
+            value={memberForm.cpf}
+            onChange={(e) => setMemberForm({ ...memberForm, cpf: e.target.value })}
+            inputMode="numeric"
+            required
+          />
+          <input
             placeholder="Apelido"
             value={memberForm.nickname}
             onChange={(e) => setMemberForm({ ...memberForm, nickname: e.target.value })}
@@ -85,6 +92,7 @@ export function MembersPanel({
             <tr>
               <th>Nome</th>
               <th>Email</th>
+              <th>CPF</th>
               <th>Apelido</th>
               {canEdit && <th>Ações</th>}
             </tr>
@@ -102,6 +110,7 @@ export function MembersPanel({
               >
                 <td>{member.name}</td>
                 <td>{member.email}</td>
+                <td>{member.cpf || '-'}</td>
                 <td>{member.nickname}</td>
                 {canEdit && (
                   <td>

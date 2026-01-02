@@ -44,10 +44,10 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const register = async (name, email, password) => {
+  const register = async (name, email, cpf, password) => {
     setAuthLoading(true);
     try {
-      const data = await fetchJSON('/api/register', { method: 'POST', body: { name, email, password } });
+      const data = await fetchJSON('/api/register', { method: 'POST', body: { name, email, cpf, password } });
       setAuthToken(data.token);
       localStorage.setItem('tesoureiro_token', data.token);
       setAuthUser({
