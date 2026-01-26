@@ -1,5 +1,6 @@
 const { google } = require('googleapis');
 const config = require('../config');
+const { getSetting } = require('./settings');
 
 const loadServiceAccount = () => {
   if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
@@ -19,15 +20,28 @@ const loadServiceAccount = () => {
   return null;
 };
 
-const getDriveClient = () => {
-  if (config.hasOauth) {
-    const oauth2Client = new google.auth.OAuth2(
-      config.GOOGLE_CLIENT_ID,
-      config.GOOGLE_CLIENT_SECRET,
-      config.GOOGLE_REDIRECT_URI
-    );
-    oauth2Client.setCredentials({ refresh_token: config.GOOGLE_REFRESH_TOKEN });
-    return google.drive({ version: 'v3', auth: oauth2Client });
+const getStoredRefreshToken = async () => {
+  if (config.GOOGLE_REFRESH_TOKEN) {
+    return config.GOOGLE_REFRESH_TOKEN;
+  }
+  const stored = await getSetting('google_refresh_token');
+  return stored || null;
+};
+
+const hasOauthClient = () => Boolean(config.GOOGLE_CLIENT_ID && config.GOOGLE_CLIENT_SECRET);
+
+const getDriveClient = async () => {
+  if (hasOauthClient()) {
+    const refreshToken = await getStoredRefreshToken();
+    if (refreshToken) {
+      const oauth2Client = new google.auth.OAuth2(
+        config.GOOGLE_CLIENT_ID,
+        config.GOOGLE_CLIENT_SECRET,
+        config.GOOGLE_REDIRECT_URI
+      );
+      oauth2Client.setCredentials({ refresh_token: refreshToken });
+      return google.drive({ version: 'v3', auth: oauth2Client });
+    }
   }
   const credentials = loadServiceAccount();
   if (!credentials) {
@@ -119,5 +133,7 @@ module.exports = {
   loadServiceAccount,
   getDriveClient,
   getDriveContext,
-  resolveFolderPath
+  resolveFolderPath,
+  getStoredRefreshToken,
+  hasOauthClient
 };

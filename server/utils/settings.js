@@ -56,6 +56,12 @@ const getSettings = async () => {
   return settings;
 };
 
+const getSetting = async (key) => {
+  if (!key) return null;
+  const row = await queryOne('SELECT value FROM settings WHERE key = ?', [key]);
+  return row?.value ?? null;
+};
+
 const getPublicSettings = async () => {
   const settings = await getSettings();
   const defaultAmount = Number(settings.default_payment_amount);
@@ -150,8 +156,10 @@ const adjustCurrentBalance = async (delta) => {
 module.exports = {
   DEFAULT_SETTINGS,
   normalizeDueDay,
+  getSetting,
   getSettings,
   getPublicSettings,
+  setSetting,
   setSettings,
   getCurrentBalance,
   setCurrentBalance,

@@ -255,6 +255,8 @@ function App() {
             }
           }}
           onClose={() => setShowSettings(false)}
+          showToast={showToast}
+          handleError={handleError}
         />
       )}
 

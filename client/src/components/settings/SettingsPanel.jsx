@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function SettingsPanel({
@@ -6,9 +7,80 @@ export function SettingsPanel({
   loading,
   saving,
   onSave,
-  onClose
+  onClose,
+  showToast,
+  handleError
 }) {
-  const { isAdmin } = useAuth();
+  const { isAdmin, apiFetch } = useAuth();
+  const [driveStatus, setDriveStatus] = useState({ loading: true, connected: false, source: 'none' });
+  const [driveConnecting, setDriveConnecting] = useState(false);
+
+  const loadDriveStatus = useCallback(async () => {
+    if (!isAdmin) {
+      return;
+    }
+    setDriveStatus((prev) => ({ ...prev, loading: true }));
+    try {
+      const data = await apiFetch('/api/google-drive/status');
+      setDriveStatus({
+        loading: false,
+        connected: Boolean(data.connected),
+        source: data.source || 'none'
+      });
+    } catch (error) {
+      setDriveStatus((prev) => ({ ...prev, loading: false }));
+      if (handleError) {
+        handleError(error);
+      }
+    }
+  }, [apiFetch, handleError]);
+
+  useEffect(() => {
+    loadDriveStatus();
+  }, [loadDriveStatus]);
+
+  useEffect(() => {
+    const handler = (event) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type === 'drive-auth') {
+        loadDriveStatus();
+        if (showToast) {
+          showToast('Google Drive conectado');
+        }
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [loadDriveStatus, showToast]);
+
+  const handleDriveConnect = useCallback(async () => {
+    if (!isAdmin) {
+      return;
+    }
+    setDriveConnecting(true);
+    try {
+      const data = await apiFetch('/api/google-drive/auth-url');
+      if (data?.url) {
+        window.open(data.url, 'drive_oauth', 'width=520,height=680,noopener,noreferrer');
+        if (showToast) {
+          showToast('Abra a janela do Google e conclua a conexão');
+        }
+      }
+    } catch (error) {
+      if (handleError) {
+        handleError(error);
+      }
+    } finally {
+      setDriveConnecting(false);
+    }
+  }, [apiFetch, handleError, showToast]);
+
+  const driveStatusLabel = {
+    service_account: 'Service Account',
+    env: 'Variável de ambiente',
+    db: 'Salvo no banco',
+    none: 'Não configurado'
+  };
 
   if (!isAdmin) {
     return null;
@@ -144,6 +216,38 @@ export function SettingsPanel({
               placeholder="Mensagem rápida para todos os usuários"
             />
             <small>Mostrado no topo da visão geral financeira.</small>
+          </div>
+
+          <div className="settings-field settings-field-full">
+            <label>Google Drive</label>
+            <div className="buttons">
+              <button
+                type="button"
+                onClick={handleDriveConnect}
+                disabled={loading || saving || driveConnecting}
+              >
+                {driveConnecting
+                  ? 'Conectando...'
+                  : driveStatus.connected
+                    ? 'Reconectar Drive'
+                    : 'Conectar Drive'}
+              </button>
+              <button
+                type="button"
+                className="ghost"
+                onClick={loadDriveStatus}
+                disabled={driveStatus.loading}
+              >
+                {driveStatus.loading ? 'Atualizando...' : 'Atualizar status'}
+              </button>
+            </div>
+            <small>
+              Status: {driveStatus.connected ? 'Conectado' : 'Desconectado'} ·{' '}
+              {driveStatusLabel[driveStatus.source] || driveStatusLabel.none}
+            </small>
+            <small>
+              Use esta opção para renovar o refresh token quando aparecer “invalid_grant”.
+            </small>
           </div>
 
           <div className="form-actions">

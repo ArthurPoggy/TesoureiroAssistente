@@ -9,7 +9,7 @@ const router = express.Router();
 
 router.get('/', requireAdmin, async (req, res) => {
   try {
-    const drive = getDriveClient();
+    const drive = await getDriveClient();
     const { folderId, sharedDriveId } = getDriveContext();
     const params = {
       q: `'${folderId}' in parents and trashed = false`,
@@ -35,7 +35,7 @@ router.post('/upload', requireAdmin, upload.single('file'), async (req, res) => 
     if (!req.file) {
       return fail(res, 'Selecione um arquivo', 400);
     }
-    const drive = getDriveClient();
+    const drive = await getDriveClient();
     const { folderId, sharedDriveId } = getDriveContext();
     const { module: moduleName, year, month, label } = req.body || {};
     const folderSegments = [moduleName, year, month, label].filter(Boolean);

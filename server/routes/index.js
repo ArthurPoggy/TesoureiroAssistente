@@ -10,6 +10,7 @@ const reportsRoutes = require('./reports');
 const dashboardRoutes = require('./dashboard');
 const seedRoutes = require('./seed');
 const settingsRoutes = require('./settings');
+const googleDriveRoutes = require('./google-drive');
 
 const router = express.Router();
 
@@ -28,5 +29,6 @@ router.use('/dashboard', dashboardRoutes);
 router.use('/ranking', dashboardRoutes);
 router.use('/seed', seedRoutes);
 router.use('/settings', settingsRoutes);
+router.use('/google-drive', googleDriveRoutes);
 
 module.exports = router;
