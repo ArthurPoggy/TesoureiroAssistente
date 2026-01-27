@@ -2,6 +2,7 @@ const express = require('express');
 const config = require('../config');
 const { query, queryOne, execute } = require('../db/query');
 const { success, fail } = require('../utils/response');
+const { requireAuth } = require('../middleware/auth');
 const {
   normalizeEmail,
   normalizeCpf,
@@ -10,9 +11,7 @@ const {
   hashSetupToken,
   hashPassword,
   comparePassword,
-  createMemberUser,
-  getTokenFromRequest,
-  verifyToken
+  createMemberUser
 } = require('../utils/auth');
 
 const router = express.Router();
@@ -150,23 +149,13 @@ router.post('/setup-password', async (req, res) => {
   }
 });
 
-router.get('/me', (req, res) => {
-  try {
-    const token = getTokenFromRequest(req);
-    if (!token) {
-      return fail(res, 'Não autorizado', 401);
-    }
-    const payload = verifyToken(token);
-    success(res, {
-      role: payload.role,
-      email: payload.email,
-      name: payload.name || '',
-      memberId: payload.memberId ?? null
-    });
-  } catch (error) {
-    const status = error.message === 'Autenticação não configurada' ? 500 : 401;
-    fail(res, error.message === 'Autenticação não configurada' ? error.message : 'Não autorizado', status);
-  }
+router.get('/me', requireAuth, (req, res) => {
+  success(res, {
+    role: req.user?.role,
+    email: req.user?.email,
+    name: req.user?.name || '',
+    memberId: req.user?.memberId ?? null
+  });
 });
 
 module.exports = router;
