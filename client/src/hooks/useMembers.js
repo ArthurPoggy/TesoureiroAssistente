@@ -87,6 +87,19 @@ export function useMembers(showToast, handleError) {
     }
   }, [apiFetch, handleError, loadMembers, selectedMemberDetail, showToast]);
 
+  const handleRoleChange = useCallback(async (id, role) => {
+    try {
+      const data = await apiFetch(`/api/members/${id}/role`, { method: 'PUT', body: { role } });
+      if (data?.member) {
+        setSelectedMemberDetail(data.member);
+      }
+      await loadMembers();
+      showToast('Permissão atualizada');
+    } catch (error) {
+      handleError(error);
+    }
+  }, [apiFetch, handleError, loadMembers, showToast]);
+
   const startEditMember = useCallback((member) => {
     setMemberForm({
       name: member.name,
@@ -112,6 +125,7 @@ export function useMembers(showToast, handleError) {
     handleMemberSubmit,
     handleMemberInvite,
     handleMemberDelete,
+    handleRoleChange,
     startEditMember
   };
 }

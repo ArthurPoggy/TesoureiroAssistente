@@ -5,6 +5,10 @@ header {
   margin-bottom: var(--spacing-xl);
   gap: var(--spacing-lg);
   flex-wrap: wrap;
+  background: var(--color-bg-secondary);
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
 }
 
 header h1 {
@@ -22,6 +26,13 @@ header h1 {
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
   background: var(--color-bg-secondary);
+  transition: border-color var(--transition-fast);
+}
+
+.filters select:focus,
+.filters input:focus {
+  border-color: var(--color-primary);
+  outline: none;
 }
 
 .user-filters {
@@ -34,6 +45,7 @@ header h1 {
 .user-filters button {
   border-radius: var(--radius-full);
   padding: 0.4rem 0.9rem;
+  transition: all var(--transition-fast);
 }
 
 .user-filters button.active {

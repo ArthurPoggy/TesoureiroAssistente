@@ -15,7 +15,7 @@ export function Header({
   settingsOpen,
   onToggleSettings
 }) {
-  const { authUser, isAdmin, logout } = useAuth();
+  const { authUser, isAdmin, isDiretor, logout } = useAuth();
 
   return (
     <header>
@@ -57,7 +57,7 @@ export function Header({
       </div>
       <div className="auth-panel">
         <div className="auth-status">
-          <span>{isAdmin ? 'Tesoureiro' : 'Visualização'}</span>
+          <span>{isDiretor ? 'Diretor Financeiro' : isAdmin ? 'Tesoureiro' : 'Visualização'}</span>
           <span>{authUser.email}</span>
           {isAdmin && (
             <button type="button" className="ghost" onClick={onToggleSettings}>

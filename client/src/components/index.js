@@ -32,6 +32,9 @@ export { AttachmentsBlock } from './files/AttachmentsBlock';
 // Analytics
 export { DelinquencyRanking } from './analytics/DelinquencyRanking';
 
+// Extrato
+export { ExtratoPanel } from './extrato/ExtratoPanel';
+
 // Settings
 export { SettingsPanel } from './settings/SettingsPanel';
 

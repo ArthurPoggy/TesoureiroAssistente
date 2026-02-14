@@ -2,7 +2,8 @@ const express = require('express');
 const PDFDocument = require('pdfkit');
 const { query, queryOne, execute } = require('../db/query');
 const { success, fail } = require('../utils/response');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requirePrivileged } = require('../middleware/auth');
+const { isPrivilegedRequest } = require('../utils/roles');
 const { adjustCurrentBalance, getSettings, DEFAULT_SETTINGS } = require('../utils/settings');
 
 const router = express.Router();
@@ -10,7 +11,7 @@ const router = express.Router();
 router.get('/', requireAuth, async (req, res) => {
   try {
     const { month, year, memberId } = req.query;
-    const isAdminRequest = req.user?.role === 'admin';
+    const isAdminRequest = isPrivilegedRequest(req);
     const effectiveMemberId = isAdminRequest ? memberId : req.user?.memberId;
     if (!isAdminRequest && !effectiveMemberId) {
       return success(res, { payments: [] });
@@ -45,7 +46,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/history/:memberId', requireAuth, async (req, res) => {
   try {
     const { memberId } = req.params;
-    const isAdminRequest = req.user?.role === 'admin';
+    const isAdminRequest = isPrivilegedRequest(req);
     const effectiveMemberId = isAdminRequest ? memberId : req.user?.memberId;
     if (!effectiveMemberId) {
       return success(res, { payments: [] });
@@ -60,7 +61,7 @@ router.get('/history/:memberId', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', requirePrivileged, async (req, res) => {
   try {
     const {
       memberId,
@@ -123,7 +124,7 @@ router.post('/', requireAdmin, async (req, res) => {
   }
 });
 
-router.put('/:id', requireAdmin, async (req, res) => {
+router.put('/:id', requirePrivileged, async (req, res) => {
   try {
     const { id } = req.params;
     const { amount, paid, paidAt, notes, goalId, attachmentId, attachmentName, attachmentUrl } = req.body;
@@ -163,7 +164,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
   }
 });
 
-router.delete('/:id', requireAdmin, async (req, res) => {
+router.delete('/:id', requirePrivileged, async (req, res) => {
   try {
     const { id } = req.params;
     const existingPayment = await queryOne('SELECT amount, paid FROM payments WHERE id = ?', [id]);
@@ -190,7 +191,7 @@ router.get('/:id/receipt', requireAuth, async (req, res) => {
     if (!payment) {
       return fail(res, 'Pagamento não encontrado', 404);
     }
-    if (req.user?.role !== 'admin' && payment.member_id !== req.user?.memberId) {
+    if (!isPrivilegedRequest(req) && payment.member_id !== req.user?.memberId) {
       return fail(res, 'Acesso restrito', 403);
     }
 

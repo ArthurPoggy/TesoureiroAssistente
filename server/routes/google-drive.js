@@ -3,7 +3,8 @@ const jwt = require('jsonwebtoken');
 const { google } = require('googleapis');
 const config = require('../config');
 const { success, fail } = require('../utils/response');
-const { requireAdmin } = require('../middleware/auth');
+const { requirePrivileged } = require('../middleware/auth');
+const { isPrivilegedRole } = require('../utils/roles');
 const { setSetting } = require('../utils/settings');
 const { loadServiceAccount, getStoredRefreshToken, hasOauthClient } = require('../utils/google-drive');
 
@@ -53,7 +54,7 @@ const renderHtml = (title, message) => `<!doctype html>
   </body>
 </html>`;
 
-router.get('/status', requireAdmin, async (req, res) => {
+router.get('/status', requirePrivileged, async (req, res) => {
   try {
     const serviceAccount = loadServiceAccount();
     const refreshToken = await getStoredRefreshToken();
@@ -69,7 +70,7 @@ router.get('/status', requireAdmin, async (req, res) => {
   }
 });
 
-router.get('/auth-url', requireAdmin, (req, res) => {
+router.get('/auth-url', requirePrivileged, (req, res) => {
   try {
     if (!hasOauthClient()) {
       return fail(res, 'OAuth do Google Drive não configurado', 400);
@@ -112,7 +113,7 @@ router.get('/callback', async (req, res) => {
     } catch (err) {
       return res.status(401).send(renderHtml('Sessão expirada', 'Reinicie a conexão e tente novamente.'));
     }
-    if (payload?.purpose !== 'drive_oauth' || payload?.role !== 'admin') {
+    if (payload?.purpose !== 'drive_oauth' || !isPrivilegedRole(payload?.role)) {
       return res.status(403).send(renderHtml('Acesso negado', 'Você não tem permissão para conectar o Drive.'));
     }
     if (!hasOauthClient()) {

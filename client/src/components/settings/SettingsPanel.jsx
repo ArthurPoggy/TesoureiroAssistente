@@ -207,6 +207,18 @@ export function SettingsPanel({
           </div>
 
           <div className="settings-field settings-field-full">
+            <label htmlFor="disclaimer-text">Texto de aviso (disclaimer)</label>
+            <textarea
+              id="disclaimer-text"
+              value={settingsForm.disclaimerText}
+              onChange={(event) => setSettingsForm({ ...settingsForm, disclaimerText: event.target.value })}
+              disabled={loading || saving}
+              placeholder="Texto exibido no rodapé e na tela de login"
+            />
+            <small>Este aviso aparece no footer do sistema e na tela de login.</small>
+          </div>
+
+          <div className="settings-field settings-field-full">
             <label htmlFor="dashboard-note">Aviso do painel</label>
             <textarea
               id="dashboard-note"

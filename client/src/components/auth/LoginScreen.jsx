@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { fetchJSON } from '../../services/api';
 import { Toast } from '../common/Toast';
 
 export function LoginScreen() {
@@ -15,6 +16,7 @@ export function LoginScreen() {
     confirmPassword: ''
   });
   const [toast, setToast] = useState(null);
+  const [disclaimerText, setDisclaimerText] = useState('');
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -29,6 +31,13 @@ export function LoginScreen() {
       setSetupToken(setup);
       setAuthMode('setup');
     }
+  }, []);
+
+  // Carregar disclaimer
+  useEffect(() => {
+    fetchJSON('/api/settings/disclaimer')
+      .then((data) => setDisclaimerText(data.disclaimerText || ''))
+      .catch(() => {});
   }, []);
 
   const handleLogin = async (event) => {
@@ -139,10 +148,9 @@ export function LoginScreen() {
                 required
               />
               <input
-                placeholder="CPF (somente números)"
+                placeholder="Registro"
                 value={registerForm.cpf}
                 onChange={(e) => setRegisterForm({ ...registerForm, cpf: e.target.value })}
-                inputMode="numeric"
                 required
               />
               <input
@@ -209,6 +217,7 @@ export function LoginScreen() {
           </>
         )}
       </div>
+      {disclaimerText && <p className="login-disclaimer">{disclaimerText}</p>}
     </div>
   );
 }

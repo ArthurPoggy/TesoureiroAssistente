@@ -15,6 +15,7 @@ export function MembersPanel({
   onDelete,
   onEdit,
   onReset,
+  onRoleChange,
   showToast
 }) {
   const { canEdit, isAdmin } = useAuth();
@@ -42,10 +43,9 @@ export function MembersPanel({
             required
           />
           <input
-            placeholder="CPF (somente números)"
+            placeholder="Registro"
             value={memberForm.cpf}
             onChange={(e) => setMemberForm({ ...memberForm, cpf: e.target.value })}
-            inputMode="numeric"
             required
           />
           <input
@@ -92,7 +92,7 @@ export function MembersPanel({
             <tr>
               <th>Nome</th>
               <th>Email</th>
-              <th>CPF</th>
+              <th>Registro</th>
               <th>Apelido</th>
               {canEdit && <th>Ações</th>}
             </tr>
@@ -145,6 +145,7 @@ export function MembersPanel({
           member={selectedMemberDetail}
           onInvite={onInvite}
           onDelete={onDelete}
+          onRoleChange={onRoleChange}
         />
       )}
     </section>

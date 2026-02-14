@@ -1,6 +1,6 @@
 const express = require('express');
 const { success, fail } = require('../utils/response');
-const { requireAdmin, requireAuth } = require('../middleware/auth');
+const { requireAdmin, requireAuth, requirePrivileged } = require('../middleware/auth');
 const {
   DEFAULT_SETTINGS,
   getSettings,
@@ -13,7 +13,7 @@ const {
 
 const router = express.Router();
 
-router.get('/', requireAdmin, async (req, res) => {
+router.get('/', requirePrivileged, async (req, res) => {
   try {
     const settings = await getSettings();
     const currentBalance = await getCurrentBalance();
@@ -30,8 +30,18 @@ router.get('/', requireAdmin, async (req, res) => {
       pixKey: settings.pix_key || '',
       pixReceiver: settings.pix_receiver || '',
       dashboardNote: settings.dashboard_note || '',
+      disclaimerText: settings.disclaimer_text ?? DEFAULT_SETTINGS.disclaimer_text,
       currentBalance
     });
+  } catch (error) {
+    fail(res, error.message);
+  }
+});
+
+router.get('/disclaimer', async (req, res) => {
+  try {
+    const settings = await getPublicSettings();
+    success(res, { disclaimerText: settings.disclaimerText || '' });
   } catch (error) {
     fail(res, error.message);
   }
@@ -46,7 +56,7 @@ router.get('/public', requireAuth, async (req, res) => {
   }
 });
 
-router.put('/', requireAdmin, async (req, res) => {
+router.put('/', requirePrivileged, async (req, res) => {
   try {
     const {
       orgName,
@@ -57,7 +67,8 @@ router.put('/', requireAdmin, async (req, res) => {
       paymentDueDay,
       pixKey,
       pixReceiver,
-      dashboardNote
+      dashboardNote,
+      disclaimerText
     } = req.body || {};
     const parsedAmount = Number(defaultPaymentAmount);
     if (Number.isNaN(parsedAmount)) {
@@ -83,7 +94,8 @@ router.put('/', requireAdmin, async (req, res) => {
       payment_due_day: dueDayValue,
       pix_key: pixKey ?? '',
       pix_receiver: pixReceiver ?? '',
-      dashboard_note: dashboardNote ?? ''
+      dashboard_note: dashboardNote ?? '',
+      disclaimer_text: disclaimerText ?? DEFAULT_SETTINGS.disclaimer_text
     });
     await setCurrentBalance(parsedBalance);
     const settings = await getSettings();
@@ -101,6 +113,7 @@ router.put('/', requireAdmin, async (req, res) => {
       pixKey: settings.pix_key || '',
       pixReceiver: settings.pix_receiver || '',
       dashboardNote: settings.dashboard_note || '',
+      disclaimerText: settings.disclaimer_text ?? DEFAULT_SETTINGS.disclaimer_text,
       currentBalance: refreshedBalance
     });
   } catch (error) {
@@ -108,7 +121,7 @@ router.put('/', requireAdmin, async (req, res) => {
   }
 });
 
-router.put('/balance', requireAdmin, async (req, res) => {
+router.put('/balance', requirePrivileged, async (req, res) => {
   try {
     const { value } = req.body || {};
     const parsed = Number(value);

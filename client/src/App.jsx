@@ -9,7 +9,7 @@ import {
 } from 'chart.js';
 import { useAuth } from './contexts/AuthContext';
 import { parseMonthFilter, parseYearFilter, currentMonth, currentYear } from './utils/formatters';
-import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard, useSettings } from './hooks';
+import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard, useSettings, useExtrato } from './hooks';
 import {
   LoginScreen,
   AuthCheckingScreen,
@@ -23,6 +23,7 @@ import {
   EventsPanel,
   DelinquencyRanking,
   ReportsSection,
+  ExtratoPanel,
   Toast
 } from './components';
 import './styles/index.css';
@@ -64,6 +65,7 @@ function App() {
     handleMemberSubmit,
     handleMemberInvite,
     handleMemberDelete,
+    handleRoleChange,
     startEditMember
   } = useMembers(showToast, handleError);
 
@@ -167,6 +169,16 @@ function App() {
     loadRanking,
     handleExport
   } = useDashboard(handleError, monthFilter, yearFilter, selectedMemberId);
+
+  const {
+    entries: extratoEntries,
+    summary: extratoSummary,
+    loading: extratoLoading,
+    filters: extratoFilters,
+    setFilters: setExtratoFilters,
+    loadExtrato,
+    exportExtrato
+  } = useExtrato(handleError);
 
   // Carregar dados iniciais
   useEffect(() => {
@@ -282,6 +294,7 @@ function App() {
         onDelete={handleMemberDelete}
         onEdit={startEditMember}
         onReset={resetMemberForm}
+        onRoleChange={handleRoleChange}
         showToast={showToast}
       />
 
@@ -328,6 +341,19 @@ function App() {
       <DelinquencyRanking delinquent={delinquent} ranking={ranking} />
 
       {isAdmin && (
+        <ExtratoPanel
+          entries={extratoEntries}
+          summary={extratoSummary}
+          loading={extratoLoading}
+          filters={extratoFilters}
+          setFilters={setExtratoFilters}
+          onLoad={loadExtrato}
+          onExport={exportExtrato}
+          members={members}
+        />
+      )}
+
+      {isAdmin && (
         <ReportsSection
           reportLoading={reportLoading}
           onExport={(format, type) => handleExport(format, type, showToast)}
@@ -335,7 +361,8 @@ function App() {
       )}
 
       <footer>
-        <p>RF01-RF12 atendidos com dashboard visual, recibos, exportação e ranking.</p>
+        {publicSettings.disclaimerText && <p className="disclaimer">{publicSettings.disclaimerText}</p>}
+        <p className="credits">Desenvolvido por Tuzinho e Diego</p>
       </footer>
     </div>
   );

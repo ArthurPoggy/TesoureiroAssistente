@@ -1,14 +1,15 @@
 const express = require('express');
 const { query, execute } = require('../db/query');
 const { success, fail } = require('../utils/response');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requirePrivileged } = require('../middleware/auth');
+const { isPrivilegedRequest } = require('../utils/roles');
 
 const router = express.Router();
 
 router.get('/', requireAuth, async (req, res) => {
   try {
     const goals = await query('SELECT * FROM goals ORDER BY deadline');
-    const isAdminRequest = req.user?.role === 'admin';
+    const isAdminRequest = isPrivilegedRequest(req);
     const params = [];
     let totalsSql =
       'SELECT goal_id, SUM(amount) as total FROM payments WHERE goal_id IS NOT NULL';
@@ -33,7 +34,7 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', requirePrivileged, async (req, res) => {
   try {
     const { title, targetAmount, deadline, description } = req.body;
     if (!title || !targetAmount) {
@@ -49,7 +50,7 @@ router.post('/', requireAdmin, async (req, res) => {
   }
 });
 
-router.put('/:id', requireAdmin, async (req, res) => {
+router.put('/:id', requirePrivileged, async (req, res) => {
   try {
     const { id } = req.params;
     const { title, targetAmount, deadline, description } = req.body;
@@ -63,7 +64,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
   }
 });
 
-router.delete('/:id', requireAdmin, async (req, res) => {
+router.delete('/:id', requirePrivileged, async (req, res) => {
   try {
     const { id } = req.params;
     await execute('DELETE FROM goals WHERE id = ?', [id]);

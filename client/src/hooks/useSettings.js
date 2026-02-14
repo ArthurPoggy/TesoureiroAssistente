@@ -8,7 +8,8 @@ const DEFAULT_PUBLIC = {
   paymentDueDay: null,
   pixKey: '',
   pixReceiver: '',
-  dashboardNote: ''
+  dashboardNote: '',
+  disclaimerText: ''
 };
 
 export function useSettings(showToast, handleError) {
@@ -23,7 +24,8 @@ export function useSettings(showToast, handleError) {
     paymentDueDay: '',
     pixKey: '',
     pixReceiver: '',
-    dashboardNote: ''
+    dashboardNote: '',
+    disclaimerText: ''
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -44,7 +46,8 @@ export function useSettings(showToast, handleError) {
       paymentDueDay: normalizedDueDay,
       pixKey: data.pixKey || '',
       pixReceiver: data.pixReceiver || '',
-      dashboardNote: data.dashboardNote || ''
+      dashboardNote: data.dashboardNote || '',
+      disclaimerText: data.disclaimerText ?? ''
     };
   }, []);
 
@@ -72,7 +75,8 @@ export function useSettings(showToast, handleError) {
         paymentDueDay: normalized.paymentDueDay ? String(normalized.paymentDueDay) : '',
         pixKey: data.pixKey ?? '',
         pixReceiver: data.pixReceiver ?? '',
-        dashboardNote: data.dashboardNote ?? ''
+        dashboardNote: data.dashboardNote ?? '',
+        disclaimerText: data.disclaimerText ?? ''
       });
     } catch (error) {
       handleError(error);
@@ -113,7 +117,8 @@ export function useSettings(showToast, handleError) {
           paymentDueDay: parsedDueDay === null ? '' : parsedDueDay,
           pixKey: settingsForm.pixKey,
           pixReceiver: settingsForm.pixReceiver,
-          dashboardNote: settingsForm.dashboardNote
+          dashboardNote: settingsForm.dashboardNote,
+          disclaimerText: settingsForm.disclaimerText
         }
       });
       const normalized = normalizePublic(data);
@@ -127,7 +132,8 @@ export function useSettings(showToast, handleError) {
         paymentDueDay: normalized.paymentDueDay ? String(normalized.paymentDueDay) : '',
         pixKey: data.pixKey ?? settingsForm.pixKey,
         pixReceiver: data.pixReceiver ?? settingsForm.pixReceiver,
-        dashboardNote: data.dashboardNote ?? settingsForm.dashboardNote
+        dashboardNote: data.dashboardNote ?? settingsForm.dashboardNote,
+        disclaimerText: data.disclaimerText ?? settingsForm.disclaimerText
       });
       showToast('Configurações salvas');
       return true;

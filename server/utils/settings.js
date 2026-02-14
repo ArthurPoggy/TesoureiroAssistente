@@ -9,7 +9,8 @@ const DEFAULT_SETTINGS = {
   payment_due_day: '',
   pix_key: '',
   pix_receiver: '',
-  dashboard_note: ''
+  dashboard_note: '',
+  disclaimer_text: 'Sistema para uso interno. Os dados são confidenciais e de responsabilidade da organização.'
 };
 
 const normalizeDueDay = (value) => {
@@ -73,7 +74,8 @@ const getPublicSettings = async () => {
     paymentDueDay,
     pixKey: settings.pix_key || '',
     pixReceiver: settings.pix_receiver || '',
-    dashboardNote: settings.dashboard_note || ''
+    dashboardNote: settings.dashboard_note || '',
+    disclaimerText: settings.disclaimer_text ?? DEFAULT_SETTINGS.disclaimer_text
   };
 };
 

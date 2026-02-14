@@ -11,6 +11,7 @@ const dashboardRoutes = require('./dashboard');
 const seedRoutes = require('./seed');
 const settingsRoutes = require('./settings');
 const googleDriveRoutes = require('./google-drive');
+const extratoRoutes = require('./extrato');
 
 const router = express.Router();
 
@@ -30,5 +31,6 @@ router.use('/ranking', dashboardRoutes);
 router.use('/seed', seedRoutes);
 router.use('/settings', settingsRoutes);
 router.use('/google-drive', googleDriveRoutes);
+router.use('/extrato', extratoRoutes);
 
 module.exports = router;

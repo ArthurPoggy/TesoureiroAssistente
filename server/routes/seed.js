@@ -1,11 +1,11 @@
 const express = require('express');
 const { query, queryOne, execute } = require('../db/query');
 const { success, fail } = require('../utils/response');
-const { requireAdmin } = require('../middleware/auth');
+const { requirePrivileged } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', requirePrivileged, async (req, res) => {
   try {
     const membersCountRow = await queryOne('SELECT COUNT(*) as total FROM members');
     if (membersCountRow?.total) {

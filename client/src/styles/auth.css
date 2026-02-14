@@ -3,7 +3,7 @@
   display: grid;
   place-items: center;
   padding: var(--spacing-2xl);
-  background: radial-gradient(circle at top, #e0f2fe, #f8fafc 55%, #e2e8f0 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
 }
 
 .login-card {
@@ -11,19 +11,29 @@
   padding: var(--spacing-2xl);
   border-radius: var(--radius-xl);
   width: min(420px, 100%);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
   display: grid;
   gap: var(--spacing-md);
 }
 
 .login-card h1 {
   margin: 0;
+  color: var(--color-text-primary);
 }
 
 .login-form {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+}
+
+.login-disclaimer {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.8rem;
+  margin-top: var(--spacing-lg);
+  max-width: 420px;
+  font-style: italic;
 }
 
 .link-button {
@@ -34,10 +44,12 @@
   font-weight: 600;
   cursor: pointer;
   text-align: left;
+  transition: color var(--transition-fast);
 }
 
 .link-button:hover {
   text-decoration: underline;
+  color: var(--color-primary-dark);
 }
 
 .auth-panel {

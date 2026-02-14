@@ -6,10 +6,15 @@
 }
 
 .stat-card {
-  background: var(--color-bg-dark);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   color: var(--color-text-white);
   border-radius: var(--radius-lg);
   padding: var(--spacing-lg);
+  transition: transform var(--transition-fast);
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
 }
 
 .panel-note {
@@ -53,6 +58,12 @@
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-lg);
   padding: var(--spacing-lg);
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+
+.goal-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .goal-header {
@@ -78,7 +89,8 @@
 
 .progress div {
   height: 100%;
-  background: var(--color-info);
+  background: linear-gradient(90deg, var(--color-primary), var(--color-info));
+  transition: width var(--transition-slow);
 }
 
 .goal-actions {
@@ -96,6 +108,11 @@
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-lg);
   padding: var(--spacing-lg);
+  transition: box-shadow var(--transition-base);
+}
+
+.event-card:hover {
+  box-shadow: var(--shadow-sm);
 }
 
 .pill-list {
@@ -156,6 +173,11 @@
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-md);
+  transition: transform var(--transition-fast);
+}
+
+.ranking-item:hover {
+  transform: translateX(4px);
 }
 
 .ranking-position {

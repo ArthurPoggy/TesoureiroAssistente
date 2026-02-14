@@ -11,13 +11,27 @@ table th,
 table td {
   padding: var(--spacing-md);
   text-align: left;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 table th {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  color: var(--color-text-secondary);
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+table tbody tr {
+  transition: background var(--transition-fast);
+}
+
+table tbody tr:nth-child(even) {
+  background: var(--color-bg-info);
+}
+
+table tbody tr:hover {
+  background: var(--color-bg-highlight);
 }
 
 .paid {

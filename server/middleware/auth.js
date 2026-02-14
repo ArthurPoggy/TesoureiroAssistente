@@ -1,6 +1,7 @@
 const { getTokenFromRequest, verifyToken } = require('../utils/auth');
 const { queryOne } = require('../db/query');
 const { fail } = require('../utils/response');
+const { isPrivilegedRole } = require('../utils/roles');
 
 const hydrateUserFromDb = async (payload) => {
   if (!payload?.memberId) {
@@ -65,7 +66,27 @@ const requireAdmin = async (req, res, next) => {
   }
 };
 
+const requirePrivileged = async (req, res, next) => {
+  try {
+    const token = getTokenFromRequest(req);
+    if (!token) {
+      return fail(res, 'Não autorizado', 401);
+    }
+    const payload = verifyToken(token);
+    const user = await hydrateUserFromDb(payload);
+    if (!isPrivilegedRole(user.role)) {
+      return fail(res, 'Acesso restrito', 403);
+    }
+    req.user = user;
+    return next();
+  } catch (error) {
+    const status = error.status || (error.message === 'Autenticação não configurada' ? 500 : 401);
+    return fail(res, error.message === 'Autenticação não configurada' ? error.message : 'Não autorizado', status);
+  }
+};
+
 module.exports = {
   requireAuth,
-  requireAdmin
+  requireAdmin,
+  requirePrivileged
 };

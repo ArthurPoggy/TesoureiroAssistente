@@ -4,6 +4,7 @@ const { query, queryOne } = require('../db/query');
 const { success, fail } = require('../utils/response');
 const { getCurrentBalance } = require('../utils/settings');
 const { requireAuth } = require('../middleware/auth');
+const { isPrivilegedRequest } = require('../utils/roles');
 
 const router = express.Router();
 
@@ -43,7 +44,7 @@ const sumExpenses = async (filters = {}) => {
 
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const isAdminRequest = req.user?.role === 'admin';
+    const isAdminRequest = isPrivilegedRequest(req);
     const year = req.query.year ? Number(req.query.year) : null;
     const month = req.query.month ? Number(req.query.month) : null;
     const memberId = isAdminRequest
@@ -152,7 +153,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/ranking', requireAuth, async (req, res) => {
   try {
     const { year, memberId } = req.query;
-    const isAdminRequest = req.user?.role === 'admin';
+    const isAdminRequest = isPrivilegedRequest(req);
     const effectiveMemberId = isAdminRequest ? memberId : req.user?.memberId;
     if (!isAdminRequest && !effectiveMemberId) {
       return success(res, { ranking: [] });

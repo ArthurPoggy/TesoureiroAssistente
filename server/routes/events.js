@@ -1,7 +1,7 @@
 const express = require('express');
 const { query, execute } = require('../db/query');
 const { success, fail } = require('../utils/response');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requirePrivileged } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -14,7 +14,7 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', requirePrivileged, async (req, res) => {
   try {
     const { name, eventDate, raisedAmount, spentAmount, description } = req.body;
     if (!name || !eventDate) {
@@ -30,7 +30,7 @@ router.post('/', requireAdmin, async (req, res) => {
   }
 });
 
-router.put('/:id', requireAdmin, async (req, res) => {
+router.put('/:id', requirePrivileged, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, eventDate, raisedAmount, spentAmount, description } = req.body;
@@ -44,7 +44,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
   }
 });
 
-router.delete('/:id', requireAdmin, async (req, res) => {
+router.delete('/:id', requirePrivileged, async (req, res) => {
   try {
     const { id } = req.params;
     await execute('DELETE FROM events WHERE id = ?', [id]);

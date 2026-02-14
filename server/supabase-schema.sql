@@ -102,7 +102,8 @@ VALUES
   ('payment_due_day', '', TIMEZONE('utc', NOW())),
   ('pix_key', '', TIMEZONE('utc', NOW())),
   ('pix_receiver', '', TIMEZONE('utc', NOW())),
-  ('dashboard_note', '', TIMEZONE('utc', NOW()))
+  ('dashboard_note', '', TIMEZONE('utc', NOW())),
+  ('disclaimer_text', 'Sistema para uso interno. Os dados são confidenciais e de responsabilidade da organização.', TIMEZONE('utc', NOW()))
 ON CONFLICT (key) DO NOTHING;
 
 ALTER TABLE expenses ADD COLUMN IF NOT EXISTS attachment_id TEXT;

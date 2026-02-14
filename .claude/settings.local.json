@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(tree:*)",
-      "Bash(git -C \"C:\\\\programation\\\\TesoureiroAssistente\" log --oneline -10)"
+      "Bash(git -C \"C:\\\\programation\\\\TesoureiroAssistente\" log --oneline -10)",
+      "Bash(npm run build:*)",
+      "Bash(npm run:*)",
+      "Bash(npx vite build)",
+      "Bash(node -e:*)",
+      "Bash(node -e \"require\\(''./server/middleware/auth''\\)\")"
     ]
   }
 }

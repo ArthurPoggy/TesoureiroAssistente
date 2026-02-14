@@ -1,13 +1,13 @@
 const express = require('express');
 const { Readable } = require('stream');
 const { success, fail } = require('../utils/response');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requirePrivileged } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
 const { getDriveClient, getDriveContext, resolveFolderPath } = require('../utils/google-drive');
 
 const router = express.Router();
 
-router.get('/', requireAdmin, async (req, res) => {
+router.get('/', requirePrivileged, async (req, res) => {
   try {
     const drive = await getDriveClient();
     const { folderId, sharedDriveId } = getDriveContext();
@@ -30,7 +30,7 @@ router.get('/', requireAdmin, async (req, res) => {
   }
 });
 
-router.post('/upload', requireAdmin, upload.single('file'), async (req, res) => {
+router.post('/upload', requirePrivileged, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return fail(res, 'Selecione um arquivo', 400);

@@ -104,7 +104,9 @@ const migrations = [
   `INSERT OR IGNORE INTO settings (key, value, updated_at)
    VALUES ('pix_receiver', '', CURRENT_TIMESTAMP)`,
   `INSERT OR IGNORE INTO settings (key, value, updated_at)
-   VALUES ('dashboard_note', '', CURRENT_TIMESTAMP)`
+   VALUES ('dashboard_note', '', CURRENT_TIMESTAMP)`,
+  `INSERT OR IGNORE INTO settings (key, value, updated_at)
+   VALUES ('disclaimer_text', 'Sistema para uso interno. Os dados são confidenciais e de responsabilidade da organização.', CURRENT_TIMESTAMP)`
 ];
 
 function runMigrations() {

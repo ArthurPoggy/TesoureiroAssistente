@@ -71,10 +71,10 @@ router.post('/register', async (req, res) => {
     }
     const { name, email, password, cpf } = req.body || {};
     if (!name || !email || !password || !cpf) {
-      return fail(res, 'Informe nome, email, CPF e senha', 400);
+      return fail(res, 'Informe nome, email, registro e senha', 400);
     }
     if (!isValidCpf(cpf)) {
-      return fail(res, 'Informe um CPF válido', 400);
+      return fail(res, 'Informe um registro válido', 400);
     }
     const normalizedEmail = normalizeEmail(email);
     const normalizedCpf = normalizeCpf(cpf);
@@ -83,7 +83,7 @@ router.post('/register', async (req, res) => {
       [normalizedEmail, normalizedCpf]
     );
     if (existing) {
-      return fail(res, 'Email ou CPF já cadastrado', 409);
+      return fail(res, 'Email ou registro já cadastrado', 409);
     }
     const countRow = await queryOne('SELECT COUNT(*) as total FROM members');
     const isFirstMember = Number(countRow?.total || 0) === 0;

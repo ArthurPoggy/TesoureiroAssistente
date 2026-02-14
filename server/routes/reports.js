@@ -4,6 +4,7 @@ const config = require('../config');
 const { query, queryOne } = require('../db/query');
 const { success, fail } = require('../utils/response');
 const { requireAuth } = require('../middleware/auth');
+const { isPrivilegedRequest } = require('../utils/roles');
 const { getSettings, DEFAULT_SETTINGS } = require('../utils/settings');
 
 const router = express.Router();
@@ -455,7 +456,7 @@ router.get('/monthly', requireAuth, async (req, res) => {
     if (!month || !year) {
       return fail(res, 'Informe mês e ano');
     }
-    const isAdminRequest = req.user?.role === 'admin';
+    const isAdminRequest = isPrivilegedRequest(req);
     if (!isAdminRequest && !req.user?.memberId) {
       return success(res, { month: Number(month), year: Number(year), total: 0 });
     }
@@ -476,7 +477,7 @@ router.get('/annual', requireAuth, async (req, res) => {
     if (!year) {
       return fail(res, 'Informe o ano');
     }
-    const isAdminRequest = req.user?.role === 'admin';
+    const isAdminRequest = isPrivilegedRequest(req);
     if (!isAdminRequest && !req.user?.memberId) {
       return success(res, { year: Number(year), total: 0 });
     }
@@ -493,7 +494,7 @@ router.get('/annual', requireAuth, async (req, res) => {
 router.get('/balance', requireAuth, async (req, res) => {
   try {
     const { year } = req.query;
-    const isAdminRequest = req.user?.role === 'admin';
+    const isAdminRequest = isPrivilegedRequest(req);
     const yearNum = year ? Number(year) : undefined;
     if (!isAdminRequest && !req.user?.memberId) {
       return success(res, { totalRaised: 0, totalExpenses: 0, balance: 0 });
@@ -511,7 +512,7 @@ router.get('/balance', requireAuth, async (req, res) => {
 router.get('/export', requireAuth, async (req, res) => {
   try {
     const { format = 'csv', type = 'payments', month, year } = req.query;
-    const isAdminRequest = req.user?.role === 'admin';
+    const isAdminRequest = isPrivilegedRequest(req);
     if (!isAdminRequest && type === 'expenses') {
       return fail(res, 'Acesso restrito', 403);
     }

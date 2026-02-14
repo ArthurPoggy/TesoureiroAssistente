@@ -26,17 +26,16 @@ const signToken = (payload, expiresIn = '12h') => {
 const hashSetupToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
-const normalizeCpf = (cpf) => String(cpf || '').replace(/\D/g, '');
-const isValidCpf = (cpf) => {
-  const digits = normalizeCpf(cpf);
-  if (digits.length !== 11) {
-    return false;
-  }
-  if (/^(\d)\1{10}$/.test(digits)) {
-    return false;
-  }
-  return true;
+
+const normalizeRegistro = (registro) => String(registro || '').trim();
+const isValidRegistro = (registro) => {
+  const trimmed = normalizeRegistro(registro);
+  return trimmed.length >= 1 && trimmed.length <= 50;
 };
+
+// Aliases para compatibilidade
+const normalizeCpf = normalizeRegistro;
+const isValidCpf = isValidRegistro;
 
 const hashPassword = async (password) => bcrypt.hash(password, 10);
 
@@ -83,6 +82,8 @@ module.exports = {
   signToken,
   hashSetupToken,
   normalizeEmail,
+  normalizeRegistro,
+  isValidRegistro,
   normalizeCpf,
   isValidCpf,
   hashPassword,

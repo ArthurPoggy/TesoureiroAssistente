@@ -6,8 +6,21 @@
   padding: var(--spacing-md) var(--spacing-lg);
   border-radius: var(--radius-sm);
   margin-bottom: var(--spacing-lg);
+  animation: toast-slide-in 0.3s ease-out;
+  font-weight: 500;
 }
 
 .toast.error {
   background: var(--color-error);
+}
+
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

@@ -9,7 +9,8 @@ export function AuthProvider({ children }) {
   const [authChecked, setAuthChecked] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
 
-  const isAdmin = authUser.role === 'admin';
+  const isAdmin = authUser.role === 'admin' || authUser.role === 'diretor_financeiro';
+  const isDiretor = authUser.role === 'diretor_financeiro';
   const canEdit = isAdmin;
 
   const apiFetch = useCallback(
@@ -132,6 +133,7 @@ export function AuthProvider({ children }) {
     authChecked,
     authLoading,
     isAdmin,
+    isDiretor,
     canEdit,
     apiFetch,
     login,

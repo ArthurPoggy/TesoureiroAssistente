@@ -1,7 +1,8 @@
 const express = require('express');
 const { query, queryOne, execute } = require('../db/query');
 const { success, fail } = require('../utils/response');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdmin, requirePrivileged } = require('../middleware/auth');
+const { isPrivilegedRequest } = require('../utils/roles');
 const {
   normalizeEmail,
   normalizeCpf,
@@ -17,7 +18,7 @@ const router = express.Router();
 
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const isAdminRequest = req.user?.role === 'admin';
+    const isAdminRequest = isPrivilegedRequest(req);
     const baseFields = ['id', 'name', 'email', 'nickname', 'cpf', 'joined_at'];
     const adminFields = ['role', 'active', 'must_reset_password'];
     const fields = isAdminRequest ? baseFields.concat(adminFields) : baseFields;
@@ -38,14 +39,14 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', requirePrivileged, async (req, res) => {
   try {
     const { name, email, nickname, cpf } = req.body || {};
     if (!name || !email || !cpf) {
-      return fail(res, 'Nome, email e CPF são obrigatórios');
+      return fail(res, 'Nome, email e registro são obrigatórios');
     }
     if (!isValidCpf(cpf)) {
-      return fail(res, 'Informe um CPF válido');
+      return fail(res, 'Informe um registro válido');
     }
     const normalizedEmail = normalizeEmail(email);
     const normalizedCpf = normalizeCpf(cpf);
@@ -54,7 +55,7 @@ router.post('/', requireAdmin, async (req, res) => {
       [normalizedEmail, normalizedCpf]
     );
     if (existing) {
-      return fail(res, 'Email ou CPF já cadastrado', 409);
+      return fail(res, 'Email ou registro já cadastrado', 409);
     }
     const setupToken = generateToken();
     const tempPassword = generatePassword();
@@ -73,15 +74,15 @@ router.post('/', requireAdmin, async (req, res) => {
   }
 });
 
-router.put('/:id', requireAdmin, async (req, res) => {
+router.put('/:id', requirePrivileged, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, email, nickname, cpf } = req.body || {};
     if (!name || !email || !cpf) {
-      return fail(res, 'Nome, email e CPF são obrigatórios', 400);
+      return fail(res, 'Nome, email e registro são obrigatórios', 400);
     }
     if (!isValidCpf(cpf)) {
-      return fail(res, 'Informe um CPF válido', 400);
+      return fail(res, 'Informe um registro válido', 400);
     }
     const normalizedEmail = normalizeEmail(email);
     const normalizedCpf = normalizeCpf(cpf);
@@ -90,7 +91,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
       [normalizedEmail, normalizedCpf, Number(id)]
     );
     if (existing) {
-      return fail(res, 'Email ou CPF já cadastrado', 409);
+      return fail(res, 'Email ou registro já cadastrado', 409);
     }
     const [member] = await query(
       'UPDATE members SET name = ?, email = ?, nickname = ?, cpf = ? WHERE id = ? RETURNING id, name, email, nickname, cpf, role, active, must_reset_password, joined_at',
@@ -102,7 +103,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
   }
 });
 
-router.post('/:id/invite', requireAdmin, async (req, res) => {
+router.post('/:id/invite', requirePrivileged, async (req, res) => {
   try {
     const { id } = req.params;
     const member = await queryOne(
@@ -132,7 +133,7 @@ router.post('/:id/invite', requireAdmin, async (req, res) => {
   }
 });
 
-router.delete('/:id', requireAdmin, async (req, res) => {
+router.delete('/:id', requirePrivileged, async (req, res) => {
   try {
     const { id } = req.params;
     await execute('DELETE FROM members WHERE id = ?', [id]);
@@ -142,10 +143,31 @@ router.delete('/:id', requireAdmin, async (req, res) => {
   }
 });
 
+router.put('/:id/role', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body || {};
+    const allowedRoles = ['viewer', 'admin', 'diretor_financeiro'];
+    if (!role || !allowedRoles.includes(role)) {
+      return fail(res, 'Role inválida. Use: viewer, admin ou diretor_financeiro', 400);
+    }
+    const [member] = await query(
+      'UPDATE members SET role = ? WHERE id = ? RETURNING id, name, email, nickname, cpf, role, active, must_reset_password, joined_at',
+      [role, id]
+    );
+    if (!member) {
+      return fail(res, 'Membro não encontrado', 404);
+    }
+    success(res, { member });
+  } catch (error) {
+    fail(res, error.message);
+  }
+});
+
 router.get('/delinquent', requireAuth, async (req, res) => {
   try {
     const { month, year, memberId } = req.query;
-    const isAdminRequest = req.user?.role === 'admin';
+    const isAdminRequest = isPrivilegedRequest(req);
     const effectiveMemberId = isAdminRequest ? memberId : req.user?.memberId;
     if (!isAdminRequest && !effectiveMemberId) {
       return success(res, { members: [] });
