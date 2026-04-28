@@ -18,6 +18,14 @@ const router = express.Router();
 
 router.get('/health', (req, res) => success(res, { status: 'running' }));
 
+router.get('/dev-token', (req, res) => {
+  if (process.env.NODE_ENV === 'production' || !config.adminConfigured) {
+    return fail(res, 'Não disponível', 403);
+  }
+  const token = signToken({ role: 'admin', email: config.ADMIN_EMAIL, memberId: null });
+  success(res, { token, role: 'admin', email: config.ADMIN_EMAIL, memberId: null, name: 'Dev Admin' });
+});
+
 router.post('/login', async (req, res) => {
   try {
     if (!config.jwtConfigured) {

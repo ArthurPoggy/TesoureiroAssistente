@@ -1,0 +1,408 @@
+{
+  "members": [
+    {
+      "name": "Arthur Poggy",
+      "email": "arthur@clan.com",
+      "nickname": "Tuzinho",
+      "cpf": "111.111.111-11",
+      "role": "admin",
+      "password": "senha123"
+    },
+    {
+      "name": "Diego Ferreira",
+      "email": "diego@clan.com",
+      "nickname": "DiegoF",
+      "cpf": "222.222.222-22",
+      "role": "diretor_financeiro",
+      "password": "senha123"
+    },
+    {
+      "name": "Guilherme Santos",
+      "email": "guilherme@clan.com",
+      "nickname": "GuiSan",
+      "cpf": "333.333.333-33",
+      "role": "viewer",
+      "password": "senha123"
+    },
+    {
+      "name": "Rafael Lima",
+      "email": "rafael@clan.com",
+      "nickname": "RafaL",
+      "cpf": "444.444.444-44",
+      "role": "viewer",
+      "password": "senha123"
+    },
+    {
+      "name": "Lucas Martins",
+      "email": "lucas@clan.com",
+      "nickname": "LucasM",
+      "cpf": "555.555.555-55",
+      "role": "viewer",
+      "password": "senha123"
+    },
+    {
+      "name": "Fernanda Costa",
+      "email": "fernanda@clan.com",
+      "nickname": "FernC",
+      "cpf": "666.666.666-66",
+      "role": "viewer",
+      "password": "senha123"
+    },
+    {
+      "name": "Beatriz Souza",
+      "email": "beatriz@clan.com",
+      "nickname": "BiaS",
+      "cpf": "777.777.777-77",
+      "role": "viewer",
+      "password": "senha123"
+    },
+    {
+      "name": "Mateus Oliveira",
+      "email": "mateus@clan.com",
+      "nickname": "MateO",
+      "cpf": "888.888.888-88",
+      "role": "viewer",
+      "password": "senha123"
+    }
+  ],
+
+  "goals": [
+    {
+      "title": "Fundo de Emergência do Clã",
+      "target_amount": 5000,
+      "deadline": "2026-06-30",
+      "description": "Reserva financeira para cobrir imprevistos e despesas urgentes da organização."
+    },
+    {
+      "title": "Servidor Dedicado",
+      "target_amount": 2000,
+      "deadline": "2026-03-31",
+      "description": "Aquisição de servidor dedicado para hospedar os serviços do clã."
+    },
+    {
+      "title": "Acampamento Anual 2026",
+      "target_amount": 8000,
+      "deadline": "2026-09-15",
+      "description": "Evento principal do ano: acampamento de 3 dias com todos os membros."
+    },
+    {
+      "title": "Equipamentos de Transmissão",
+      "target_amount": 3500,
+      "deadline": "2025-12-31",
+      "description": "Compra de câmera, microfone e captura para transmissões ao vivo."
+    }
+  ],
+
+  "events": [
+    {
+      "name": "Torneio Interno Janeiro 2025",
+      "event_date": "2025-01-18",
+      "raised_amount": 1500,
+      "spent_amount": 820,
+      "description": "Primeiro torneio interno do ano, disputado em formato de grupos."
+    },
+    {
+      "name": "Confraternização Meio do Ano",
+      "event_date": "2025-07-12",
+      "raised_amount": 3200,
+      "spent_amount": 2950,
+      "description": "Churrasco e premiação dos destaques do semestre."
+    },
+    {
+      "name": "Campeonato Regional Outubro 2025",
+      "event_date": "2025-10-04",
+      "raised_amount": 5000,
+      "spent_amount": 4350,
+      "description": "Participação no campeonato regional com passagens e hospedagem."
+    },
+    {
+      "name": "Workshop de Estratégias 2026",
+      "event_date": "2026-02-22",
+      "raised_amount": 1200,
+      "spent_amount": 580,
+      "description": "Workshop intensivo de 2 dias com treinador convidado."
+    }
+  ],
+
+  "expenses": [
+    {
+      "title": "Aluguel de espaço para treino",
+      "amount": 450,
+      "expense_date": "2025-01-10",
+      "category": "Operacional",
+      "notes": "Sala de reuniões alugada mensalmente para treinos presenciais.",
+      "event_ref": null
+    },
+    {
+      "title": "Passagens aéreas – Campeonato Regional",
+      "amount": 2200,
+      "expense_date": "2025-09-15",
+      "category": "Eventos",
+      "notes": "4 passagens ida e volta para os representantes do clã.",
+      "event_ref": 2
+    },
+    {
+      "title": "Hospedagem – Campeonato Regional",
+      "amount": 1400,
+      "expense_date": "2025-09-20",
+      "category": "Eventos",
+      "notes": "2 quartos de hotel por 3 noites.",
+      "event_ref": 2
+    },
+    {
+      "title": "Compra de headsets",
+      "amount": 860,
+      "expense_date": "2025-02-14",
+      "category": "Infraestrutura",
+      "notes": "2 headsets gamer para reposição de equipamentos danificados.",
+      "event_ref": null
+    },
+    {
+      "title": "Domínio e hospedagem do site",
+      "amount": 220,
+      "expense_date": "2025-03-01",
+      "category": "Infraestrutura",
+      "notes": "Renovação anual do domínio e plano de hospedagem.",
+      "event_ref": null
+    },
+    {
+      "title": "Troféus e medalhas – Torneio Interno",
+      "amount": 380,
+      "expense_date": "2025-01-15",
+      "category": "Eventos",
+      "notes": "10 troféus para os vencedores das categorias.",
+      "event_ref": 0
+    },
+    {
+      "title": "Buffet churrasco – Confraternização",
+      "amount": 1800,
+      "expense_date": "2025-07-10",
+      "category": "Eventos",
+      "notes": "Buffet para 30 pessoas incluindo bebidas.",
+      "event_ref": 1
+    },
+    {
+      "title": "Licença de software de edição",
+      "amount": 199,
+      "expense_date": "2025-04-05",
+      "category": "Infraestrutura",
+      "notes": "Licença anual para edição de vídeos das transmissões.",
+      "event_ref": null
+    },
+    {
+      "title": "Material gráfico e banners",
+      "amount": 320,
+      "expense_date": "2025-05-20",
+      "category": "Marketing",
+      "notes": "Banners e camisetas para divulgação do clã em eventos.",
+      "event_ref": null
+    },
+    {
+      "title": "Manutenção do servidor",
+      "amount": 150,
+      "expense_date": "2025-06-01",
+      "category": "Infraestrutura",
+      "notes": "Upgrade de memória RAM do servidor de comunicação.",
+      "event_ref": null
+    },
+    {
+      "title": "Coffee break – Workshop",
+      "amount": 280,
+      "expense_date": "2026-02-22",
+      "category": "Eventos",
+      "notes": "Café da manhã e lanches para os dois dias de workshop.",
+      "event_ref": 3
+    },
+    {
+      "title": "Plataforma de gestão – assinatura anual",
+      "amount": 480,
+      "expense_date": "2025-08-01",
+      "category": "Operacional",
+      "notes": "Ferramenta de organização e comunicação interna.",
+      "event_ref": null
+    }
+  ],
+
+  "payments": [
+    { "member_index": 0, "month": 1,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 0, "month": 2,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 0, "month": 3,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 0, "month": 4,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 0, "month": 5,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 0, "month": 6,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 0, "month": 7,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 0, "month": 8,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 0, "month": 9,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 0, "month": 10, "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 0, "month": 11, "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 0, "month": 12, "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 0, "month": 1,  "year": 2026, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 0, "month": 2,  "year": 2026, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 0, "month": 3,  "year": 2026, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 0, "month": 4,  "year": 2026, "amount": 100, "paid": true,  "notes": "" },
+
+    { "member_index": 1, "month": 1,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 1, "month": 2,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 1, "month": 3,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 1, "month": 4,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 1, "month": 5,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 1, "month": 6,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 1, "month": 7,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 1, "month": 8,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 1, "month": 9,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 1, "month": 10, "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 1, "month": 11, "year": 2025, "amount": 100, "paid": false, "notes": "Aguardando confirmação" },
+    { "member_index": 1, "month": 12, "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 1, "month": 1,  "year": 2026, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 1, "month": 2,  "year": 2026, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 1, "month": 3,  "year": 2026, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 1, "month": 4,  "year": 2026, "amount": 100, "paid": false, "notes": "" },
+
+    { "member_index": 2, "month": 1,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 2, "month": 2,  "year": 2025, "amount": 100, "paid": false, "notes": "Pagamento atrasado" },
+    { "member_index": 2, "month": 3,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 2, "month": 4,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 2, "month": 5,  "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 2, "month": 6,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 2, "month": 7,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 2, "month": 8,  "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 2, "month": 9,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 2, "month": 10, "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 2, "month": 11, "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 2, "month": 12, "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 2, "month": 1,  "year": 2026, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 2, "month": 2,  "year": 2026, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 2, "month": 3,  "year": 2026, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 2, "month": 4,  "year": 2026, "amount": 100, "paid": false, "notes": "" },
+
+    { "member_index": 3, "month": 1,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 3, "month": 2,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 3, "month": 3,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 3, "month": 4,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 3, "month": 5,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 3, "month": 6,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 3, "month": 7,  "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 3, "month": 8,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 3, "month": 9,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 3, "month": 10, "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 3, "month": 11, "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 3, "month": 12, "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 3, "month": 1,  "year": 2026, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 3, "month": 2,  "year": 2026, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 3, "month": 3,  "year": 2026, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 3, "month": 4,  "year": 2026, "amount": 100, "paid": false, "notes": "" },
+
+    { "member_index": 4, "month": 1,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 4, "month": 2,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 4, "month": 3,  "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 4, "month": 4,  "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 4, "month": 5,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 4, "month": 6,  "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 4, "month": 7,  "year": 2025, "amount": 100, "paid": false, "notes": "Sem contato" },
+    { "member_index": 4, "month": 8,  "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 4, "month": 9,  "year": 2025, "amount": 100, "paid": true,  "notes": "Pago com atraso" },
+    { "member_index": 4, "month": 10, "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 4, "month": 11, "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 4, "month": 12, "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 4, "month": 1,  "year": 2026, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 4, "month": 2,  "year": 2026, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 4, "month": 3,  "year": 2026, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 4, "month": 4,  "year": 2026, "amount": 100, "paid": false, "notes": "" },
+
+    { "member_index": 5, "month": 1,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 5, "month": 2,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 5, "month": 3,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 5, "month": 4,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 5, "month": 5,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 5, "month": 6,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 5, "month": 7,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 5, "month": 8,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 5, "month": 9,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 5, "month": 10, "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 5, "month": 11, "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 5, "month": 12, "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 5, "month": 1,  "year": 2026, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 5, "month": 2,  "year": 2026, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 5, "month": 3,  "year": 2026, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 5, "month": 4,  "year": 2026, "amount": 100, "paid": true,  "notes": "" },
+
+    { "member_index": 6, "month": 1,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 6, "month": 2,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 6, "month": 3,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 6, "month": 4,  "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 6, "month": 5,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 6, "month": 6,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 6, "month": 7,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 6, "month": 8,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 6, "month": 9,  "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 6, "month": 10, "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 6, "month": 11, "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 6, "month": 12, "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 6, "month": 1,  "year": 2026, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 6, "month": 2,  "year": 2026, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 6, "month": 3,  "year": 2026, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 6, "month": 4,  "year": 2026, "amount": 100, "paid": false, "notes": "" },
+
+    { "member_index": 7, "month": 1,  "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 7, "month": 2,  "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 7, "month": 3,  "year": 2025, "amount": 100, "paid": true,  "notes": "Pago em atraso" },
+    { "member_index": 7, "month": 4,  "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 7, "month": 5,  "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 7, "month": 6,  "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 7, "month": 7,  "year": 2025, "amount": 100, "paid": true,  "notes": "" },
+    { "member_index": 7, "month": 8,  "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 7, "month": 9,  "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 7, "month": 10, "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 7, "month": 11, "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 7, "month": 12, "year": 2025, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 7, "month": 1,  "year": 2026, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 7, "month": 2,  "year": 2026, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 7, "month": 3,  "year": 2026, "amount": 100, "paid": false, "notes": "" },
+    { "member_index": 7, "month": 4,  "year": 2026, "amount": 100, "paid": false, "notes": "" }
+  ],
+
+  "projects": [
+    {
+      "name": "Ranking Competitivo 2025/2026",
+      "description": "Acompanhamento da evolução dos membros no ranking competitivo da temporada.",
+      "status": "active",
+      "member_indexes": [0, 1, 2, 3]
+    },
+    {
+      "name": "Expansão de Membros",
+      "description": "Recrutamento e integração de novos membros para fortalecer o clã.",
+      "status": "active",
+      "member_indexes": [0, 1, 5]
+    },
+    {
+      "name": "Modernização do Site",
+      "description": "Redesign completo do site oficial com novo visual e funcionalidades.",
+      "status": "inactive",
+      "member_indexes": [0, 4]
+    },
+    {
+      "name": "Liga Regional – Próxima Temporada",
+      "description": "Preparação e inscrição na liga regional com foco no campeonato de 2026.",
+      "status": "active",
+      "member_indexes": [0, 1, 2, 3, 4, 5]
+    },
+    {
+      "name": "Treinamento Elite",
+      "description": "Programa intensivo de treinamento para os membros de alto desempenho.",
+      "status": "inactive",
+      "member_indexes": [2, 3, 6]
+    }
+  ],
+
+  "settings": {
+    "org_name": "Clã Phoenix",
+    "org_tagline": "Unidos pelo jogo, fortalecidos pela comunidade.",
+    "default_payment_amount": "100",
+    "payment_due_day": "10",
+    "pix_key": "clan.phoenix@gmail.com",
+    "pix_receiver": "Arthur Poggy",
+    "dashboard_note": "Lembrete: mensalidades vencem todo dia 10. Mantenha seus pagamentos em dia!",
+    "document_footer": "Guarde este recibo. Dúvidas? Fale com o tesoureiro pelo Discord.",
+    "disclaimer_text": "Sistema de uso interno do Clã Phoenix. Dados confidenciais."
+  }
+}

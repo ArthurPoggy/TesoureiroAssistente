@@ -78,7 +78,7 @@ router.post('/:id/members', requirePrivileged, async (req, res) => {
     const { id } = req.params;
     const { memberId } = req.body;
     if (!memberId) return fail(res, 'Membro é obrigatório');
-    await query(
+    await execute(
       'INSERT OR IGNORE INTO member_projects (member_id, project_id) VALUES (?, ?)',
       [memberId, id]
     );
