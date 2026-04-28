@@ -9,7 +9,7 @@ import {
 } from 'chart.js';
 import { useAuth } from './contexts/AuthContext';
 import { parseMonthFilter, parseYearFilter, currentMonth, currentYear } from './utils/formatters';
-import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard, useSettings, useExtrato } from './hooks';
+import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard, useSettings, useExtrato, useTags } from './hooks';
 import {
   LoginScreen,
   AuthCheckingScreen,
@@ -180,6 +180,8 @@ function App() {
     exportExtrato
   } = useExtrato(handleError);
 
+  const { tags, loadTags } = useTags(showToast, handleError);
+
   // Carregar dados iniciais
   useEffect(() => {
     if (!authToken || !authChecked) return;
@@ -187,7 +189,8 @@ function App() {
     loadGoals();
     loadExpenses();
     loadEvents();
-  }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents]);
+    loadTags();
+  }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents, loadTags]);
 
   useEffect(() => {
     if (!authToken || !authChecked) return;
@@ -321,6 +324,7 @@ function App() {
           editingExpenseId={editingExpenseId}
           fileInputKey={expenseFileInputKey}
           events={events}
+          tags={tags}
           onSubmit={(e) => handleExpenseSubmit(e, refreshAfterExpense)}
           onDelete={(id) => handleExpenseDelete(id, refreshAfterExpense)}
           onEdit={startEditExpense}

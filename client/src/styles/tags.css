@@ -1,0 +1,72 @@
+.tag-selector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) 0;
+  grid-column: 1 / -1;
+}
+
+.tag-selector-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tag-selector-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.tag-chip {
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+  line-height: 1.5;
+}
+
+.tag-chip:hover:not(.tag-chip--readonly) {
+  border-color: var(--color-primary-light);
+  color: var(--color-primary);
+  background: var(--color-bg-highlight);
+}
+
+.tag-chip--selected {
+  background: var(--color-primary);
+  border-color: var(--color-primary-dark);
+  color: var(--color-text-white);
+}
+
+.tag-chip--selected:hover:not(.tag-chip--readonly) {
+  background: var(--color-primary-dark);
+  color: var(--color-text-white);
+}
+
+.tag-chip--readonly {
+  cursor: default;
+}
+
+.tag-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+}
+
+.tag-pill {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-pill);
+  color: var(--color-text-info);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
