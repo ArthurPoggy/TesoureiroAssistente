@@ -10,7 +10,9 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "setupFiles": ["./tests/jest.setup.js"]
+    "setupFiles": [
+      "./tests/jest.setup.js"
+    ]
   },
   "keywords": [],
   "author": "",
@@ -19,6 +21,7 @@
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^12.5.0",
     "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "googleapis": "^128.0.0",
     "jsonwebtoken": "^9.0.2",
