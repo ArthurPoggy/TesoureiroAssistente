@@ -41,5 +41,8 @@ export { SettingsPanel } from './settings/SettingsPanel';
 // Reports
 export { ReportsSection } from './reports/ReportsSection';
 
+// Projects
+export { ProjectsPanel } from './projects/ProjectsPanel';
+
 // Common
 export { Toast } from './common/Toast';
