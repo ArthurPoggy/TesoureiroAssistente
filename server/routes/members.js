@@ -164,6 +164,47 @@ router.put('/:id/role', requireAdmin, async (req, res) => {
   }
 });
 
+router.get('/:id/summary', requirePrivileged, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const member = await queryOne(
+      'SELECT id, name, email, nickname, cpf, role, active, must_reset_password, joined_at FROM members WHERE id = ?',
+      [id]
+    );
+    if (!member) return fail(res, 'Membro não encontrado', 404);
+
+    const paymentRow = await queryOne(
+      'SELECT COUNT(*) as total, SUM(amount) as total_amount FROM payments WHERE member_id = ?',
+      [id]
+    );
+
+    const lastPayment = await queryOne(
+      'SELECT month, year, paid_at FROM payments WHERE member_id = ? ORDER BY year DESC, month DESC LIMIT 1',
+      [id]
+    );
+
+    const activeProjects = await query(
+      `SELECT p.id, p.name FROM projects p
+       JOIN member_projects mp ON mp.project_id = p.id
+       WHERE mp.member_id = ? AND p.status = 'active'
+       ORDER BY p.name`,
+      [id]
+    );
+
+    success(res, {
+      member,
+      payments: {
+        total: paymentRow?.total || 0,
+        totalAmount: paymentRow?.total_amount || 0,
+        lastPayment: lastPayment || null
+      },
+      activeProjects
+    });
+  } catch (error) {
+    fail(res, error.message);
+  }
+});
+
 router.get('/delinquent', requireAuth, async (req, res) => {
   try {
     const { month, year, memberId } = req.query;
