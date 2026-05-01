@@ -164,7 +164,7 @@ router.put('/:id/role', requireAdmin, async (req, res) => {
   }
 });
 
-router.get('/delinquent', requireAuth, async (req, res) => {
+router.get('/delinquent', requirePrivileged, async (req, res) => {
   try {
     const { month, year, memberId } = req.query;
     const isAdminRequest = isPrivilegedRequest(req);

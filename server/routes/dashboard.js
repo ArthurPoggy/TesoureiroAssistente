@@ -3,7 +3,7 @@ const config = require('../config');
 const { query, queryOne } = require('../db/query');
 const { success, fail } = require('../utils/response');
 const { getCurrentBalance } = require('../utils/settings');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requirePrivileged } = require('../middleware/auth');
 const { isPrivilegedRequest } = require('../utils/roles');
 
 const router = express.Router();
@@ -150,7 +150,7 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
-router.get('/ranking', requireAuth, async (req, res) => {
+router.get('/ranking', requirePrivileged, async (req, res) => {
   try {
     const { year, memberId } = req.query;
     const isAdminRequest = isPrivilegedRequest(req);
