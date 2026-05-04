@@ -33,7 +33,7 @@ export function MemberDetailView({ member, onInvite, onDelete, onRoleChange }) {
         <strong>Email:</strong> {member.email || '-'}
       </p>
       <p>
-        <strong>Registro:</strong> {member.cpf || '-'}
+        <strong>Registro Escoteiro:</strong> {member.cpf || '-'}
       </p>
       <p>
         <strong>Apelido:</strong> {member.nickname || '-'}
