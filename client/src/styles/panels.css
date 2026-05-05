@@ -24,6 +24,12 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: var(--spacing-2xl);
+  margin-bottom: var(--spacing-xl);
+  align-items: start;
+}
+
+.two-column > .panel {
+  margin-bottom: 0;
 }
 
 .split {
