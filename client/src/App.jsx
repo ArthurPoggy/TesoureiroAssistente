@@ -9,7 +9,7 @@ import {
 } from 'chart.js';
 import { useAuth } from './contexts/AuthContext';
 import { parseMonthFilter, parseYearFilter, currentMonth, currentYear } from './utils/formatters';
-import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard, useSettings, useExtrato } from './hooks';
+import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard, useSettings, useExtrato, useProjects } from './hooks';
 import {
   LoginScreen,
   AuthCheckingScreen,
@@ -24,6 +24,7 @@ import {
   DelinquencyRanking,
   ReportsSection,
   ExtratoPanel,
+  ProjectsPanel,
   Toast
 } from './components';
 import './styles/index.css';
@@ -70,6 +71,21 @@ function App() {
   } = useMembers(showToast, handleError);
 
   const { goals, goalForm, setGoalForm, editingGoalId, loadGoals, resetGoalForm, handleGoalSubmit, handleGoalDelete, startEditGoal } = useGoals(showToast, handleError);
+
+  const {
+    projects,
+    projectForm,
+    setProjectForm,
+    editingProjectId,
+    saving: projectSaving,
+    loadProjects,
+    resetProjectForm,
+    handleProjectSubmit,
+    handleProjectDelete,
+    startEditProject,
+    addMemberToProject,
+    removeMemberFromProject
+  } = useProjects(showToast, handleError);
 
   const { events, eventForm, setEventForm, editingEventId, loadEvents, resetEventForm, handleEventSubmit, handleEventDelete, startEditEvent } = useEvents(showToast, handleError);
 
@@ -187,7 +203,8 @@ function App() {
     loadGoals();
     loadExpenses();
     loadEvents();
-  }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents]);
+    loadProjects();
+  }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents, loadProjects]);
 
   useEffect(() => {
     if (!authToken || !authChecked) return;
@@ -337,6 +354,21 @@ function App() {
           onReset={resetEventForm}
         />
       </section>
+
+      <ProjectsPanel
+        projects={projects}
+        projectForm={projectForm}
+        setProjectForm={setProjectForm}
+        editingProjectId={editingProjectId}
+        members={members}
+        saving={projectSaving}
+        onSubmit={handleProjectSubmit}
+        onDelete={handleProjectDelete}
+        onEdit={startEditProject}
+        onReset={resetProjectForm}
+        onAddMember={addMemberToProject}
+        onRemoveMember={removeMemberFromProject}
+      />
 
       <DelinquencyRanking delinquent={delinquent} ranking={ranking} />
 

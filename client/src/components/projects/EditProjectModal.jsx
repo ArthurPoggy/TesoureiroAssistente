@@ -60,6 +60,25 @@ export function EditProjectModal({ projectForm, setProjectForm, onSave, onClose,
             </select>
           </label>
 
+          <label>
+            Data de início
+            <input
+              type="date"
+              value={projectForm.start_date || ''}
+              onChange={(e) => setProjectForm({ ...projectForm, start_date: e.target.value })}
+            />
+          </label>
+
+          <label>
+            Data de término
+            <input
+              type="date"
+              value={projectForm.end_date || ''}
+              min={projectForm.start_date || undefined}
+              onChange={(e) => setProjectForm({ ...projectForm, end_date: e.target.value })}
+            />
+          </label>
+
           <div className="form-actions">
             <button type="submit" disabled={saving}>
               {saving ? 'Salvando...' : 'Salvar alterações'}

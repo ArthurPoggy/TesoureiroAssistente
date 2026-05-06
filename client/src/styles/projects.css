@@ -54,6 +54,20 @@
   color: #64748b;
 }
 
+.project-dates {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-sm);
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+}
+
+.project-duration {
+  color: var(--color-text-muted);
+}
+
 .project-members {
   margin-top: var(--spacing-sm);
   display: flex;
