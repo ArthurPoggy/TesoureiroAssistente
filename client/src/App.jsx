@@ -9,7 +9,7 @@ import {
 } from 'chart.js';
 import { useAuth } from './contexts/AuthContext';
 import { parseMonthFilter, parseYearFilter, currentMonth, currentYear } from './utils/formatters';
-import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard, useSettings, useExtrato } from './hooks';
+import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard, useSettings, useExtrato, useClanHistory } from './hooks';
 import {
   LoginScreen,
   AuthCheckingScreen,
@@ -24,6 +24,7 @@ import {
   DelinquencyRanking,
   ReportsSection,
   ExtratoPanel,
+  ClanHistoryPanel,
   Toast
 } from './components';
 import './styles/index.css';
@@ -39,6 +40,7 @@ function App() {
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
   const [selectedUserFilter, setSelectedUserFilter] = useState('all');
   const [showSettings, setShowSettings] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type });
@@ -171,6 +173,19 @@ function App() {
   } = useDashboard(handleError, monthFilter, yearFilter, selectedMemberId);
 
   const {
+    records: historyRecords,
+    historyForm,
+    setHistoryForm,
+    editingHistoryId,
+    fileInputKey: historyFileInputKey,
+    loadRecords: loadHistory,
+    resetHistoryForm,
+    handleHistorySubmit,
+    handleHistoryDelete,
+    startEditHistory
+  } = useClanHistory(showToast, handleError);
+
+  const {
     entries: extratoEntries,
     summary: extratoSummary,
     loading: extratoLoading,
@@ -187,7 +202,8 @@ function App() {
     loadGoals();
     loadExpenses();
     loadEvents();
-  }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents]);
+    loadHistory();
+  }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents, loadHistory]);
 
   useEffect(() => {
     if (!authToken || !authChecked) return;
@@ -242,6 +258,8 @@ function App() {
         resetFilters={resetFilters}
         settingsOpen={showSettings}
         onToggleSettings={() => setShowSettings((value) => !value)}
+        showHistory={showHistory}
+        onToggleHistory={() => setShowHistory((value) => !value)}
       />
 
       {toast && <Toast message={toast.message} type={toast.type} />}
@@ -350,6 +368,20 @@ function App() {
           onLoad={loadExtrato}
           onExport={exportExtrato}
           members={members}
+        />
+      )}
+
+      {showHistory && (
+        <ClanHistoryPanel
+          records={historyRecords}
+          historyForm={historyForm}
+          setHistoryForm={setHistoryForm}
+          editingHistoryId={editingHistoryId}
+          fileInputKey={historyFileInputKey}
+          onSubmit={handleHistorySubmit}
+          onDelete={handleHistoryDelete}
+          onEdit={startEditHistory}
+          onReset={resetHistoryForm}
         />
       )}
 
