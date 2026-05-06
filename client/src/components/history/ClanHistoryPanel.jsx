@@ -24,7 +24,8 @@ export function ClanHistoryPanel({
   onSubmit,
   onDelete,
   onEdit,
-  onReset
+  onReset,
+  onClose
 }) {
   const { canEdit } = useAuth();
   const [showForm, setShowForm] = useState(false);
@@ -46,135 +47,140 @@ export function ClanHistoryPanel({
   }
 
   return (
-    <section className="panel">
-      <div className="panel-header">
-        <h2>História do Clã</h2>
-        {canEdit && !showForm && (
-          <button
-            type="button"
-            onClick={() => { setShowForm(true); onReset(); }}
-          >
-            + Novo Registro
-          </button>
+    <div className="history-modal-overlay" onClick={onClose}>
+      <div className="history-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="panel-header">
+          <h2>História do Clã</h2>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {canEdit && !showForm && (
+              <button
+                type="button"
+                onClick={() => { setShowForm(true); onReset(); }}
+              >
+                + Novo Registro
+              </button>
+            )}
+            <button type="button" className="ghost" onClick={onClose}>✕ Fechar</button>
+          </div>
+        </div>
+
+        {canEdit && showForm && (
+          <form className="form-grid" onSubmit={handleSubmit}>
+            <label>
+              Título *
+              <input
+                type="text"
+                value={historyForm.title}
+                onChange={(e) => setHistoryForm((f) => ({ ...f, title: e.target.value }))}
+                required
+                placeholder="Título do registro"
+              />
+            </label>
+
+            <label>
+              Data *
+              <input
+                type="date"
+                value={historyForm.eventDate}
+                onChange={(e) => setHistoryForm((f) => ({ ...f, eventDate: e.target.value }))}
+                required
+              />
+            </label>
+
+            <label style={{ gridColumn: '1 / -1' }}>
+              Descrição
+              <textarea
+                value={historyForm.description}
+                onChange={(e) => setHistoryForm((f) => ({ ...f, description: e.target.value }))}
+                placeholder="Descreva este momento histórico..."
+                rows={4}
+              />
+            </label>
+
+            <label>
+              Foto ou Documento
+              <input
+                key={fileInputKey}
+                type="file"
+                accept="image/*,.pdf,.doc,.docx"
+                onChange={(e) => setHistoryForm((f) => ({ ...f, attachmentFile: e.target.files[0] || null }))}
+              />
+            </label>
+
+            <label>
+              Nome do arquivo
+              <input
+                type="text"
+                value={historyForm.attachmentName}
+                onChange={(e) => setHistoryForm((f) => ({ ...f, attachmentName: e.target.value }))}
+                placeholder="Nome opcional para o arquivo"
+              />
+            </label>
+
+            <div className="form-actions">
+              <button type="submit">
+                {editingHistoryId ? 'Salvar alterações' : 'Adicionar registro'}
+              </button>
+              <button type="button" className="ghost" onClick={handleReset}>
+                Cancelar
+              </button>
+            </div>
+          </form>
+        )}
+
+        {records.length === 0 ? (
+          <p className="history-empty">Nenhum registro histórico ainda.</p>
+        ) : (
+          <div className="history-timeline">
+            {records.map((record) => (
+              <div key={record.id} className="history-card">
+                <div className="history-date">{formatDate(record.event_date)}</div>
+                <div className="history-content">
+                  <h3>{record.title}</h3>
+                  {record.description && <p>{record.description}</p>}
+
+                  {record.attachment_url && (
+                    <div className="history-attachment">
+                      {isImageFile(record.attachment_name) ? (
+                        <img
+                          src={record.attachment_url}
+                          alt={record.attachment_name || 'Imagem'}
+                          onClick={() => setLightboxUrl(record.attachment_url)}
+                        />
+                      ) : (
+                        <a href={record.attachment_url} target="_blank" rel="noreferrer">
+                          Baixar {record.attachment_name || 'documento'}
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  {canEdit && (
+                    <div className="history-actions">
+                      <button type="button" className="ghost" onClick={() => handleEditClick(record)}>
+                        Editar
+                      </button>
+                      <button type="button" className="ghost" onClick={() => onDelete(record.id)}>
+                        Remover
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {lightboxUrl && (
+          <div className="history-lightbox" onClick={() => setLightboxUrl(null)}>
+            <img
+              src={lightboxUrl}
+              alt="Visualização ampliada"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
         )}
       </div>
-
-      {canEdit && showForm && (
-        <form className="form-grid" onSubmit={handleSubmit}>
-          <label>
-            Título *
-            <input
-              type="text"
-              value={historyForm.title}
-              onChange={(e) => setHistoryForm((f) => ({ ...f, title: e.target.value }))}
-              required
-              placeholder="Título do registro"
-            />
-          </label>
-
-          <label>
-            Data *
-            <input
-              type="date"
-              value={historyForm.eventDate}
-              onChange={(e) => setHistoryForm((f) => ({ ...f, eventDate: e.target.value }))}
-              required
-            />
-          </label>
-
-          <label style={{ gridColumn: '1 / -1' }}>
-            Descrição
-            <textarea
-              value={historyForm.description}
-              onChange={(e) => setHistoryForm((f) => ({ ...f, description: e.target.value }))}
-              placeholder="Descreva este momento histórico..."
-              rows={4}
-            />
-          </label>
-
-          <label>
-            Foto ou Documento
-            <input
-              key={fileInputKey}
-              type="file"
-              accept="image/*,.pdf,.doc,.docx"
-              onChange={(e) => setHistoryForm((f) => ({ ...f, attachmentFile: e.target.files[0] || null }))}
-            />
-          </label>
-
-          <label>
-            Nome do arquivo
-            <input
-              type="text"
-              value={historyForm.attachmentName}
-              onChange={(e) => setHistoryForm((f) => ({ ...f, attachmentName: e.target.value }))}
-              placeholder="Nome opcional para o arquivo"
-            />
-          </label>
-
-          <div className="form-actions">
-            <button type="submit">
-              {editingHistoryId ? 'Salvar alterações' : 'Adicionar registro'}
-            </button>
-            <button type="button" className="ghost" onClick={handleReset}>
-              Cancelar
-            </button>
-          </div>
-        </form>
-      )}
-
-      {records.length === 0 ? (
-        <p className="history-empty">Nenhum registro histórico ainda.</p>
-      ) : (
-        <div className="history-timeline">
-          {records.map((record) => (
-            <div key={record.id} className="history-card">
-              <div className="history-date">{formatDate(record.event_date)}</div>
-              <div className="history-content">
-                <h3>{record.title}</h3>
-                {record.description && <p>{record.description}</p>}
-
-                {record.attachment_url && (
-                  <div className="history-attachment">
-                    {isImageFile(record.attachment_name) ? (
-                      <img
-                        src={record.attachment_url}
-                        alt={record.attachment_name || 'Imagem'}
-                        onClick={() => setLightboxUrl(record.attachment_url)}
-                      />
-                    ) : (
-                      <a href={record.attachment_url} target="_blank" rel="noreferrer">
-                        Baixar {record.attachment_name || 'documento'}
-                      </a>
-                    )}
-                  </div>
-                )}
-
-                {canEdit && (
-                  <div className="history-actions">
-                    <button type="button" className="ghost" onClick={() => handleEditClick(record)}>
-                      Editar
-                    </button>
-                    <button type="button" className="ghost" onClick={() => onDelete(record.id)}>
-                      Remover
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {lightboxUrl && (
-        <div className="history-lightbox" onClick={() => setLightboxUrl(null)}>
-          <img
-            src={lightboxUrl}
-            alt="Visualização ampliada"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-      )}
-    </section>
+    </div>
   );
 }

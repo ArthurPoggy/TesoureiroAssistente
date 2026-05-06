@@ -382,6 +382,7 @@ function App() {
           onDelete={handleHistoryDelete}
           onEdit={startEditHistory}
           onReset={resetHistoryForm}
+          onClose={() => setShowHistory(false)}
         />
       )}
 
