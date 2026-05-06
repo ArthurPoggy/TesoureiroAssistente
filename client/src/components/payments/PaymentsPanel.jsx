@@ -1,6 +1,9 @@
 import { useAuth } from '../../contexts/AuthContext';
-import { formatCurrency, months } from '../../utils/formatters';
+import { formatCurrency, months, currentYear } from '../../utils/formatters';
 import { useState } from 'react';
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => currentYear - 2 + i);
 
 export function PaymentsPanel({
   payments,
@@ -15,6 +18,15 @@ export function PaymentsPanel({
   onDelete,
   onReceipt,
   fileInputKey,
+  page = 1,
+  pageSize = 25,
+  total = 0,
+  filterMonth = '',
+  filterYear = '',
+  onPageChange,
+  onPageSizeChange,
+  onFilterMonthChange,
+  onFilterYearChange,
   children
 }) {
   const { canEdit } = useAuth();
@@ -193,6 +205,42 @@ export function PaymentsPanel({
         <p className="lock-hint">Somente o tesoureiro pode registrar ou editar pagamentos.</p>
       )}
 
+      <div className="table-toolbar">
+        <div className="table-toolbar-filters">
+          <select
+            value={filterMonth}
+            onChange={(e) => onFilterMonthChange?.(e.target.value)}
+          >
+            <option value="">Todos os meses</option>
+            {months.map((m) => (
+              <option key={m.value} value={m.value}>{m.label}</option>
+            ))}
+          </select>
+          <select
+            value={filterYear}
+            onChange={(e) => onFilterYearChange?.(e.target.value)}
+          >
+            <option value="">Todos os anos</option>
+            {YEAR_OPTIONS.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
+        <div className="table-toolbar-pagesize">
+          <label>
+            Por página:
+            <select
+              value={pageSize}
+              onChange={(e) => onPageSizeChange?.(e.target.value)}
+            >
+              {PAGE_SIZE_OPTIONS.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </div>
+
       <div className="table-wrapper">
         {loading ? (
           <p>Carregando pagamentos...</p>
@@ -212,20 +260,16 @@ export function PaymentsPanel({
               {payments.map((payment) => (
                 <tr key={payment.id}>
                   <td>{payment.member_name}</td>
-                  <td>
-                    {payment.month}/{payment.year}
-                  </td>
+                  <td>{payment.month}/{payment.year}</td>
                   <td>{formatCurrency(payment.amount)}</td>
                   <td className={payment.paid ? 'paid' : 'pending'}>
                     {payment.paid ? 'Pago' : 'Pendente'}
                   </td>
-                  <td>{payment.goal_id ? goals.find((goal) => goal.id === payment.goal_id)?.title : '-'}</td>
+                  <td>{payment.goal_id ? goals.find((g) => g.id === payment.goal_id)?.title : '-'}</td>
                   {canEdit && (
                     <td>
                       <button onClick={() => onReceipt(payment.id)}>Gerar recibo</button>
-                      <button className="ghost" onClick={() => onDelete(payment.id)}>
-                        Remover
-                      </button>
+                      <button className="ghost" onClick={() => onDelete(payment.id)}>Remover</button>
                     </td>
                   )}
                 </tr>
@@ -234,6 +278,26 @@ export function PaymentsPanel({
           </table>
         )}
       </div>
+
+      {total > 0 && (() => {
+        const totalPages = Math.ceil(total / pageSize);
+        const from = (page - 1) * pageSize + 1;
+        const to = Math.min(page * pageSize, total);
+        return (
+          <div className="pagination">
+            <span className="pagination-info">
+              Exibindo {from}–{to} de {total} registros
+            </span>
+            <div className="pagination-controls">
+              <button className="ghost pagination-btn" onClick={() => onPageChange?.(1)} disabled={page === 1} title="Primeira">«</button>
+              <button className="ghost pagination-btn" onClick={() => onPageChange?.(page - 1)} disabled={page === 1}>Anterior</button>
+              <span className="pagination-page">Página {page} de {totalPages}</span>
+              <button className="ghost pagination-btn" onClick={() => onPageChange?.(page + 1)} disabled={page >= totalPages}>Próxima</button>
+              <button className="ghost pagination-btn" onClick={() => onPageChange?.(totalPages)} disabled={page >= totalPages} title="Última">»</button>
+            </div>
+          </div>
+        );
+      })()}
 
       {children}
     </section>

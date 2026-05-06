@@ -9,6 +9,11 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [total, setTotal] = useState(0);
+  const [filterMonth, setFilterMonth] = useState('');
+  const [filterYear, setFilterYear] = useState('');
   const [lastDefaultAmount, setLastDefaultAmount] = useState(defaultAmount);
   const [paymentForm, setPaymentForm] = useState({
     memberId: '',
@@ -40,17 +45,40 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
     try {
       setLoading(true);
       const params = new URLSearchParams({
-        ...(selectedMemberId ? { memberId: selectedMemberId } : {})
+        ...(selectedMemberId ? { memberId: selectedMemberId } : {}),
+        ...(filterMonth ? { month: filterMonth } : {}),
+        ...(filterYear ? { year: filterYear } : {}),
+        page,
+        pageSize
       });
-      const query = params.toString();
-      const data = await apiFetch(query ? `/api/payments?${query}` : '/api/payments');
+      const data = await apiFetch(`/api/payments?${params.toString()}`);
       setPayments(data.payments || []);
+      setTotal(data.total || 0);
     } catch (error) {
       handleError(error);
     } finally {
       setLoading(false);
     }
-  }, [apiFetch, handleError, selectedMemberId]);
+  }, [apiFetch, handleError, selectedMemberId, filterMonth, filterYear, page, pageSize]);
+
+  useEffect(() => {
+    loadPayments();
+  }, [loadPayments]);
+
+  const handleFilterMonthChange = useCallback((val) => {
+    setFilterMonth(val);
+    setPage(1);
+  }, []);
+
+  const handleFilterYearChange = useCallback((val) => {
+    setFilterYear(val);
+    setPage(1);
+  }, []);
+
+  const handlePageSizeChange = useCallback((val) => {
+    setPageSize(Number(val));
+    setPage(1);
+  }, []);
 
   const handlePaymentSubmit = useCallback(async (event, refreshCallbacks = []) => {
     event.preventDefault();
@@ -150,6 +178,15 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
     handlePaymentSubmit,
     handlePaymentDelete,
     handleReceipt,
-    fileInputKey
+    fileInputKey,
+    page,
+    pageSize,
+    total,
+    filterMonth,
+    filterYear,
+    setPage,
+    onFilterMonthChange: handleFilterMonthChange,
+    onFilterYearChange: handleFilterYearChange,
+    onPageSizeChange: handlePageSizeChange
   };
 }
