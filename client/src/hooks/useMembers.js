@@ -1,13 +1,15 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { uploadMemberAvatar } from '../services/memberAvatarApi';
 
 export function useMembers(showToast, handleError) {
-  const { apiFetch } = useAuth();
+  const { apiFetch, authToken } = useAuth();
   const [members, setMembers] = useState([]);
   const [memberForm, setMemberForm] = useState({ name: '', email: '', cpf: '', nickname: '' });
   const [editingMemberId, setEditingMemberId] = useState(null);
   const [selectedMemberDetail, setSelectedMemberDetail] = useState(null);
   const [inviteLink, setInviteLink] = useState('');
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   const loadMembers = useCallback(async () => {
     try {
@@ -100,6 +102,22 @@ export function useMembers(showToast, handleError) {
     }
   }, [apiFetch, handleError, loadMembers, showToast]);
 
+  const handleAvatarUpload = useCallback(async (memberId, file) => {
+    setAvatarUploading(true);
+    try {
+      const data = await uploadMemberAvatar(memberId, file, authToken);
+      await loadMembers();
+      if (selectedMemberDetail?.id === memberId) {
+        setSelectedMemberDetail(data.member);
+      }
+      showToast('Foto atualizada');
+    } catch (error) {
+      handleError(error);
+    } finally {
+      setAvatarUploading(false);
+    }
+  }, [authToken, handleError, loadMembers, selectedMemberDetail, showToast]);
+
   const startEditMember = useCallback((member) => {
     setMemberForm({
       name: member.name,
@@ -120,12 +138,14 @@ export function useMembers(showToast, handleError) {
     setSelectedMemberDetail,
     inviteLink,
     setInviteLink,
+    avatarUploading,
     loadMembers,
     resetMemberForm,
     handleMemberSubmit,
     handleMemberInvite,
     handleMemberDelete,
     handleRoleChange,
+    handleAvatarUpload,
     startEditMember
   };
 }
