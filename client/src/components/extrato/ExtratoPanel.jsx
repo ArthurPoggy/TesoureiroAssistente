@@ -33,7 +33,8 @@ export function ExtratoPanel({
   setFilters,
   onLoad,
   onExport,
-  members
+  members,
+  isAdmin
 }) {
   useEffect(() => {
     onLoad();
@@ -73,7 +74,7 @@ export function ExtratoPanel({
           <option value="despesa">Despesa</option>
           <option value="evento">Evento</option>
         </select>
-        {members && members.length > 0 && (
+        {isAdmin && members && members.length > 0 && (
           <select
             value={filters.memberId}
             onChange={(e) => setFilters({ ...filters, memberId: e.target.value })}
@@ -144,14 +145,16 @@ export function ExtratoPanel({
         </table>
       </div>
 
-      <div className="extrato-export">
-        <button type="button" onClick={() => onExport('csv')}>
-          Exportar CSV
-        </button>
-        <button type="button" onClick={() => onExport('pdf')}>
-          Exportar PDF
-        </button>
-      </div>
+      {isAdmin && (
+        <div className="extrato-export">
+          <button type="button" onClick={() => onExport('csv')}>
+            Exportar CSV
+          </button>
+          <button type="button" onClick={() => onExport('pdf')}>
+            Exportar PDF
+          </button>
+        </div>
+      )}
     </section>
   );
 }

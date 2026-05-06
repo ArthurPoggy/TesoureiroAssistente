@@ -3,7 +3,7 @@ const PDFDocument = require('pdfkit');
 const config = require('../config');
 const { query } = require('../db/query');
 const { success, fail } = require('../utils/response');
-const { requirePrivileged } = require('../middleware/auth');
+const { requireAuth } = require('../middleware/auth');
 const { getSettings, DEFAULT_SETTINGS } = require('../utils/settings');
 
 const router = express.Router();
@@ -137,7 +137,7 @@ const buildEntries = async (filters = {}) => {
   return entries;
 };
 
-router.get('/', requirePrivileged, async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   try {
     const { startDate, endDate, type, memberId } = req.query;
     const entries = await buildEntries({ startDate, endDate, type, memberId });
@@ -160,7 +160,7 @@ router.get('/', requirePrivileged, async (req, res) => {
   }
 });
 
-router.get('/export', requirePrivileged, async (req, res) => {
+router.get('/export', requireAuth, async (req, res) => {
   try {
     const { format = 'csv', startDate, endDate, type, memberId } = req.query;
     const entries = await buildEntries({ startDate, endDate, type, memberId });

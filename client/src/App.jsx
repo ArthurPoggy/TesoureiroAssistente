@@ -178,7 +178,7 @@ function App() {
     setFilters: setExtratoFilters,
     loadExtrato,
     exportExtrato
-  } = useExtrato(handleError);
+  } = useExtrato(handleError, isAdmin);
 
   // Carregar dados iniciais
   useEffect(() => {
@@ -340,18 +340,17 @@ function App() {
 
       <DelinquencyRanking delinquent={delinquent} ranking={ranking} />
 
-      {isAdmin && (
-        <ExtratoPanel
-          entries={extratoEntries}
-          summary={extratoSummary}
-          loading={extratoLoading}
-          filters={extratoFilters}
-          setFilters={setExtratoFilters}
-          onLoad={loadExtrato}
-          onExport={exportExtrato}
-          members={members}
-        />
-      )}
+      <ExtratoPanel
+        entries={extratoEntries}
+        summary={extratoSummary}
+        loading={extratoLoading}
+        filters={extratoFilters}
+        setFilters={setExtratoFilters}
+        onLoad={loadExtrato}
+        onExport={exportExtrato}
+        members={isAdmin ? members : []}
+        isAdmin={isAdmin}
+      />
 
       {isAdmin && (
         <ReportsSection
