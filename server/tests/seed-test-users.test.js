@@ -1,4 +1,5 @@
 const request = require('supertest');
+const { execute } = require('../db/query');
 
 process.env.JWT_SECRET = 'test-secret-seed';
 process.env.ADMIN_EMAIL = 'admin@test.com';
@@ -13,7 +14,14 @@ const TEST_EMAILS = [
 ];
 const TEST_ROLES = ['admin', 'diretor_financeiro', 'viewer'];
 
+const cleanupTestUsers = () =>
+  execute(`DELETE FROM members WHERE LOWER(email) IN (${TEST_EMAILS.map(() => '?').join(',')})`, TEST_EMAILS);
+
 describe('POST /api/seed/test-users — criação de perfis de teste', () => {
+  beforeAll(async () => {
+    await cleanupTestUsers();
+  });
+
   it('retorna 200 e cria os 3 perfis na primeira chamada', async () => {
     const res = await request(app).post('/api/seed/test-users');
 
@@ -69,7 +77,6 @@ describe('POST /api/seed/test-users — bloqueio em produção', () => {
 
   afterEach(() => {
     process.env.NODE_ENV = originalEnv;
-    jest.resetModules();
   });
 
   it('retorna 403 quando NODE_ENV é production', async () => {

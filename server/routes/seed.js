@@ -6,10 +6,12 @@ const { createMemberUser, normalizeEmail } = require('../utils/auth');
 
 const router = express.Router();
 
+const TEST_USER_PASSWORD = process.env.SEED_TEST_PASSWORD || 'test123';
+
 const TEST_PROFILES = [
-  { name: 'Admin Teste',    email: 'admin_teste@clan.com',   cpf: 'TEST-ADMIN',   password: 'test123', role: 'admin' },
-  { name: 'Diretor Teste',  email: 'diretor_teste@clan.com', cpf: 'TEST-DIRETOR', password: 'test123', role: 'diretor_financeiro' },
-  { name: 'Viewer Teste',   email: 'viewer_teste@clan.com',  cpf: 'TEST-VIEWER',  password: 'test123', role: 'viewer' }
+  { name: 'Admin Teste',   email: 'admin_teste@clan.com',   cpf: 'TEST-ADMIN',   role: 'admin' },
+  { name: 'Diretor Teste', email: 'diretor_teste@clan.com', cpf: 'TEST-DIRETOR', role: 'diretor_financeiro' },
+  { name: 'Viewer Teste',  email: 'viewer_teste@clan.com',  cpf: 'TEST-VIEWER',  role: 'viewer' }
 ];
 
 router.post('/', requirePrivileged, async (req, res) => {
@@ -92,7 +94,7 @@ router.post('/test-users', async (req, res) => {
           name: profile.name,
           email: normalizeEmail(profile.email),
           cpf: profile.cpf,
-          password: profile.password,
+          password: TEST_USER_PASSWORD,
           role: profile.role
         });
         created.push({ email: profile.email, role: profile.role });
@@ -102,7 +104,7 @@ router.post('/test-users', async (req, res) => {
     const credentials = TEST_PROFILES.map((p) => ({
       role: p.role,
       email: p.email,
-      password: p.password
+      password: TEST_USER_PASSWORD
     }));
 
     return success(res, { created, existing, credentials });
