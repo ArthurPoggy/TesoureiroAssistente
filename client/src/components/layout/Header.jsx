@@ -1,5 +1,6 @@
 import { useAuth } from '../../contexts/AuthContext';
 import { months } from '../../utils/formatters';
+import { MemberAvatar } from '../members/MemberAvatar';
 
 export function Header({
   orgName,
@@ -13,7 +14,10 @@ export function Header({
   setSelectedUserFilter,
   resetFilters,
   settingsOpen,
-  onToggleSettings
+  onToggleSettings,
+  currentMember,
+  onAvatarUpload,
+  avatarUploading
 }) {
   const { authUser, isAdmin, isDiretor, logout } = useAuth();
 
@@ -57,6 +61,13 @@ export function Header({
       </div>
       <div className="auth-panel">
         <div className="auth-status">
+          <MemberAvatar
+            member={currentMember || { name: authUser.name || authUser.email }}
+            size="sm"
+            editable={Boolean(currentMember)}
+            onUpload={(file) => onAvatarUpload && currentMember && onAvatarUpload(currentMember.id, file)}
+            uploading={avatarUploading}
+          />
           <span>{isDiretor ? 'Diretor Financeiro' : isAdmin ? 'Tesoureiro' : 'Visualização'}</span>
           <span>{authUser.email}</span>
           {isAdmin && (

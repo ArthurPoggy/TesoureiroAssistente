@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { MemberAvatar } from './MemberAvatar';
 
 const roleLabels = {
   admin: 'Tesoureiro',
@@ -7,10 +8,11 @@ const roleLabels = {
   viewer: 'Visualização'
 };
 
-export function MemberDetailView({ member, onInvite, onDelete, onRoleChange }) {
-  const { authUser } = useAuth();
+export function MemberDetailView({ member, onInvite, onDelete, onRoleChange, onAvatarUpload, avatarUploading }) {
+  const { authUser, isAdmin } = useAuth();
   const [changingRole, setChangingRole] = useState(false);
   const isStrictAdmin = authUser.role === 'admin';
+  const canEditAvatar = isAdmin || authUser.memberId === member?.id;
 
   const handleRoleChange = async (e) => {
     const newRole = e.target.value;
@@ -25,7 +27,16 @@ export function MemberDetailView({ member, onInvite, onDelete, onRoleChange }) {
 
   return (
     <div className="user-detail">
-      <h3>Detalhes do membro</h3>
+      <div className="user-detail-header">
+        <MemberAvatar
+          member={member}
+          size="lg"
+          editable={canEditAvatar}
+          onUpload={(file) => onAvatarUpload && onAvatarUpload(member.id, file)}
+          uploading={avatarUploading}
+        />
+        <h3>Detalhes do membro</h3>
+      </div>
       <p>
         <strong>Nome:</strong> {member.name || '-'}
       </p>

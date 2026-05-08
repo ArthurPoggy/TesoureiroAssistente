@@ -1,5 +1,6 @@
 import { useAuth } from '../../contexts/AuthContext';
 import { MemberDetailView } from './MemberDetailView';
+import { MemberAvatar } from './MemberAvatar';
 
 export function MembersPanel({
   members,
@@ -10,12 +11,14 @@ export function MembersPanel({
   setSelectedMemberDetail,
   inviteLink,
   setInviteLink,
+  avatarUploading,
   onSubmit,
   onInvite,
   onDelete,
   onEdit,
   onReset,
   onRoleChange,
+  onAvatarUpload,
   showToast
 }) {
   const { canEdit, isAdmin } = useAuth();
@@ -90,6 +93,7 @@ export function MembersPanel({
         <table>
           <thead>
             <tr>
+              <th style={{ width: 40 }} />
               <th>Nome</th>
               <th>Email</th>
               <th>Registro</th>
@@ -108,6 +112,9 @@ export function MembersPanel({
                   }
                 }}
               >
+                <td>
+                  <MemberAvatar member={member} size="sm" />
+                </td>
                 <td>{member.name}</td>
                 <td>{member.email}</td>
                 <td>{member.cpf || '-'}</td>
@@ -146,6 +153,8 @@ export function MembersPanel({
           onInvite={onInvite}
           onDelete={onDelete}
           onRoleChange={onRoleChange}
+          onAvatarUpload={onAvatarUpload}
+          avatarUploading={avatarUploading}
         />
       )}
     </section>

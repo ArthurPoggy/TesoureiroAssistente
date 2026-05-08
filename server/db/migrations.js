@@ -106,7 +106,9 @@ const migrations = [
   `INSERT OR IGNORE INTO settings (key, value, updated_at)
    VALUES ('dashboard_note', '', CURRENT_TIMESTAMP)`,
   `INSERT OR IGNORE INTO settings (key, value, updated_at)
-   VALUES ('disclaimer_text', 'Sistema para uso interno. Os dados são confidenciais e de responsabilidade da organização.', CURRENT_TIMESTAMP)`
+   VALUES ('disclaimer_text', 'Sistema para uso interno. Os dados são confidenciais e de responsabilidade da organização.', CURRENT_TIMESTAMP)`,
+  `ALTER TABLE members ADD COLUMN avatar_url TEXT`,
+  `ALTER TABLE members ADD COLUMN avatar_drive_id TEXT`
 ];
 
 function runMigrations() {

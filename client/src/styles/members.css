@@ -1,0 +1,71 @@
+.member-avatar {
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.member-avatar-sm {
+  width: 32px;
+  height: 32px;
+}
+
+.member-avatar-md {
+  width: 48px;
+  height: 48px;
+}
+
+.member-avatar-lg {
+  width: 80px;
+  height: 80px;
+}
+
+.member-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.member-avatar span {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #fff;
+  user-select: none;
+}
+
+.member-avatar-sm span { font-size: 0.75rem; }
+.member-avatar-md span { font-size: 1rem; }
+.member-avatar-lg span { font-size: 1.5rem; }
+
+.member-avatar-editable {
+  cursor: pointer;
+}
+
+.member-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  font-size: 0.65rem;
+  color: #fff;
+  text-align: center;
+  border-radius: 50%;
+  line-height: 1.2;
+  padding: 4px;
+}
+
+.member-avatar-editable:hover .member-avatar-overlay {
+  opacity: 1;
+}
