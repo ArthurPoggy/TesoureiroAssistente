@@ -7,6 +7,8 @@ const { hashPassword } = require('../utils/auth');
 
 const router = express.Router();
 
+const SEED_DEFAULT_PASSWORD = process.env.SEED_DEFAULT_PASSWORD || 'test123';
+
 router.post('/', requirePrivileged, async (req, res) => {
   try {
     const countRow = await queryOne('SELECT COUNT(*) as total FROM members');
@@ -19,7 +21,7 @@ router.post('/', requirePrivileged, async (req, res) => {
     // Membros
     const memberIds = [];
     for (const m of seedData.members) {
-      const passwordHash = await hashPassword(m.password);
+      const passwordHash = await hashPassword(SEED_DEFAULT_PASSWORD);
       const [row] = await query(
         `INSERT INTO members (name, email, nickname, cpf, role, password_hash, active, must_reset_password)
          VALUES (?, ?, ?, ?, ?, ?, 1, 0) RETURNING id`,

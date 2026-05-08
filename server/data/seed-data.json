@@ -5,64 +5,56 @@
       "email": "arthur@clan.com",
       "nickname": "Tuzinho",
       "cpf": "111.111.111-11",
-      "role": "admin",
-      "password": "senha123"
+      "role": "admin"
     },
     {
       "name": "Diego Ferreira",
       "email": "diego@clan.com",
       "nickname": "DiegoF",
       "cpf": "222.222.222-22",
-      "role": "diretor_financeiro",
-      "password": "senha123"
+      "role": "diretor_financeiro"
     },
     {
       "name": "Guilherme Santos",
       "email": "guilherme@clan.com",
       "nickname": "GuiSan",
       "cpf": "333.333.333-33",
-      "role": "viewer",
-      "password": "senha123"
+      "role": "viewer"
     },
     {
       "name": "Rafael Lima",
       "email": "rafael@clan.com",
       "nickname": "RafaL",
       "cpf": "444.444.444-44",
-      "role": "viewer",
-      "password": "senha123"
+      "role": "viewer"
     },
     {
       "name": "Lucas Martins",
       "email": "lucas@clan.com",
       "nickname": "LucasM",
       "cpf": "555.555.555-55",
-      "role": "viewer",
-      "password": "senha123"
+      "role": "viewer"
     },
     {
       "name": "Fernanda Costa",
       "email": "fernanda@clan.com",
       "nickname": "FernC",
       "cpf": "666.666.666-66",
-      "role": "viewer",
-      "password": "senha123"
+      "role": "viewer"
     },
     {
       "name": "Beatriz Souza",
       "email": "beatriz@clan.com",
       "nickname": "BiaS",
       "cpf": "777.777.777-77",
-      "role": "viewer",
-      "password": "senha123"
+      "role": "viewer"
     },
     {
       "name": "Mateus Oliveira",
       "email": "mateus@clan.com",
       "nickname": "MateO",
       "cpf": "888.888.888-88",
-      "role": "viewer",
-      "password": "senha123"
+      "role": "viewer"
     }
   ],
 
