@@ -8,6 +8,15 @@ const { hashPassword } = require('../utils/auth');
 const router = express.Router();
 
 const SEED_DEFAULT_PASSWORD = process.env.SEED_DEFAULT_PASSWORD || 'test123';
+const { createMemberUser, normalizeEmail } = require('../utils/auth');
+
+const TEST_USER_PASSWORD = process.env.SEED_TEST_PASSWORD || 'test123';
+
+const TEST_PROFILES = [
+  { name: 'Admin Teste',   email: 'admin_teste@clan.com',   cpf: 'TEST-ADMIN',   role: 'admin' },
+  { name: 'Diretor Teste', email: 'diretor_teste@clan.com', cpf: 'TEST-DIRETOR', role: 'diretor_financeiro' },
+  { name: 'Viewer Teste',  email: 'viewer_teste@clan.com',  cpf: 'TEST-VIEWER',  role: 'viewer' }
+];
 
 router.post('/', requirePrivileged, async (req, res) => {
   try {
@@ -117,6 +126,45 @@ router.post('/', requirePrivileged, async (req, res) => {
     });
   } catch (error) {
     fail(res, error.message);
+  }
+});
+
+router.post('/test-users', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return fail(res, 'Não disponível em produção', 403);
+  }
+  try {
+    const created = [];
+    const existing = [];
+
+    for (const profile of TEST_PROFILES) {
+      const found = await queryOne(
+        'SELECT id, role FROM members WHERE LOWER(email) = ?',
+        [normalizeEmail(profile.email)]
+      );
+      if (found) {
+        existing.push({ email: profile.email, role: profile.role });
+      } else {
+        await createMemberUser({
+          name: profile.name,
+          email: normalizeEmail(profile.email),
+          cpf: profile.cpf,
+          password: TEST_USER_PASSWORD,
+          role: profile.role
+        });
+        created.push({ email: profile.email, role: profile.role });
+      }
+    }
+
+    const credentials = TEST_PROFILES.map((p) => ({
+      role: p.role,
+      email: p.email,
+      password: TEST_USER_PASSWORD
+    }));
+
+    return success(res, { created, existing, credentials });
+  } catch (error) {
+    return fail(res, error.message);
   }
 });
 
