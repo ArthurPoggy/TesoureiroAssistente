@@ -151,6 +151,9 @@ router.put('/:id/role', requireAdmin, async (req, res) => {
     if (!role || !allowedRoles.includes(role)) {
       return fail(res, 'Role inválida. Use: viewer, admin ou diretor_financeiro', 400);
     }
+    if (String(id) === String(req.user?.memberId)) {
+      return fail(res, 'Você não pode alterar o próprio cargo', 403);
+    }
     const [member] = await query(
       'UPDATE members SET role = ? WHERE id = ? RETURNING id, name, email, nickname, cpf, role, active, must_reset_password, joined_at',
       [role, id]

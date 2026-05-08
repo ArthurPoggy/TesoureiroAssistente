@@ -25,6 +25,7 @@ export function MemberDetailView({ member, onInvite, onDelete, onRoleChange }) {
   const [summary, setSummary] = useState(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
   const isStrictAdmin = authUser.role === 'admin';
+  const isSelf = authUser?.memberId && String(authUser.memberId) === String(member?.id);
 
   useEffect(() => {
     if (!member?.id) return;
@@ -81,7 +82,7 @@ export function MemberDetailView({ member, onInvite, onDelete, onRoleChange }) {
             <dd>{effectiveMember.must_reset_password ? 'Pendente' : 'Concluído'}</dd>
             <dt>Permissão</dt>
             <dd>
-              {isStrictAdmin ? (
+              {isStrictAdmin && !isSelf ? (
                 <select value={effectiveMember.role || 'viewer'} onChange={handleRoleChange} disabled={changingRole}>
                   <option value="viewer">Visualização</option>
                   <option value="admin">Tesoureiro</option>

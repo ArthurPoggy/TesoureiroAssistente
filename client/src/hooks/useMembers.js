@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 export function useMembers(showToast, handleError) {
-  const { apiFetch } = useAuth();
+  const { apiFetch, authUser } = useAuth();
   const [members, setMembers] = useState([]);
   const [memberForm, setMemberForm] = useState({ name: '', email: '', cpf: '', nickname: '' });
   const [editingMemberId, setEditingMemberId] = useState(null);
@@ -95,6 +95,10 @@ export function useMembers(showToast, handleError) {
   }, [apiFetch, handleError, loadMembers, setSelectedMemberDetail, showToast]);
 
   const handleRoleChange = useCallback(async (id, role) => {
+    if (authUser?.memberId && String(id) === String(authUser.memberId)) {
+      showToast('Você não pode alterar o próprio cargo', 'error');
+      return;
+    }
     try {
       const data = await apiFetch(`/api/members/${id}/role`, { method: 'PUT', body: { role } });
       if (data?.member) {
