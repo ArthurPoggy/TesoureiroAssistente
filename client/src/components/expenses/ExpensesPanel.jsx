@@ -1,7 +1,7 @@
 import { useAuth } from '../../contexts/AuthContext';
 import { formatCurrency } from '../../utils/formatters';
 
-function TagSelector({ tags, selectedIds, onChange, canEdit }) {
+function TagSelector({ tags, selectedIds = [], onChange, canEdit }) {
   const toggle = (id) => {
     if (!canEdit) return;
     onChange(
@@ -105,6 +105,7 @@ export function ExpensesPanel({
             ))}
           </select>
           <input
+            type="text"
             placeholder="Observações"
             value={expenseForm.notes}
             onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })}
