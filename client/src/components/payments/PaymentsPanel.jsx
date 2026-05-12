@@ -1,5 +1,6 @@
 import { useAuth } from '../../contexts/AuthContext';
 import { formatCurrency, months } from '../../utils/formatters';
+import { useState } from 'react';
 
 export function PaymentsPanel({
   payments,
@@ -17,7 +18,29 @@ export function PaymentsPanel({
   children
 }) {
   const { canEdit } = useAuth();
+  const [errors, setErrors] = useState({});
   const paymentInfoItems = [];
+  const validate = () => {
+  const newErrors = {};
+
+  if (!paymentForm.memberId) {
+    newErrors.memberId = "Selecione um membro";
+  }
+
+  if (!paymentForm.amount || paymentForm.amount <= 0) {
+    newErrors.amount = "Valor deve ser maior que zero";
+  }
+
+  if (!paymentForm.year) {
+    newErrors.year = "Ano obrigatório";
+  }
+
+  if (paymentForm.paid && !paymentForm.paidAt) {
+    newErrors.paidAt = "Informe a data do pagamento";
+  }
+
+  return newErrors;
+};
   if (paymentSettings?.paymentDueDay) {
     paymentInfoItems.push({
       label: 'Vencimento padrão',
@@ -58,12 +81,28 @@ export function PaymentsPanel({
       )}
 
       {canEdit ? (
-        <form className="form-grid" onSubmit={onSubmit} aria-busy={submitting}>
+        <form
+  className="form-grid"
+  onSubmit={(e) => {
+    e.preventDefault();
+
+    const validationErrors = validate();
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    onSubmit(e);
+  }}
+  aria-busy={submitting}
+>
           <select
             value={paymentForm.memberId}
             onChange={(e) => setPaymentForm({ ...paymentForm, memberId: e.target.value })}
             required
           >
+            {errors.memberId && <span className="error">{errors.memberId}</span>}
             <option value="">Selecione um membro</option>
             {members.map((member) => (
               <option key={member.id} value={member.id}>
@@ -92,6 +131,7 @@ export function PaymentsPanel({
             onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
             placeholder="Valor"
           />
+          {errors.amount && <span className="error">{errors.amount}</span>}
           <select
             value={paymentForm.goalId}
             onChange={(e) => setPaymentForm({ ...paymentForm, goalId: e.target.value })}
