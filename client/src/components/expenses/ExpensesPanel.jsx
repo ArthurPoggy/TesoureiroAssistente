@@ -1,6 +1,50 @@
 import { useAuth } from '../../contexts/AuthContext';
 import { formatCurrency } from '../../utils/formatters';
 
+function TagSelector({ tags, selectedIds = [], onChange, canEdit }) {
+  const toggle = (id) => {
+    if (!canEdit) return;
+    onChange(
+      selectedIds.includes(id)
+        ? selectedIds.filter((x) => x !== id)
+        : [...selectedIds, id]
+    );
+  };
+
+  if (!tags.length) return null;
+
+  return (
+    <div className="tag-selector">
+      <span className="tag-selector-label">Tags</span>
+      <div className="tag-selector-list">
+        {tags.map((tag) => (
+          <button
+            key={tag.id}
+            type="button"
+            className={`tag-chip${selectedIds.includes(tag.id) ? ' tag-chip--selected' : ''}${!canEdit ? ' tag-chip--readonly' : ''}`}
+            onClick={() => toggle(tag.id)}
+          >
+            {tag.name}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TagPills({ tags }) {
+  if (!tags || !tags.length) return null;
+  return (
+    <div className="tag-pills">
+      {tags.map((tag) => (
+        <span key={tag.id} className="tag-pill">
+          {tag.name}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function ExpensesPanel({
   expenses,
   expenseForm,
@@ -8,6 +52,7 @@ export function ExpensesPanel({
   editingExpenseId,
   fileInputKey,
   events,
+  tags,
   onSubmit,
   onDelete,
   onEdit,
@@ -60,9 +105,16 @@ export function ExpensesPanel({
             ))}
           </select>
           <input
+            type="text"
             placeholder="Observações"
             value={expenseForm.notes}
             onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })}
+          />
+          <TagSelector
+            tags={tags}
+            selectedIds={expenseForm.tagIds || []}
+            onChange={(ids) => setExpenseForm({ ...expenseForm, tagIds: ids })}
+            canEdit={canEdit}
           />
           <input
             placeholder="Nome do anexo (opcional)"
@@ -101,6 +153,7 @@ export function ExpensesPanel({
               <th>Título</th>
               <th>Valor</th>
               <th>Categoria</th>
+              <th>Tags</th>
               {canEdit && <th>Ações</th>}
             </tr>
           </thead>
@@ -111,6 +164,7 @@ export function ExpensesPanel({
                 <td>{expense.title}</td>
                 <td>{formatCurrency(expense.amount)}</td>
                 <td>{expense.category}</td>
+                <td><TagPills tags={expense.tags} /></td>
                 {canEdit && (
                   <td>
                     <button onClick={() => onEdit(expense)}>Editar</button>

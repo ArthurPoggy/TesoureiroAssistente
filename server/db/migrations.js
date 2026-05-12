@@ -106,7 +106,25 @@ const migrations = [
   `INSERT OR IGNORE INTO settings (key, value, updated_at)
    VALUES ('dashboard_note', '', CURRENT_TIMESTAMP)`,
   `INSERT OR IGNORE INTO settings (key, value, updated_at)
-   VALUES ('disclaimer_text', 'Sistema para uso interno. Os dados são confidenciais e de responsabilidade da organização.', CURRENT_TIMESTAMP)`
+   VALUES ('disclaimer_text', 'Sistema para uso interno. Os dados são confidenciais e de responsabilidade da organização.', CURRENT_TIMESTAMP)`,
+  `CREATE TABLE IF NOT EXISTS tags (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(name COLLATE NOCASE)
+    )`,
+  `CREATE TABLE IF NOT EXISTS expense_tags (
+      expense_id INTEGER NOT NULL,
+      tag_id INTEGER NOT NULL,
+      PRIMARY KEY (expense_id, tag_id),
+      FOREIGN KEY(expense_id) REFERENCES expenses(id) ON DELETE CASCADE,
+      FOREIGN KEY(tag_id) REFERENCES tags(id) ON DELETE CASCADE
+    )`,
+  `INSERT OR IGNORE INTO tags (name) VALUES ('Equipamentos')`,
+  `INSERT OR IGNORE INTO tags (name) VALUES ('Comida')`,
+  `INSERT OR IGNORE INTO tags (name) VALUES ('Acampamento')`,
+  `INSERT OR IGNORE INTO tags (name) VALUES ('Transporte')`,
+  `INSERT OR IGNORE INTO tags (name) VALUES ('Material')`
 ];
 
 function runMigrations() {
