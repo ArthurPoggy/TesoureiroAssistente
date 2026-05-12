@@ -149,9 +149,11 @@ function App() {
     total: paymentTotal,
     filterMonth: paymentFilterMonth,
     filterYear: paymentFilterYear,
+    filterMemberId: paymentFilterMemberId,
     setPage: setPaymentPage,
     onFilterMonthChange: handlePaymentFilterMonth,
     onFilterYearChange: handlePaymentFilterYear,
+    onFilterMemberChange: handlePaymentFilterMember,
     onPageSizeChange: handlePaymentPageSize
   } = usePayments(showToast, handleError, selectedMemberId, members, publicSettings.defaultPaymentAmount);
 
@@ -325,10 +327,12 @@ function App() {
         total={paymentTotal}
         filterMonth={paymentFilterMonth}
         filterYear={paymentFilterYear}
+        filterMemberId={paymentFilterMemberId}
         onPageChange={setPaymentPage}
         onPageSizeChange={handlePaymentPageSize}
         onFilterMonthChange={handlePaymentFilterMonth}
         onFilterYearChange={handlePaymentFilterYear}
+        onFilterMemberChange={handlePaymentFilterMember}
       />
 
       <section className="panel two-column">

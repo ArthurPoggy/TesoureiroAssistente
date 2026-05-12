@@ -14,6 +14,7 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
   const [total, setTotal] = useState(0);
   const [filterMonth, setFilterMonth] = useState('');
   const [filterYear, setFilterYear] = useState('');
+  const [filterMemberId, setFilterMemberId] = useState('');
   const [lastDefaultAmount, setLastDefaultAmount] = useState(defaultAmount);
   const [paymentForm, setPaymentForm] = useState({
     memberId: '',
@@ -45,8 +46,9 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
   const loadPayments = useCallback(async () => {
     try {
       setLoading(true);
+      const effectiveMemberId = selectedMemberId || filterMemberId;
       const params = new URLSearchParams({
-        ...(selectedMemberId ? { memberId: selectedMemberId } : {}),
+        ...(effectiveMemberId ? { memberId: effectiveMemberId } : {}),
         ...(filterMonth ? { month: filterMonth } : {}),
         ...(filterYear ? { year: filterYear } : {}),
         page,
@@ -60,7 +62,7 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
     } finally {
       setLoading(false);
     }
-  }, [apiFetch, handleError, selectedMemberId, filterMonth, filterYear, page, pageSize]);
+  }, [apiFetch, handleError, selectedMemberId, filterMonth, filterYear, filterMemberId, page, pageSize]);
 
   useEffect(() => {
     loadPayments();
@@ -78,6 +80,11 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
 
   const handlePageSizeChange = useCallback((val) => {
     setPageSize(Number(val));
+    setPage(1);
+  }, []);
+
+  const handleFilterMemberChange = useCallback((val) => {
+    setFilterMemberId(val);
     setPage(1);
   }, []);
 
@@ -185,9 +192,11 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
     total,
     filterMonth,
     filterYear,
+    filterMemberId,
     setPage,
     onFilterMonthChange: handleFilterMonthChange,
     onFilterYearChange: handleFilterYearChange,
+    onFilterMemberChange: handleFilterMemberChange,
     onPageSizeChange: handlePageSizeChange
   };
 }

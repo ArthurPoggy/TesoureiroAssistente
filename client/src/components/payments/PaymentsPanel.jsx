@@ -23,10 +23,12 @@ export function PaymentsPanel({
   total = 0,
   filterMonth = '',
   filterYear = '',
+  filterMemberId = '',
   onPageChange,
   onPageSizeChange,
   onFilterMonthChange,
   onFilterYearChange,
+  onFilterMemberChange,
   children
 }) {
   const { canEdit } = useAuth();
@@ -207,6 +209,17 @@ export function PaymentsPanel({
 
       <div className="table-toolbar">
         <div className="table-toolbar-filters">
+          {canEdit && (
+            <select
+              value={filterMemberId}
+              onChange={(e) => onFilterMemberChange?.(e.target.value)}
+            >
+              <option value="">Todos os membros</option>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+          )}
           <select
             value={filterMonth}
             onChange={(e) => onFilterMonthChange?.(e.target.value)}
