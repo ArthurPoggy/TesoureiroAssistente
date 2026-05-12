@@ -28,11 +28,15 @@ router.post('/login', async (req, res) => {
       return fail(res, 'Informe email e senha', 400);
     }
     const normalizedEmail = normalizeEmail(email);
-    if (
-      config.adminConfigured &&
-      normalizedEmail === normalizeEmail(config.ADMIN_EMAIL) &&
-      password === config.ADMIN_PASSWORD
-    ) {
+
+    // Login via variável de ambiente (admin do sistema)
+    if (config.ADMIN_EMAIL && normalizedEmail === normalizeEmail(config.ADMIN_EMAIL)) {
+      if (!config.adminConfigured) {
+        return fail(res, 'Admin não configurado: defina ADMIN_PASSWORD no .env do servidor', 500);
+      }
+      if (password !== config.ADMIN_PASSWORD) {
+        return fail(res, 'Credenciais inválidas', 401);
+      }
       const token = signToken({ role: 'admin', email: config.ADMIN_EMAIL, memberId: null });
       return success(res, { token, role: 'admin', email: config.ADMIN_EMAIL, memberId: null });
     }
