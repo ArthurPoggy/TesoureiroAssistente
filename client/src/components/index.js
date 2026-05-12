@@ -41,5 +41,8 @@ export { SettingsPanel } from './settings/SettingsPanel';
 // Reports
 export { ReportsSection } from './reports/ReportsSection';
 
+// History
+export { ClanHistoryPanel } from './history/ClanHistoryPanel';
+
 // Common
 export { Toast } from './common/Toast';
