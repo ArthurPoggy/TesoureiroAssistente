@@ -106,7 +106,25 @@ const migrations = [
   `INSERT OR IGNORE INTO settings (key, value, updated_at)
    VALUES ('dashboard_note', '', CURRENT_TIMESTAMP)`,
   `INSERT OR IGNORE INTO settings (key, value, updated_at)
-   VALUES ('disclaimer_text', 'Sistema para uso interno. Os dados são confidenciais e de responsabilidade da organização.', CURRENT_TIMESTAMP)`
+   VALUES ('disclaimer_text', 'Sistema para uso interno. Os dados são confidenciais e de responsabilidade da organização.', CURRENT_TIMESTAMP)`,
+  `CREATE TABLE IF NOT EXISTS projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      start_date TEXT,
+      end_date TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )`,
+  `CREATE TABLE IF NOT EXISTS member_projects (
+      project_id INTEGER NOT NULL,
+      member_id INTEGER NOT NULL,
+      PRIMARY KEY (project_id, member_id),
+      FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
+      FOREIGN KEY(member_id) REFERENCES members(id) ON DELETE CASCADE
+    )`,
+  `ALTER TABLE projects ADD COLUMN start_date TEXT`,
+  `ALTER TABLE projects ADD COLUMN end_date TEXT`
 ];
 
 function runMigrations() {
