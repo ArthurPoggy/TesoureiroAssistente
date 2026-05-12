@@ -14,7 +14,7 @@ export function EventsPanel({
   const { canEdit } = useAuth();
 
   return (
-    <div>
+    <section className="panel">
       <div className="panel-header">
         <h2>Eventos</h2>
         <p>Use eventos para contar histórias como &quot;Acampamento de junho&quot;.</p>
@@ -88,6 +88,6 @@ export function EventsPanel({
           </article>
         ))}
       </div>
-    </div>
+    </section>
   );
 }

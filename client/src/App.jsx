@@ -313,7 +313,7 @@ function App() {
         fileInputKey={paymentFileInputKey}
       />
 
-      <section className="panel two-column">
+      <div className="two-column">
         <ExpensesPanel
           expenses={expenses}
           expenseForm={expenseForm}
@@ -336,7 +336,7 @@ function App() {
           onEdit={startEditEvent}
           onReset={resetEventForm}
         />
-      </section>
+      </div>
 
       <DelinquencyRanking delinquent={delinquent} ranking={ranking} />
 
