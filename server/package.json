@@ -6,13 +6,11 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "jest --runInBand --forceExit"
+    "test": "jest --runInBand"
   },
   "jest": {
     "testEnvironment": "node",
-    "testMatch": [
-      "**/tests/**/*.test.js"
-    ]
+    "setupFiles": ["./tests/jest.setup.js"]
   },
   "keywords": [],
   "author": "",

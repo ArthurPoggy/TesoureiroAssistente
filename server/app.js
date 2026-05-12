@@ -4,12 +4,17 @@ const path = require('path');
 const config = require('./config');
 const { initDatabase } = require('./db/connection');
 const { runMigrations } = require('./db/migrations');
+const { runAutoSeed } = require('./db/autoSeed');
 const routes = require('./routes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 // Inicializar banco de dados
 initDatabase();
 runMigrations();
+
+if (!['production', 'test'].includes(process.env.NODE_ENV) && !config.useSupabase) {
+  runAutoSeed();
+}
 
 // Criar app Express
 const app = express();
