@@ -29,17 +29,18 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
   });
 
   useEffect(() => {
-    const currentAmount = Number(paymentForm.amount);
-    const previousDefault = Number(lastDefaultAmount);
     const nextDefault = Number(defaultAmount);
-    if (Number.isNaN(nextDefault)) {
-      return;
-    }
-    if (!paymentForm.amount || currentAmount === previousDefault) {
-      setPaymentForm((prev) => ({ ...prev, amount: nextDefault }));
-    }
+    if (Number.isNaN(nextDefault)) return;
+    setPaymentForm((prev) => {
+      const currentAmount = Number(prev.amount);
+      const previousDefault = Number(lastDefaultAmount);
+      if (!prev.amount || currentAmount === previousDefault) {
+        return { ...prev, amount: nextDefault };
+      }
+      return prev;
+    });
     setLastDefaultAmount(nextDefault);
-  }, [defaultAmount, lastDefaultAmount, paymentForm.amount]);
+  }, [defaultAmount, lastDefaultAmount]);
 
   const loadPayments = useCallback(async () => {
     try {

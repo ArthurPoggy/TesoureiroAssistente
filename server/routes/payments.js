@@ -94,7 +94,7 @@ router.post('/', requirePrivileged, async (req, res) => {
     if (!memberId || !month || !year || !amount) {
       return fail(res, 'Campos obrigatórios não preenchidos');
     }
-    const paidValue = Boolean(paid);
+    const paidValue = paid ? 1 : 0;
     const existingPayment = await queryOne(
       'SELECT id, amount, paid FROM payments WHERE member_id = ? AND month = ? AND year = ?',
       [memberId, month, year]
@@ -143,7 +143,7 @@ router.put('/:id', requirePrivileged, async (req, res) => {
   try {
     const { id } = req.params;
     const { amount, paid, paidAt, notes, goalId, attachmentId, attachmentName, attachmentUrl } = req.body;
-    const paidValue = Boolean(paid);
+    const paidValue = paid ? 1 : 0;
     const existingPayment = await queryOne(
       'SELECT amount, paid FROM payments WHERE id = ?',
       [id]

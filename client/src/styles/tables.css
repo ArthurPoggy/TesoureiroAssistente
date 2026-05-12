@@ -1,5 +1,35 @@
 .table-wrapper {
   overflow-x: auto;
+  position: relative;
+}
+
+.table-wrapper--loading table {
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  user-select: none;
+}
+
+.table-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.table-spinner {
+  width: 28px;
+  height: 28px;
+  border-width: 3px;
+}
+
+.table-loading-msg {
+  text-align: center;
+  padding: var(--spacing-lg);
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
 }
 
 table {

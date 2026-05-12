@@ -241,41 +241,48 @@ export function PaymentsPanel({
         </div>
       </div>
 
-      <div className="table-wrapper">
-        {loading ? (
-          <p>Carregando pagamentos...</p>
+      <div className={`table-wrapper${loading ? ' table-wrapper--loading' : ''}`}>
+        {loading && payments.length === 0 ? (
+          <p className="table-loading-msg">Carregando pagamentos...</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Membro</th>
-                <th>Competência</th>
-                <th>Valor</th>
-                <th>Status</th>
-                <th>Meta</th>
-                {canEdit && <th>Ações</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {payments.map((payment) => (
-                <tr key={payment.id}>
-                  <td>{payment.member_name}</td>
-                  <td>{payment.month}/{payment.year}</td>
-                  <td>{formatCurrency(payment.amount)}</td>
-                  <td className={payment.paid ? 'paid' : 'pending'}>
-                    {payment.paid ? 'Pago' : 'Pendente'}
-                  </td>
-                  <td>{payment.goal_id ? goals.find((g) => g.id === payment.goal_id)?.title : '-'}</td>
-                  {canEdit && (
-                    <td>
-                      <button onClick={() => onReceipt(payment.id)}>Gerar recibo</button>
-                      <button className="ghost" onClick={() => onDelete(payment.id)}>Remover</button>
-                    </td>
-                  )}
+          <>
+            {loading && (
+              <div className="table-loading-overlay" role="status" aria-label="Carregando">
+                <span className="spinner table-spinner" aria-hidden="true" />
+              </div>
+            )}
+            <table>
+              <thead>
+                <tr>
+                  <th>Membro</th>
+                  <th>Competência</th>
+                  <th>Valor</th>
+                  <th>Status</th>
+                  <th>Meta</th>
+                  {canEdit && <th>Ações</th>}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {payments.map((payment) => (
+                  <tr key={payment.id}>
+                    <td>{payment.member_name}</td>
+                    <td>{payment.month}/{payment.year}</td>
+                    <td>{formatCurrency(payment.amount)}</td>
+                    <td className={payment.paid ? 'paid' : 'pending'}>
+                      {payment.paid ? 'Pago' : 'Pendente'}
+                    </td>
+                    <td>{payment.goal_id ? goals.find((g) => g.id === payment.goal_id)?.title : '-'}</td>
+                    {canEdit && (
+                      <td>
+                        <button onClick={() => onReceipt(payment.id)}>Gerar recibo</button>
+                        <button className="ghost" onClick={() => onDelete(payment.id)}>Remover</button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         )}
       </div>
 
