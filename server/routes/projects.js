@@ -7,7 +7,40 @@ const router = express.Router();
 
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const projects = await query('SELECT * FROM projects ORDER BY created_at DESC');
+    const { name, status, startDate, endDate, memberId } = req.query;
+
+    let whereSql = 'WHERE 1 = 1';
+    const params = [];
+
+    if (name) {
+      // LOWER + LIKE para busca case-insensitive em SQLite e Postgres.
+      // Sem unaccent: "café" e "cafe" são considerados diferentes (limitação aceita na v1).
+      whereSql += " AND LOWER(COALESCE(name, '')) LIKE LOWER(?)";
+      params.push(`%${name}%`);
+    }
+    if (status === 'active' || status === 'inactive') {
+      whereSql += ' AND status = ?';
+      params.push(status);
+    }
+    if (startDate) {
+      whereSql += ' AND created_at >= ?';
+      params.push(startDate);
+    }
+    if (endDate) {
+      // Inclui o dia inteiro: data fornecida + 23:59:59
+      whereSql += ' AND created_at <= ?';
+      params.push(`${endDate} 23:59:59`);
+    }
+    if (memberId) {
+      whereSql += ' AND id IN (SELECT project_id FROM member_projects WHERE member_id = ?)';
+      params.push(Number(memberId));
+    }
+
+    const projects = await query(
+      `SELECT * FROM projects ${whereSql} ORDER BY created_at DESC`,
+      params
+    );
+
     const memberRows = await query(
       `SELECT mp.project_id, mp.member_id, mp.joined_at, m.name, m.nickname
        FROM member_projects mp
