@@ -109,3 +109,19 @@ ON CONFLICT (key) DO NOTHING;
 ALTER TABLE expenses ADD COLUMN IF NOT EXISTS attachment_id TEXT;
 ALTER TABLE expenses ADD COLUMN IF NOT EXISTS attachment_name TEXT;
 ALTER TABLE expenses ADD COLUMN IF NOT EXISTS attachment_url TEXT;
+
+CREATE TABLE IF NOT EXISTS projects (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+);
+
+CREATE TABLE IF NOT EXISTS member_projects (
+  id SERIAL PRIMARY KEY,
+  member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  joined_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
+  UNIQUE(member_id, project_id)
+);
