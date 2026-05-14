@@ -147,6 +147,43 @@ export function MemberDetailView({ member, onInvite, onDelete, onRoleChange }) {
       </div>
 
       <div className="form-actions member-detail-actions">
+    <div className="user-detail">
+      <h3>Detalhes do membro</h3>
+      <p>
+        <strong>Nome:</strong> {member.name || '-'}
+      </p>
+      <p>
+        <strong>Email:</strong> {member.email || '-'}
+      </p>
+      <p>
+        <strong>Registro Escoteiro:</strong> {member.cpf || '-'}
+      </p>
+      <p>
+        <strong>Apelido:</strong> {member.nickname || '-'}
+      </p>
+      <p>
+        <strong>Permissão:</strong>{' '}
+        {isStrictAdmin ? (
+          <select value={member.role || 'viewer'} onChange={handleRoleChange} disabled={changingRole}>
+            <option value="viewer">Visualização</option>
+            <option value="admin">Tesoureiro</option>
+            <option value="diretor_financeiro">Diretor Financeiro</option>
+          </select>
+        ) : (
+          roleLabels[member.role] || member.role || 'Visualização'
+        )}
+      </p>
+      <p>
+        <strong>Status:</strong> {member.active ? 'Ativo' : 'Inativo'}
+      </p>
+      <p>
+        <strong>Primeiro acesso:</strong>{' '}
+        {member.must_reset_password ? 'Pendente' : 'Concluído'}
+      </p>
+      <p>
+        <strong>Criado em:</strong> {member.joined_at || '-'}
+      </p>
+      <div className="form-actions">
         <button type="button" onClick={() => onInvite(member.id)}>
           Gerar link de acesso
         </button>
