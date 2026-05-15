@@ -184,6 +184,7 @@ function App() {
 
   const {
     projects,
+    loading: projectsLoading,
     projectForm,
     setProjectForm,
     editingProjectId,
@@ -193,7 +194,19 @@ function App() {
     handleProjectDelete,
     startEditProject,
     addMemberToProject,
-    removeMemberFromProject
+    removeMemberFromProject,
+    filterName: projectFilterName,
+    filterStatus: projectFilterStatus,
+    filterStartDate: projectFilterStartDate,
+    filterEndDate: projectFilterEndDate,
+    filterMemberId: projectFilterMemberId,
+    activeFiltersCount: projectActiveFiltersCount,
+    onFilterNameChange: handleProjectFilterName,
+    onFilterStatusChange: handleProjectFilterStatus,
+    onFilterStartDateChange: handleProjectFilterStartDate,
+    onFilterEndDateChange: handleProjectFilterEndDate,
+    onFilterMemberIdChange: handleProjectFilterMemberId,
+    onClearFilters: handleProjectClearFilters
   } = useProjects(showToast, handleError);
 
   const {
@@ -378,6 +391,7 @@ function App() {
 
       <ProjectsPanel
         projects={projects}
+        loading={projectsLoading}
         projectForm={projectForm}
         setProjectForm={setProjectForm}
         editingProjectId={editingProjectId}
@@ -388,6 +402,18 @@ function App() {
         onReset={resetProjectForm}
         onAddMember={addMemberToProject}
         onRemoveMember={removeMemberFromProject}
+        filterName={projectFilterName}
+        filterStatus={projectFilterStatus}
+        filterStartDate={projectFilterStartDate}
+        filterEndDate={projectFilterEndDate}
+        filterMemberId={projectFilterMemberId}
+        activeFiltersCount={projectActiveFiltersCount}
+        onFilterNameChange={handleProjectFilterName}
+        onFilterStatusChange={handleProjectFilterStatus}
+        onFilterStartDateChange={handleProjectFilterStartDate}
+        onFilterEndDateChange={handleProjectFilterEndDate}
+        onFilterMemberIdChange={handleProjectFilterMemberId}
+        onClearFilters={handleProjectClearFilters}
       />
 
       <DelinquencyRanking delinquent={delinquent} ranking={ranking} />

@@ -1,20 +1,117 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+
+const FILTERS_STORAGE_KEY = 'tesoureiro_project_filters';
+const DEBOUNCE_MS = 300;
+
+const DEFAULT_FILTERS = {
+  filterName: '',
+  filterStatus: '',
+  filterStartDate: '',
+  filterEndDate: '',
+  filterMemberId: ''
+};
+
+function loadStoredFilters() {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return DEFAULT_FILTERS;
+  }
+  try {
+    const raw = window.localStorage.getItem(FILTERS_STORAGE_KEY);
+    if (!raw) return DEFAULT_FILTERS;
+    const parsed = JSON.parse(raw);
+    return { ...DEFAULT_FILTERS, ...parsed };
+  } catch {
+    return DEFAULT_FILTERS;
+  }
+}
+
+function persistFilters(filters) {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    window.localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+  } catch {
+    // ignora erro de quota
+  }
+}
 
 export function useProjects(showToast, handleError) {
   const { apiFetch } = useAuth();
   const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [projectForm, setProjectForm] = useState({ name: '', description: '', status: 'active' });
   const [editingProjectId, setEditingProjectId] = useState(null);
 
+  const stored = useMemo(loadStoredFilters, []);
+  const [filterName, setFilterName] = useState(stored.filterName);
+  const [filterStatus, setFilterStatus] = useState(stored.filterStatus);
+  const [filterStartDate, setFilterStartDate] = useState(stored.filterStartDate);
+  const [filterEndDate, setFilterEndDate] = useState(stored.filterEndDate);
+  const [filterMemberId, setFilterMemberId] = useState(stored.filterMemberId);
+
+  // Debounce no campo de nome para evitar request a cada keystroke
+  const [debouncedName, setDebouncedName] = useState(stored.filterName);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedName(filterName), DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [filterName]);
+
+  // Persistência (debounced 500ms para evitar gravar a cada keystroke)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      persistFilters({
+        filterName,
+        filterStatus,
+        filterStartDate,
+        filterEndDate,
+        filterMemberId
+      });
+    }, 500);
+    return () => clearTimeout(t);
+  }, [filterName, filterStatus, filterStartDate, filterEndDate, filterMemberId]);
+
+  const activeFiltersCount = useMemo(() => {
+    return [filterName, filterStatus, filterStartDate, filterEndDate, filterMemberId]
+      .filter((v) => v !== '' && v !== null && v !== undefined).length;
+  }, [filterName, filterStatus, filterStartDate, filterEndDate, filterMemberId]);
+
   const loadProjects = useCallback(async () => {
     try {
-      const data = await apiFetch('/api/projects');
+      setLoading(true);
+      const params = new URLSearchParams({
+        ...(debouncedName ? { name: debouncedName } : {}),
+        ...(filterStatus ? { status: filterStatus } : {}),
+        ...(filterStartDate ? { startDate: filterStartDate } : {}),
+        ...(filterEndDate ? { endDate: filterEndDate } : {}),
+        ...(filterMemberId ? { memberId: filterMemberId } : {})
+      });
+      const query = params.toString();
+      const data = await apiFetch(query ? `/api/projects?${query}` : '/api/projects');
       setProjects(data.projects || []);
     } catch (error) {
       handleError(error);
+    } finally {
+      setLoading(false);
     }
-  }, [apiFetch, handleError]);
+  }, [apiFetch, handleError, debouncedName, filterStatus, filterStartDate, filterEndDate, filterMemberId]);
+
+  useEffect(() => {
+    loadProjects();
+  }, [loadProjects]);
+
+  const handleFilterNameChange = useCallback((val) => setFilterName(val), []);
+  const handleFilterStatusChange = useCallback((val) => setFilterStatus(val), []);
+  const handleFilterStartDateChange = useCallback((val) => setFilterStartDate(val), []);
+  const handleFilterEndDateChange = useCallback((val) => setFilterEndDate(val), []);
+  const handleFilterMemberIdChange = useCallback((val) => setFilterMemberId(val), []);
+
+  const clearAllFilters = useCallback(() => {
+    setFilterName('');
+    setFilterStatus('');
+    setFilterStartDate('');
+    setFilterEndDate('');
+    setFilterMemberId('');
+  }, []);
 
   const resetProjectForm = useCallback(() => {
     setProjectForm({ name: '', description: '', status: 'active' });
@@ -80,6 +177,7 @@ export function useProjects(showToast, handleError) {
 
   return {
     projects,
+    loading,
     projectForm,
     setProjectForm,
     editingProjectId,
@@ -89,6 +187,18 @@ export function useProjects(showToast, handleError) {
     handleProjectDelete,
     startEditProject,
     addMemberToProject,
-    removeMemberFromProject
+    removeMemberFromProject,
+    filterName,
+    filterStatus,
+    filterStartDate,
+    filterEndDate,
+    filterMemberId,
+    activeFiltersCount,
+    onFilterNameChange: handleFilterNameChange,
+    onFilterStatusChange: handleFilterStatusChange,
+    onFilterStartDateChange: handleFilterStartDateChange,
+    onFilterEndDateChange: handleFilterEndDateChange,
+    onFilterMemberIdChange: handleFilterMemberIdChange,
+    onClearFilters: clearAllFilters
   };
 }
