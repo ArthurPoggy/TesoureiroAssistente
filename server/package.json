@@ -10,7 +10,9 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "setupFiles": ["./tests/jest.setup.js"]
+    "setupFiles": [
+      "./tests/jest.setup.js"
+    ]
   },
   "keywords": [],
   "author": "",
