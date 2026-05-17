@@ -230,10 +230,12 @@ function App() {
   useEffect(() => {
     if (!authToken || !authChecked) return;
     loadPayments();
-    loadDelinquent();
-    loadRanking();
     loadDashboard();
-  }, [selectedMonth, selectedYear, selectedMemberId, authToken, authChecked, loadPayments, loadDelinquent, loadRanking, loadDashboard]);
+    if (isAdmin) {
+      loadDelinquent();
+      loadRanking();
+    }
+  }, [selectedMonth, selectedYear, selectedMemberId, authToken, authChecked, isAdmin, loadPayments, loadDelinquent, loadRanking, loadDashboard]);
 
   const resetFilters = useCallback(() => {
     setSelectedMonth('all');
@@ -376,6 +378,7 @@ function App() {
         />
       </section>
 
+      {isAdmin && <DelinquencyRanking delinquent={delinquent} ranking={ranking} />}
       <ProjectsPanel
         projects={projects}
         projectForm={projectForm}

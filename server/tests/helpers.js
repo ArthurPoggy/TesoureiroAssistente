@@ -15,15 +15,16 @@ const auth = (token) => ({ Authorization: `Bearer ${token}` });
 const cleanTable = (table) => global.__testDb.prepare(`DELETE FROM ${table}`).run();
 
 const cleanAll = () => {
+  ['payments', 'members'].forEach(cleanTable);
   ['member_projects', 'projects', 'members'].forEach(cleanTable);
 };
 
 const insertMember = (overrides = {}) => {
   const defaults = {
     name: 'Membro Teste',
-    email: `member_${Date.now()}@test.com`,
+    email: `member_${Date.now()}_${Math.random()}@test.com`,
     nickname: 'MT',
-    cpf: String(Math.floor(Math.random() * 1e11)),
+    cpf: String(Math.floor(Math.random() * 1e11)).padStart(11, '0'),
     role: 'viewer',
     password_hash: '$2a$10$placeholder',
     active: 1,
@@ -39,6 +40,16 @@ const insertMember = (overrides = {}) => {
   return result.lastInsertRowid;
 };
 
+const insertPayment = (memberId, overrides = {}) => {
+  const defaults = { month: 1, year: 2025, amount: 100, paid: 1 };
+  const p = { ...defaults, ...overrides };
+  const result = global.__testDb
+    .prepare('INSERT INTO payments (member_id, month, year, amount, paid) VALUES (?, ?, ?, ?, ?)')
+    .run(memberId, p.month, p.year, p.amount, p.paid);
+  return result.lastInsertRowid;
+};
+
+module.exports = { tokens, auth, cleanAll, cleanTable, insertMember, insertPayment };
 const insertProject = (overrides = {}) => {
   const defaults = { name: 'Projeto Teste', description: 'Desc', status: 'active' };
   const p = { ...defaults, ...overrides };
