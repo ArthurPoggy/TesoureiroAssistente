@@ -96,12 +96,40 @@ export function AuthProvider({ children }) {
 
   // Verificar token ao carregar
   useEffect(() => {
-    if (!authToken) {
-      setAuthUser({ role: null, email: '', name: '', memberId: null });
-      setAuthChecked(true);
-      return;
-    }
     let canceled = false;
+
+    const applyToken = (token, user) => {
+      if (canceled) return;
+      setAuthToken(token);
+      localStorage.setItem('tesoureiro_token', token);
+      setAuthUser(user);
+      setAuthChecked(true);
+    };
+
+    const clearSession = () => {
+      if (canceled) return;
+      setAuthUser({ role: null, email: '', name: '', memberId: null });
+      setAuthToken(null);
+      localStorage.removeItem('tesoureiro_token');
+      setAuthChecked(true);
+    };
+
+    if (!authToken) {
+      if (import.meta.env.DEV) {
+        fetchJSON('/api/dev-token')
+          .then((data) => applyToken(data.token, {
+            role: data.role,
+            email: data.email,
+            name: data.name || 'Dev Admin',
+            memberId: data.memberId ?? null
+          }))
+          .catch(clearSession);
+      } else {
+        clearSession();
+      }
+      return () => { canceled = true; };
+    }
+
     apiFetch('/api/me')
       .then((data) => {
         if (!canceled) {
@@ -115,16 +143,21 @@ export function AuthProvider({ children }) {
         }
       })
       .catch(() => {
-        if (!canceled) {
-          setAuthUser({ role: null, email: '', name: '', memberId: null });
-          setAuthToken(null);
-          localStorage.removeItem('tesoureiro_token');
-          setAuthChecked(true);
+        if (import.meta.env.DEV) {
+          fetchJSON('/api/dev-token')
+            .then((data) => applyToken(data.token, {
+              role: data.role,
+              email: data.email,
+              name: data.name || 'Dev Admin',
+              memberId: data.memberId ?? null
+            }))
+            .catch(clearSession);
+        } else {
+          clearSession();
         }
       });
-    return () => {
-      canceled = true;
-    };
+
+    return () => { canceled = true; };
   }, [authToken, apiFetch]);
 
   const value = {
