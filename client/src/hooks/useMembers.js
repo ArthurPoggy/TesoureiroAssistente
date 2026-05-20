@@ -1,27 +1,34 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 export function useMembers(showToast, handleError) {
-  const { apiFetch } = useAuth();
+  const { apiFetch, authUser } = useAuth();
   const [members, setMembers] = useState([]);
   const [memberForm, setMemberForm] = useState({ name: '', email: '', cpf: '', nickname: '' });
   const [editingMemberId, setEditingMemberId] = useState(null);
-  const [selectedMemberDetail, setSelectedMemberDetail] = useState(null);
+  const [selectedMemberDetail, _setSelectedMemberDetail] = useState(null);
   const [inviteLink, setInviteLink] = useState('');
+
+  const selectedRef = useRef(null);
+  const setSelectedMemberDetail = useCallback((value) => {
+    selectedRef.current = value;
+    _setSelectedMemberDetail(value);
+  }, []);
 
   const loadMembers = useCallback(async () => {
     try {
       const data = await apiFetch('/api/members');
       const list = data.members || [];
       setMembers(list);
-      if (selectedMemberDetail) {
-        const updated = list.find((member) => member.id === selectedMemberDetail.id);
-        setSelectedMemberDetail(updated || null);
+      if (selectedRef.current) {
+        const updated = list.find((m) => m.id === selectedRef.current.id);
+        selectedRef.current = updated || null;
+        _setSelectedMemberDetail(updated || null);
       }
     } catch (error) {
       handleError(error);
     }
-  }, [apiFetch, handleError, selectedMemberDetail]);
+  }, [apiFetch, handleError]);
 
   const resetMemberForm = useCallback(() => {
     setMemberForm({ name: '', email: '', cpf: '', nickname: '' });
@@ -55,7 +62,7 @@ export function useMembers(showToast, handleError) {
     } catch (error) {
       handleError(error);
     }
-  }, [apiFetch, editingMemberId, handleError, loadMembers, memberForm, resetMemberForm, showToast]);
+  }, [apiFetch, editingMemberId, handleError, loadMembers, memberForm, resetMemberForm, setSelectedMemberDetail, showToast]);
 
   const handleMemberInvite = useCallback(async (id) => {
     try {
@@ -71,13 +78,13 @@ export function useMembers(showToast, handleError) {
     } catch (error) {
       handleError(error);
     }
-  }, [apiFetch, handleError, showToast]);
+  }, [apiFetch, handleError, setSelectedMemberDetail, showToast]);
 
   const handleMemberDelete = useCallback(async (id) => {
     if (!window.confirm('Remover este membro?')) return;
     try {
       await apiFetch(`/api/members/${id}`, { method: 'DELETE' });
-      if (selectedMemberDetail?.id === id) {
+      if (selectedRef.current?.id === id) {
         setSelectedMemberDetail(null);
       }
       await loadMembers();
@@ -85,9 +92,13 @@ export function useMembers(showToast, handleError) {
     } catch (error) {
       handleError(error);
     }
-  }, [apiFetch, handleError, loadMembers, selectedMemberDetail, showToast]);
+  }, [apiFetch, handleError, loadMembers, setSelectedMemberDetail, showToast]);
 
   const handleRoleChange = useCallback(async (id, role) => {
+    if (authUser?.memberId && String(id) === String(authUser.memberId)) {
+      showToast('Você não pode alterar o próprio cargo', 'error');
+      return;
+    }
     try {
       const data = await apiFetch(`/api/members/${id}/role`, { method: 'PUT', body: { role } });
       if (data?.member) {
@@ -98,7 +109,7 @@ export function useMembers(showToast, handleError) {
     } catch (error) {
       handleError(error);
     }
-  }, [apiFetch, handleError, loadMembers, showToast]);
+  }, [apiFetch, handleError, loadMembers, setSelectedMemberDetail, showToast]);
 
   const startEditMember = useCallback((member) => {
     setMemberForm({
