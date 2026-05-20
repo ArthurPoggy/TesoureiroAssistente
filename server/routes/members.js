@@ -39,6 +39,45 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
+router.get('/delinquent', requireAuth, async (req, res) => {
+  try {
+    const { month, year, memberId } = req.query;
+    const isAdminRequest = isPrivilegedRequest(req);
+    const effectiveMemberId = isAdminRequest ? memberId : req.user?.memberId;
+    if (!isAdminRequest && !effectiveMemberId) {
+      return success(res, { members: [] });
+    }
+    const monthValue = month ? Number(month) : null;
+    const yearValue = year ? Number(year) : null;
+    let sql = `SELECT DISTINCT m.id, m.name, m.email, m.nickname, m.joined_at
+       FROM members m
+       LEFT JOIN payments p ON p.member_id = m.id`;
+    const params = [];
+    const joinFilters = [];
+    if (monthValue) {
+      joinFilters.push('p.month = ?');
+      params.push(monthValue);
+    }
+    if (yearValue) {
+      joinFilters.push('p.year = ?');
+      params.push(yearValue);
+    }
+    if (joinFilters.length) {
+      sql += ` AND ${joinFilters.join(' AND ')}`;
+    }
+    sql += ' WHERE (p.id IS NULL OR p.paid IS NOT TRUE)';
+    if (effectiveMemberId) {
+      sql += ' AND m.id = ?';
+      params.push(Number(effectiveMemberId));
+    }
+    sql += ' ORDER BY m.name';
+    const members = await query(sql, params);
+    success(res, { members });
+  } catch (error) {
+    fail(res, error.message);
+  }
+});
+
 router.post('/', requirePrivileged, async (req, res) => {
   try {
     const { name, email, nickname, cpf } = req.body || {};
@@ -203,45 +242,6 @@ router.get('/:id/summary', requirePrivileged, async (req, res) => {
       },
       activeProjects
     });
-  } catch (error) {
-    fail(res, error.message);
-  }
-});
-
-router.get('/delinquent', requireAuth, async (req, res) => {
-  try {
-    const { month, year, memberId } = req.query;
-    const isAdminRequest = isPrivilegedRequest(req);
-    const effectiveMemberId = isAdminRequest ? memberId : req.user?.memberId;
-    if (!isAdminRequest && !effectiveMemberId) {
-      return success(res, { members: [] });
-    }
-    const monthValue = month ? Number(month) : null;
-    const yearValue = year ? Number(year) : null;
-    let sql = `SELECT DISTINCT m.id, m.name, m.email, m.nickname, m.joined_at
-       FROM members m
-       LEFT JOIN payments p ON p.member_id = m.id`;
-    const params = [];
-    const joinFilters = [];
-    if (monthValue) {
-      joinFilters.push('p.month = ?');
-      params.push(monthValue);
-    }
-    if (yearValue) {
-      joinFilters.push('p.year = ?');
-      params.push(yearValue);
-    }
-    if (joinFilters.length) {
-      sql += ` AND ${joinFilters.join(' AND ')}`;
-    }
-    sql += ' WHERE (p.id IS NULL OR p.paid IS NOT TRUE)';
-    if (effectiveMemberId) {
-      sql += ' AND m.id = ?';
-      params.push(Number(effectiveMemberId));
-    }
-    sql += ' ORDER BY m.name';
-    const members = await query(sql, params);
-    success(res, { members });
   } catch (error) {
     fail(res, error.message);
   }
