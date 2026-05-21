@@ -7,4 +7,5 @@ export { useFiles } from './useFiles';
 export { useDashboard } from './useDashboard';
 export { useSettings } from './useSettings';
 export { useExtrato } from './useExtrato';
+export { useTags } from './useTags';
 export { useProjects } from './useProjects';

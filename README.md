@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Tesoureiro Assistente
 
 ## Pré-requisitos
@@ -20,6 +19,3 @@ Esse script usa `concurrently` para levantar backend (`server`) e frontend (`cli
 ### Scripts úteis adicionais
 - `npm run dev:server` – roda apenas o backend a partir da raiz.
 - `npm run dev:client` – roda apenas o frontend a partir da raiz.
-=======
-# TesoureiroAssistente
->>>>>>> 99392cabdbf9817aac9fac51459b6ed806cc8362
