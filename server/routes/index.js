@@ -13,6 +13,7 @@ const settingsRoutes = require('./settings');
 const googleDriveRoutes = require('./google-drive');
 const extratoRoutes = require('./extrato');
 const tagsRoutes = require('./tags');
+const projectsRoutes = require('./projects');
 
 const router = express.Router();
 
@@ -34,5 +35,6 @@ router.use('/settings', settingsRoutes);
 router.use('/google-drive', googleDriveRoutes);
 router.use('/extrato', extratoRoutes);
 router.use('/tags', tagsRoutes);
+router.use('/projects', projectsRoutes);
 
 module.exports = router;

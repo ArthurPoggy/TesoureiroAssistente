@@ -124,7 +124,23 @@ const migrations = [
   `INSERT OR IGNORE INTO tags (name) VALUES ('Comida')`,
   `INSERT OR IGNORE INTO tags (name) VALUES ('Acampamento')`,
   `INSERT OR IGNORE INTO tags (name) VALUES ('Transporte')`,
-  `INSERT OR IGNORE INTO tags (name) VALUES ('Material')`
+  `INSERT OR IGNORE INTO tags (name) VALUES ('Material')`,
+  `CREATE TABLE IF NOT EXISTS projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )`,
+  `CREATE TABLE IF NOT EXISTS member_projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      member_id INTEGER NOT NULL,
+      project_id INTEGER NOT NULL,
+      joined_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(member_id, project_id),
+      FOREIGN KEY(member_id) REFERENCES members(id) ON DELETE CASCADE,
+      FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
+    )`
 ];
 
 function runMigrations() {
