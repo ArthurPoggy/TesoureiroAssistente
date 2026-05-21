@@ -9,7 +9,7 @@ import {
 } from 'chart.js';
 import { useAuth } from './contexts/AuthContext';
 import { parseMonthFilter, parseYearFilter, currentMonth, currentYear } from './utils/formatters';
-import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard, useSettings, useExtrato, useTags, useProjects } from './hooks';
+import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard, useSettings, useExtrato, useClanHistory, useTags, useProjects } from './hooks';
 import {
   LoginScreen,
   AuthCheckingScreen,
@@ -24,6 +24,7 @@ import {
   DelinquencyRanking,
   ReportsSection,
   ExtratoPanel,
+  ClanHistoryPanel,
   ProjectsPanel,
   Toast
 } from './components';
@@ -183,6 +184,19 @@ function App() {
   } = useDashboard(handleError, monthFilter, yearFilter, selectedMemberId);
 
   const {
+    records: historyRecords,
+    historyForm,
+    setHistoryForm,
+    editingHistoryId,
+    fileInputKey: historyFileInputKey,
+    loadRecords: loadHistory,
+    resetHistoryForm,
+    handleHistorySubmit,
+    handleHistoryDelete,
+    startEditHistory
+  } = useClanHistory(showToast, handleError);
+
+  const {
     projects,
     projectForm,
     setProjectForm,
@@ -215,9 +229,10 @@ function App() {
     loadGoals();
     loadExpenses();
     loadEvents();
+    loadHistory();
     loadTags();
     loadProjects();
-  }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents, loadTags, loadProjects]);
+  }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents, loadHistory, loadTags, loadProjects]);
 
   useEffect(() => {
     if (!authToken || !authChecked) return;
@@ -409,6 +424,18 @@ function App() {
         onExport={exportExtrato}
         members={isAdmin ? members : []}
         isAdmin={isAdmin}
+      />
+
+      <ClanHistoryPanel
+        records={historyRecords}
+        historyForm={historyForm}
+        setHistoryForm={setHistoryForm}
+        editingHistoryId={editingHistoryId}
+        fileInputKey={historyFileInputKey}
+        onSubmit={handleHistorySubmit}
+        onDelete={handleHistoryDelete}
+        onEdit={startEditHistory}
+        onReset={resetHistoryForm}
       />
 
       {isAdmin && (
