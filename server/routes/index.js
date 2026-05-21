@@ -13,6 +13,7 @@ const settingsRoutes = require('./settings');
 const googleDriveRoutes = require('./google-drive');
 const extratoRoutes = require('./extrato');
 const tagsRoutes = require('./tags');
+const { requirePrivileged } = require('../middleware/auth');
 const projectsRoutes = require('./projects');
 
 const router = express.Router();
@@ -29,7 +30,7 @@ router.use('/events', eventsRoutes);
 router.use('/files', filesRoutes);
 router.use('/reports', reportsRoutes);
 router.use('/dashboard', dashboardRoutes);
-router.use('/ranking', dashboardRoutes);
+router.use('/ranking', requirePrivileged, dashboardRoutes);
 router.use('/seed', seedRoutes);
 router.use('/settings', settingsRoutes);
 router.use('/google-drive', googleDriveRoutes);

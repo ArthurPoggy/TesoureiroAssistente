@@ -61,7 +61,7 @@ export function ExpensesPanel({
   const { canEdit } = useAuth();
 
   return (
-    <div>
+    <section className="panel">
       <div className="panel-header">
         <h2>Despesas</h2>
         <p>Controle de gastos por categoria.</p>
@@ -178,6 +178,6 @@ export function ExpensesPanel({
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   );
 }
