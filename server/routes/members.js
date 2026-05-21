@@ -209,6 +209,28 @@ const AVATAR_SELECT = 'id, name, email, nickname, cpf, role, active, must_reset_
 const canEditAvatar = (req, targetId) =>
   req.user?.memberId === targetId || isPrivilegedRole(req.user?.role);
 
+// Detecta o tipo real da imagem pelos magic bytes, em vez de confiar no
+// content-type enviado pelo cliente (que pode ser forjado).
+const detectImageMime = (buffer) => {
+  if (!buffer || buffer.length < 12) return null;
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return 'image/jpeg';
+  }
+  if (
+    buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47 &&
+    buffer[4] === 0x0d && buffer[5] === 0x0a && buffer[6] === 0x1a && buffer[7] === 0x0a
+  ) {
+    return 'image/png';
+  }
+  if (
+    buffer.toString('ascii', 0, 4) === 'RIFF' &&
+    buffer.toString('ascii', 8, 12) === 'WEBP'
+  ) {
+    return 'image/webp';
+  }
+  return null;
+};
+
 // Upload de foto: a imagem (já redimensionada no cliente) é guardada como data URL
 // na própria coluna avatar_url, sem dependência de armazenamento externo.
 router.post('/:id/avatar', requireAuth, upload.single('file'), async (req, res) => {
@@ -220,14 +242,15 @@ router.post('/:id/avatar', requireAuth, upload.single('file'), async (req, res) 
     if (!req.file) {
       return fail(res, 'Selecione uma imagem', 400);
     }
-    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowed.includes(req.file.mimetype)) {
-      return fail(res, 'Formato inválido. Use JPG, PNG ou WebP', 400);
-    }
     if (req.file.size > 2 * 1024 * 1024) {
       return fail(res, 'Imagem muito grande. Máximo 2MB', 400);
     }
-    const avatarUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    // Valida pelo conteúdo real (magic bytes), não pelo content-type do cliente.
+    const detectedMime = detectImageMime(req.file.buffer);
+    if (!detectedMime) {
+      return fail(res, 'Formato inválido. Use JPG, PNG ou WebP', 400);
+    }
+    const avatarUrl = `data:${detectedMime};base64,${req.file.buffer.toString('base64')}`;
     const [member] = await query(
       `UPDATE members SET avatar_url = ? WHERE id = ? RETURNING ${AVATAR_SELECT}`,
       [avatarUrl, targetId]
