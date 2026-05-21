@@ -1,7 +1,28 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { EditProjectModal } from './EditProjectModal';
 
 const STATUS_LABEL = { active: 'Ativo', inactive: 'Inativo' };
+
+function formatDate(dateStr) {
+  if (!dateStr) return null;
+  const [y, m, d] = dateStr.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function formatDuration(startDate, endDate) {
+  if (!startDate) return null;
+  const start = new Date(startDate + 'T00:00:00');
+  const end = endDate ? new Date(endDate + 'T00:00:00') : new Date();
+  const days = Math.round((end - start) / (1000 * 60 * 60 * 24));
+  if (days < 0) return null;
+  if (days === 0) return '1 dia';
+  if (days < 30) return `${days} dia${days !== 1 ? 's' : ''}`;
+  const months = Math.floor(days / 30);
+  const rem = days % 30;
+  if (rem === 0) return `${months} ${months === 1 ? 'mês' : 'meses'}`;
+  return `${months} ${months === 1 ? 'mês' : 'meses'} e ${rem} dia${rem !== 1 ? 's' : ''}`;
+}
 
 export function ProjectsPanel({
   projects,
@@ -14,12 +35,14 @@ export function ProjectsPanel({
   onEdit,
   onReset,
   onAddMember,
-  onRemoveMember
+  onRemoveMember,
+  saving
 }) {
   const { canEdit } = useAuth();
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [addingToProjectId, setAddingToProjectId] = useState(null);
   const [addMemberSelect, setAddMemberSelect] = useState('');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const checkedMember = useMemo(() => {
     if (!selectedMemberId) return null;
@@ -35,6 +58,21 @@ export function ProjectsPanel({
     await onAddMember(projectId, Number(addMemberSelect));
     setAddingToProjectId(null);
     setAddMemberSelect('');
+  };
+
+  const handleEditClick = (project) => {
+    onEdit(project);
+    setIsEditModalOpen(true);
+  };
+
+  const handleModalSave = async (e) => {
+    await onSubmit(e);
+    setIsEditModalOpen(false);
+  };
+
+  const handleModalClose = () => {
+    onReset();
+    setIsEditModalOpen(false);
   };
 
   return (
@@ -77,7 +115,7 @@ export function ProjectsPanel({
         )}
       </div>
 
-      {canEdit && (
+      {canEdit && !editingProjectId && (
         <form className="form-grid" onSubmit={onSubmit}>
           <input
             placeholder="Nome do projeto"
@@ -97,6 +135,23 @@ export function ProjectsPanel({
             <option value="active">Ativo</option>
             <option value="inactive">Inativo</option>
           </select>
+          <label>
+            Data de início
+            <input
+              type="date"
+              value={projectForm.start_date || ''}
+              onChange={(e) => setProjectForm({ ...projectForm, start_date: e.target.value })}
+            />
+          </label>
+          <label>
+            Data de término
+            <input
+              type="date"
+              value={projectForm.end_date || ''}
+              min={projectForm.start_date || undefined}
+              onChange={(e) => setProjectForm({ ...projectForm, end_date: e.target.value })}
+            />
+          </label>
           <div className="form-actions">
             <button type="submit">{editingProjectId ? 'Atualizar projeto' : 'Salvar projeto'}</button>
             {editingProjectId && (
@@ -123,6 +178,23 @@ export function ProjectsPanel({
               </span>
             </div>
             {project.description && <p>{project.description}</p>}
+
+            {(project.start_date || project.end_date) && (
+              <div className="project-dates">
+                {project.start_date && (
+                  <span>Início: <strong>{formatDate(project.start_date)}</strong></span>
+                )}
+                {project.end_date && (
+                  <span>Término: <strong>{formatDate(project.end_date)}</strong></span>
+                )}
+                {formatDuration(project.start_date, project.end_date) && (
+                  <span className="project-duration">
+                    {project.end_date ? 'Duração' : 'Em andamento há'}:{' '}
+                    <strong>{formatDuration(project.start_date, project.end_date)}</strong>
+                  </span>
+                )}
+              </div>
+            )}
 
             <div className="project-members">
               <strong>Membros:</strong>{' '}
@@ -179,7 +251,7 @@ export function ProjectsPanel({
                   </div>
                 ) : (
                   <div className="goal-actions">
-                    <button type="button" onClick={() => onEdit(project)}>Editar</button>
+                    <button type="button" onClick={() => handleEditClick(project)}>Editar</button>
                     <button
                       type="button"
                       onClick={() => { setAddingToProjectId(project.id); setAddMemberSelect(''); }}
@@ -196,6 +268,16 @@ export function ProjectsPanel({
           </article>
         ))}
       </div>
+
+      {isEditModalOpen && editingProjectId && (
+        <EditProjectModal
+          projectForm={projectForm}
+          setProjectForm={setProjectForm}
+          onSave={handleModalSave}
+          onClose={handleModalClose}
+          saving={saving}
+        />
+      )}
     </section>
   );
 }

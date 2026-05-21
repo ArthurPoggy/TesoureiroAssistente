@@ -9,7 +9,7 @@ import {
 } from 'chart.js';
 import { useAuth } from './contexts/AuthContext';
 import { parseMonthFilter, parseYearFilter, currentMonth, currentYear } from './utils/formatters';
-import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard, useSettings, useExtrato, useProjects } from './hooks';
+import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard, useSettings, useExtrato, useClanHistory, useTags, useProjects } from './hooks';
 import {
   LoginScreen,
   AuthCheckingScreen,
@@ -24,6 +24,7 @@ import {
   DelinquencyRanking,
   ReportsSection,
   ExtratoPanel,
+  ClanHistoryPanel,
   ProjectsPanel,
   Toast
 } from './components';
@@ -71,6 +72,21 @@ function App() {
   } = useMembers(showToast, handleError);
 
   const { goals, goalForm, setGoalForm, editingGoalId, loadGoals, resetGoalForm, handleGoalSubmit, handleGoalDelete, startEditGoal } = useGoals(showToast, handleError);
+
+  const {
+    projects,
+    projectForm,
+    setProjectForm,
+    editingProjectId,
+    saving: projectSaving,
+    loadProjects,
+    resetProjectForm,
+    handleProjectSubmit,
+    handleProjectDelete,
+    startEditProject,
+    addMemberToProject,
+    removeMemberFromProject
+  } = useProjects(showToast, handleError);
 
   const { events, eventForm, setEventForm, editingEventId, loadEvents, resetEventForm, handleEventSubmit, handleEventDelete, startEditEvent } = useEvents(showToast, handleError);
 
@@ -144,7 +160,18 @@ function App() {
     loadPayments,
     handlePaymentSubmit,
     handlePaymentDelete,
-    handleReceipt
+    handleReceipt,
+    page: paymentPage,
+    pageSize: paymentPageSize,
+    total: paymentTotal,
+    filterMonth: paymentFilterMonth,
+    filterYear: paymentFilterYear,
+    filterMemberId: paymentFilterMemberId,
+    setPage: setPaymentPage,
+    onFilterMonthChange: handlePaymentFilterMonth,
+    onFilterYearChange: handlePaymentFilterYear,
+    onFilterMemberChange: handlePaymentFilterMember,
+    onPageSizeChange: handlePaymentPageSize
   } = usePayments(showToast, handleError, selectedMemberId, members, publicSettings.defaultPaymentAmount);
 
   const {
@@ -172,18 +199,17 @@ function App() {
   } = useDashboard(handleError, monthFilter, yearFilter, selectedMemberId);
 
   const {
-    projects,
-    projectForm,
-    setProjectForm,
-    editingProjectId,
-    loadProjects,
-    resetProjectForm,
-    handleProjectSubmit,
-    handleProjectDelete,
-    startEditProject,
-    addMemberToProject,
-    removeMemberFromProject
-  } = useProjects(showToast, handleError);
+    records: historyRecords,
+    historyForm,
+    setHistoryForm,
+    editingHistoryId,
+    fileInputKey: historyFileInputKey,
+    loadRecords: loadHistory,
+    resetHistoryForm,
+    handleHistorySubmit,
+    handleHistoryDelete,
+    startEditHistory
+  } = useClanHistory(showToast, handleError);
 
   const {
     entries: extratoEntries,
@@ -195,6 +221,8 @@ function App() {
     exportExtrato
   } = useExtrato(handleError, isAdmin);
 
+  const { tags, loadTags } = useTags(showToast, handleError);
+
   // Carregar dados iniciais
   useEffect(() => {
     if (!authToken || !authChecked) return;
@@ -202,8 +230,10 @@ function App() {
     loadGoals();
     loadExpenses();
     loadEvents();
+    loadHistory();
+    loadTags();
     loadProjects();
-  }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents, loadProjects]);
+  }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents, loadHistory, loadTags, loadProjects]);
 
   useEffect(() => {
     if (!authToken || !authChecked) return;
@@ -219,10 +249,12 @@ function App() {
   useEffect(() => {
     if (!authToken || !authChecked) return;
     loadPayments();
-    loadDelinquent();
-    loadRanking();
     loadDashboard();
-  }, [selectedMonth, selectedYear, selectedMemberId, authToken, authChecked, loadPayments, loadDelinquent, loadRanking, loadDashboard]);
+    if (isAdmin) {
+      loadDelinquent();
+      loadRanking();
+    }
+  }, [selectedMonth, selectedYear, selectedMemberId, authToken, authChecked, isAdmin, loadPayments, loadDelinquent, loadRanking, loadDashboard]);
 
   const resetFilters = useCallback(() => {
     setSelectedMonth('all');
@@ -327,9 +359,20 @@ function App() {
         onDelete={(id) => handlePaymentDelete(id, refreshAfterPayment)}
         onReceipt={handleReceipt}
         fileInputKey={paymentFileInputKey}
+        page={paymentPage}
+        pageSize={paymentPageSize}
+        total={paymentTotal}
+        filterMonth={paymentFilterMonth}
+        filterYear={paymentFilterYear}
+        filterMemberId={paymentFilterMemberId}
+        onPageChange={setPaymentPage}
+        onPageSizeChange={handlePaymentPageSize}
+        onFilterMonthChange={handlePaymentFilterMonth}
+        onFilterYearChange={handlePaymentFilterYear}
+        onFilterMemberChange={handlePaymentFilterMember}
       />
 
-      <section className="panel two-column">
+      <div className="two-column">
         <ExpensesPanel
           expenses={expenses}
           expenseForm={expenseForm}
@@ -337,6 +380,7 @@ function App() {
           editingExpenseId={editingExpenseId}
           fileInputKey={expenseFileInputKey}
           events={events}
+          tags={tags}
           onSubmit={(e) => handleExpenseSubmit(e, refreshAfterExpense)}
           onDelete={(id) => handleExpenseDelete(id, refreshAfterExpense)}
           onEdit={startEditExpense}
@@ -352,7 +396,9 @@ function App() {
           onEdit={startEditEvent}
           onReset={resetEventForm}
         />
-      </section>
+      </div>
+
+      {isAdmin && <DelinquencyRanking delinquent={delinquent} ranking={ranking} />}
 
       <ProjectsPanel
         projects={projects}
@@ -360,6 +406,7 @@ function App() {
         setProjectForm={setProjectForm}
         editingProjectId={editingProjectId}
         members={members}
+        saving={projectSaving}
         onSubmit={handleProjectSubmit}
         onDelete={handleProjectDelete}
         onEdit={startEditProject}
@@ -367,8 +414,6 @@ function App() {
         onAddMember={addMemberToProject}
         onRemoveMember={removeMemberFromProject}
       />
-
-      <DelinquencyRanking delinquent={delinquent} ranking={ranking} />
 
       <ExtratoPanel
         entries={extratoEntries}
@@ -380,6 +425,18 @@ function App() {
         onExport={exportExtrato}
         members={isAdmin ? members : []}
         isAdmin={isAdmin}
+      />
+
+      <ClanHistoryPanel
+        records={historyRecords}
+        historyForm={historyForm}
+        setHistoryForm={setHistoryForm}
+        editingHistoryId={editingHistoryId}
+        fileInputKey={historyFileInputKey}
+        onSubmit={handleHistorySubmit}
+        onDelete={handleHistoryDelete}
+        onEdit={startEditHistory}
+        onReset={resetHistoryForm}
       />
 
       {isAdmin && (
