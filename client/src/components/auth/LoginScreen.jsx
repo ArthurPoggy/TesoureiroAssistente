@@ -148,7 +148,7 @@ export function LoginScreen() {
                 required
               />
               <input
-                placeholder="Registro"
+                placeholder="Registro Escoteiro"
                 value={registerForm.cpf}
                 onChange={(e) => setRegisterForm({ ...registerForm, cpf: e.target.value })}
                 required

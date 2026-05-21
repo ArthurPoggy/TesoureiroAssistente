@@ -9,7 +9,7 @@ import {
 } from 'chart.js';
 import { useAuth } from './contexts/AuthContext';
 import { parseMonthFilter, parseYearFilter, currentMonth, currentYear } from './utils/formatters';
-import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard, useSettings, useExtrato, useClanHistory } from './hooks';
+import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard, useSettings, useExtrato, useClanHistory, useProjects } from './hooks';
 import {
   LoginScreen,
   AuthCheckingScreen,
@@ -25,6 +25,7 @@ import {
   ReportsSection,
   ExtratoPanel,
   ClanHistoryPanel,
+  ProjectsPanel,
   Toast
 } from './components';
 import './styles/index.css';
@@ -145,7 +146,18 @@ function App() {
     loadPayments,
     handlePaymentSubmit,
     handlePaymentDelete,
-    handleReceipt
+    handleReceipt,
+    page: paymentPage,
+    pageSize: paymentPageSize,
+    total: paymentTotal,
+    filterMonth: paymentFilterMonth,
+    filterYear: paymentFilterYear,
+    filterMemberId: paymentFilterMemberId,
+    setPage: setPaymentPage,
+    onFilterMonthChange: handlePaymentFilterMonth,
+    onFilterYearChange: handlePaymentFilterYear,
+    onFilterMemberChange: handlePaymentFilterMember,
+    onPageSizeChange: handlePaymentPageSize
   } = usePayments(showToast, handleError, selectedMemberId, members, publicSettings.defaultPaymentAmount);
 
   const {
@@ -186,6 +198,20 @@ function App() {
   } = useClanHistory(showToast, handleError);
 
   const {
+    projects,
+    projectForm,
+    setProjectForm,
+    editingProjectId,
+    loadProjects,
+    resetProjectForm,
+    handleProjectSubmit,
+    handleProjectDelete,
+    startEditProject,
+    addMemberToProject,
+    removeMemberFromProject
+  } = useProjects(showToast, handleError);
+
+  const {
     entries: extratoEntries,
     summary: extratoSummary,
     loading: extratoLoading,
@@ -193,7 +219,7 @@ function App() {
     setFilters: setExtratoFilters,
     loadExtrato,
     exportExtrato
-  } = useExtrato(handleError);
+  } = useExtrato(handleError, isAdmin);
 
   // Carregar dados iniciais
   useEffect(() => {
@@ -203,7 +229,8 @@ function App() {
     loadExpenses();
     loadEvents();
     loadHistory();
-  }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents, loadHistory]);
+    loadProjects();
+  }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents, loadHistory, loadProjects]);
 
   useEffect(() => {
     if (!authToken || !authChecked) return;
@@ -329,6 +356,17 @@ function App() {
         onDelete={(id) => handlePaymentDelete(id, refreshAfterPayment)}
         onReceipt={handleReceipt}
         fileInputKey={paymentFileInputKey}
+        page={paymentPage}
+        pageSize={paymentPageSize}
+        total={paymentTotal}
+        filterMonth={paymentFilterMonth}
+        filterYear={paymentFilterYear}
+        filterMemberId={paymentFilterMemberId}
+        onPageChange={setPaymentPage}
+        onPageSizeChange={handlePaymentPageSize}
+        onFilterMonthChange={handlePaymentFilterMonth}
+        onFilterYearChange={handlePaymentFilterYear}
+        onFilterMemberChange={handlePaymentFilterMember}
       />
 
       <section className="panel two-column">
@@ -356,20 +394,33 @@ function App() {
         />
       </section>
 
+      <ProjectsPanel
+        projects={projects}
+        projectForm={projectForm}
+        setProjectForm={setProjectForm}
+        editingProjectId={editingProjectId}
+        members={members}
+        onSubmit={handleProjectSubmit}
+        onDelete={handleProjectDelete}
+        onEdit={startEditProject}
+        onReset={resetProjectForm}
+        onAddMember={addMemberToProject}
+        onRemoveMember={removeMemberFromProject}
+      />
+
       <DelinquencyRanking delinquent={delinquent} ranking={ranking} />
 
-      {isAdmin && (
-        <ExtratoPanel
-          entries={extratoEntries}
-          summary={extratoSummary}
-          loading={extratoLoading}
-          filters={extratoFilters}
-          setFilters={setExtratoFilters}
-          onLoad={loadExtrato}
-          onExport={exportExtrato}
-          members={members}
-        />
-      )}
+      <ExtratoPanel
+        entries={extratoEntries}
+        summary={extratoSummary}
+        loading={extratoLoading}
+        filters={extratoFilters}
+        setFilters={setExtratoFilters}
+        onLoad={loadExtrato}
+        onExport={exportExtrato}
+        members={isAdmin ? members : []}
+        isAdmin={isAdmin}
+      />
 
       {showHistory && (
         <ClanHistoryPanel
