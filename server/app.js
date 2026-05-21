@@ -23,7 +23,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Arquivos enviados localmente
+// Arquivos locais (fallback quando Google Drive não configurado)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Rotas da API
