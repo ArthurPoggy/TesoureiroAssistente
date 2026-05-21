@@ -1,7 +1,45 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { downloadBinary, uploadDriveFile } from '../services/api';
 import { currentMonth, currentYear } from '../utils/formatters';
+
+const FILTERS_STORAGE_KEY = 'tesoureiro_payment_filters';
+const DEBOUNCE_MS = 300;
+
+const DEFAULT_FILTERS = {
+  filterMonth: '',
+  filterYear: '',
+  filterMemberId: '',
+  filterStatus: '',
+  filterMinAmount: '',
+  filterMaxAmount: '',
+  filterNotes: '',
+  filterHasAttachment: '',
+  filterGoalId: ''
+};
+
+function loadStoredFilters() {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return DEFAULT_FILTERS;
+  }
+  try {
+    const raw = window.localStorage.getItem(FILTERS_STORAGE_KEY);
+    if (!raw) return DEFAULT_FILTERS;
+    const parsed = JSON.parse(raw);
+    return { ...DEFAULT_FILTERS, ...parsed };
+  } catch {
+    return DEFAULT_FILTERS;
+  }
+}
+
+function persistFilters(filters) {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    window.localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+  } catch {
+    // ignora erro de quota ou modo privado
+  }
+}
 
 export function usePayments(showToast, handleError, selectedMemberId, members = [], defaultAmount = 100) {
   const { apiFetch, authToken } = useAuth();
@@ -12,9 +50,88 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [total, setTotal] = useState(0);
-  const [filterMonth, setFilterMonth] = useState('');
-  const [filterYear, setFilterYear] = useState('');
-  const [filterMemberId, setFilterMemberId] = useState('');
+
+  const stored = useMemo(loadStoredFilters, []);
+  const [filterMonth, setFilterMonth] = useState(stored.filterMonth);
+  const [filterYear, setFilterYear] = useState(stored.filterYear);
+  const [filterMemberId, setFilterMemberId] = useState(stored.filterMemberId);
+  const [filterStatus, setFilterStatus] = useState(stored.filterStatus);
+  const [filterMinAmount, setFilterMinAmount] = useState(stored.filterMinAmount);
+  const [filterMaxAmount, setFilterMaxAmount] = useState(stored.filterMaxAmount);
+  const [filterNotes, setFilterNotes] = useState(stored.filterNotes);
+  const [filterHasAttachment, setFilterHasAttachment] = useState(stored.filterHasAttachment);
+  const [filterGoalId, setFilterGoalId] = useState(stored.filterGoalId);
+
+  // Debounce para inputs de texto/número que disparam a cada keystroke
+  const [debouncedNotes, setDebouncedNotes] = useState(stored.filterNotes);
+  const [debouncedMinAmount, setDebouncedMinAmount] = useState(stored.filterMinAmount);
+  const [debouncedMaxAmount, setDebouncedMaxAmount] = useState(stored.filterMaxAmount);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedNotes(filterNotes), DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [filterNotes]);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedMinAmount(filterMinAmount), DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [filterMinAmount]);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedMaxAmount(filterMaxAmount), DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [filterMaxAmount]);
+
+  // Persistência consolidada (debounced)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      persistFilters({
+        filterMonth,
+        filterYear,
+        filterMemberId,
+        filterStatus,
+        filterMinAmount,
+        filterMaxAmount,
+        filterNotes,
+        filterHasAttachment,
+        filterGoalId
+      });
+    }, 500);
+    return () => clearTimeout(t);
+  }, [
+    filterMonth,
+    filterYear,
+    filterMemberId,
+    filterStatus,
+    filterMinAmount,
+    filterMaxAmount,
+    filterNotes,
+    filterHasAttachment,
+    filterGoalId
+  ]);
+
+  const activeFiltersCount = useMemo(() => {
+    return [
+      filterMonth,
+      filterYear,
+      filterMemberId,
+      filterStatus,
+      filterMinAmount,
+      filterMaxAmount,
+      filterNotes,
+      filterHasAttachment,
+      filterGoalId
+    ].filter((v) => v !== '' && v !== null && v !== undefined).length;
+  }, [
+    filterMonth,
+    filterYear,
+    filterMemberId,
+    filterStatus,
+    filterMinAmount,
+    filterMaxAmount,
+    filterNotes,
+    filterHasAttachment,
+    filterGoalId
+  ]);
+
   const [lastDefaultAmount, setLastDefaultAmount] = useState(defaultAmount);
   const [paymentForm, setPaymentForm] = useState({
     memberId: '',
@@ -51,6 +168,12 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
         ...(effectiveMemberId ? { memberId: effectiveMemberId } : {}),
         ...(filterMonth ? { month: filterMonth } : {}),
         ...(filterYear ? { year: filterYear } : {}),
+        ...(filterStatus ? { status: filterStatus } : {}),
+        ...(debouncedMinAmount !== '' ? { minAmount: debouncedMinAmount } : {}),
+        ...(debouncedMaxAmount !== '' ? { maxAmount: debouncedMaxAmount } : {}),
+        ...(debouncedNotes ? { notes: debouncedNotes } : {}),
+        ...(filterHasAttachment ? { hasAttachment: filterHasAttachment } : {}),
+        ...(filterGoalId ? { goalId: filterGoalId } : {}),
         page,
         pageSize
       });
@@ -62,7 +185,22 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
     } finally {
       setLoading(false);
     }
-  }, [apiFetch, handleError, selectedMemberId, filterMonth, filterYear, filterMemberId, page, pageSize]);
+  }, [
+    apiFetch,
+    handleError,
+    selectedMemberId,
+    filterMonth,
+    filterYear,
+    filterMemberId,
+    filterStatus,
+    debouncedMinAmount,
+    debouncedMaxAmount,
+    debouncedNotes,
+    filterHasAttachment,
+    filterGoalId,
+    page,
+    pageSize
+  ]);
 
   useEffect(() => {
     loadPayments();
@@ -72,19 +210,53 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
     setFilterMonth(val);
     setPage(1);
   }, []);
-
   const handleFilterYearChange = useCallback((val) => {
     setFilterYear(val);
     setPage(1);
   }, []);
-
+  const handleFilterMemberChange = useCallback((val) => {
+    setFilterMemberId(val);
+    setPage(1);
+  }, []);
+  const handleFilterStatusChange = useCallback((val) => {
+    setFilterStatus(val);
+    setPage(1);
+  }, []);
+  const handleFilterMinAmountChange = useCallback((val) => {
+    setFilterMinAmount(val);
+    setPage(1);
+  }, []);
+  const handleFilterMaxAmountChange = useCallback((val) => {
+    setFilterMaxAmount(val);
+    setPage(1);
+  }, []);
+  const handleFilterNotesChange = useCallback((val) => {
+    setFilterNotes(val);
+    setPage(1);
+  }, []);
+  const handleFilterHasAttachmentChange = useCallback((val) => {
+    setFilterHasAttachment(val);
+    setPage(1);
+  }, []);
+  const handleFilterGoalIdChange = useCallback((val) => {
+    setFilterGoalId(val);
+    setPage(1);
+  }, []);
   const handlePageSizeChange = useCallback((val) => {
     setPageSize(Number(val));
     setPage(1);
   }, []);
 
-  const handleFilterMemberChange = useCallback((val) => {
-    setFilterMemberId(val);
+  const clearAllFilters = useCallback(() => {
+    setFilterMonth('');
+    setFilterYear('');
+    setFilterMemberId('');
+    setFilterStatus('');
+    setFilterMinAmount('');
+    setFilterMaxAmount('');
+    setFilterNotes('');
+    setFilterHasAttachment('');
+    setFilterGoalId('');
     setPage(1);
   }, []);
 
@@ -190,13 +362,27 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
     page,
     pageSize,
     total,
+    setPage,
     filterMonth,
     filterYear,
     filterMemberId,
-    setPage,
+    filterStatus,
+    filterMinAmount,
+    filterMaxAmount,
+    filterNotes,
+    filterHasAttachment,
+    filterGoalId,
+    activeFiltersCount,
     onFilterMonthChange: handleFilterMonthChange,
     onFilterYearChange: handleFilterYearChange,
     onFilterMemberChange: handleFilterMemberChange,
-    onPageSizeChange: handlePageSizeChange
+    onFilterStatusChange: handleFilterStatusChange,
+    onFilterMinAmountChange: handleFilterMinAmountChange,
+    onFilterMaxAmountChange: handleFilterMaxAmountChange,
+    onFilterNotesChange: handleFilterNotesChange,
+    onFilterHasAttachmentChange: handleFilterHasAttachmentChange,
+    onFilterGoalIdChange: handleFilterGoalIdChange,
+    onPageSizeChange: handlePageSizeChange,
+    onClearFilters: clearAllFilters
   };
 }

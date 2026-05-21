@@ -150,11 +150,25 @@ function App() {
     filterMonth: paymentFilterMonth,
     filterYear: paymentFilterYear,
     filterMemberId: paymentFilterMemberId,
+    filterStatus: paymentFilterStatus,
+    filterMinAmount: paymentFilterMinAmount,
+    filterMaxAmount: paymentFilterMaxAmount,
+    filterNotes: paymentFilterNotes,
+    filterHasAttachment: paymentFilterHasAttachment,
+    filterGoalId: paymentFilterGoalId,
+    activeFiltersCount: paymentActiveFiltersCount,
     setPage: setPaymentPage,
     onFilterMonthChange: handlePaymentFilterMonth,
     onFilterYearChange: handlePaymentFilterYear,
     onFilterMemberChange: handlePaymentFilterMember,
-    onPageSizeChange: handlePaymentPageSize
+    onFilterStatusChange: handlePaymentFilterStatus,
+    onFilterMinAmountChange: handlePaymentFilterMinAmount,
+    onFilterMaxAmountChange: handlePaymentFilterMaxAmount,
+    onFilterNotesChange: handlePaymentFilterNotes,
+    onFilterHasAttachmentChange: handlePaymentFilterHasAttachment,
+    onFilterGoalIdChange: handlePaymentFilterGoalId,
+    onPageSizeChange: handlePaymentPageSize,
+    onClearFilters: handlePaymentClearFilters
   } = usePayments(showToast, handleError, selectedMemberId, members, publicSettings.defaultPaymentAmount);
 
   const {
@@ -328,11 +342,25 @@ function App() {
         filterMonth={paymentFilterMonth}
         filterYear={paymentFilterYear}
         filterMemberId={paymentFilterMemberId}
+        filterStatus={paymentFilterStatus}
+        filterMinAmount={paymentFilterMinAmount}
+        filterMaxAmount={paymentFilterMaxAmount}
+        filterNotes={paymentFilterNotes}
+        filterHasAttachment={paymentFilterHasAttachment}
+        filterGoalId={paymentFilterGoalId}
+        activeFiltersCount={paymentActiveFiltersCount}
         onPageChange={setPaymentPage}
         onPageSizeChange={handlePaymentPageSize}
         onFilterMonthChange={handlePaymentFilterMonth}
         onFilterYearChange={handlePaymentFilterYear}
         onFilterMemberChange={handlePaymentFilterMember}
+        onFilterStatusChange={handlePaymentFilterStatus}
+        onFilterMinAmountChange={handlePaymentFilterMinAmount}
+        onFilterMaxAmountChange={handlePaymentFilterMaxAmount}
+        onFilterNotesChange={handlePaymentFilterNotes}
+        onFilterHasAttachmentChange={handlePaymentFilterHasAttachment}
+        onFilterGoalIdChange={handlePaymentFilterGoalId}
+        onClearFilters={handlePaymentClearFilters}
       />
 
       <section className="panel two-column">

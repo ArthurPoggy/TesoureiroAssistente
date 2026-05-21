@@ -10,7 +10,19 @@ const router = express.Router();
 
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { month, year, memberId, page, pageSize } = req.query;
+    const {
+      month,
+      year,
+      memberId,
+      page,
+      pageSize,
+      status,
+      minAmount,
+      maxAmount,
+      notes,
+      hasAttachment,
+      goalId
+    } = req.query;
     const isAdminRequest = isPrivilegedRequest(req);
     const effectiveMemberId = isAdminRequest ? memberId : req.user?.memberId;
     if (!isAdminRequest && !effectiveMemberId) {
@@ -34,6 +46,38 @@ router.get('/', requireAuth, async (req, res) => {
     if (effectiveMemberId) {
       whereSql += ' AND p.member_id = ?';
       params.push(Number(effectiveMemberId));
+    }
+    if (status === 'paid') {
+      whereSql += ' AND p.paid = ?';
+      params.push(1);
+    } else if (status === 'pending') {
+      whereSql += ' AND p.paid = ?';
+      params.push(0);
+    }
+    const minAmountValue = minAmount !== undefined && minAmount !== '' ? Number(minAmount) : null;
+    if (minAmountValue !== null && !Number.isNaN(minAmountValue)) {
+      whereSql += ' AND p.amount >= ?';
+      params.push(minAmountValue);
+    }
+    const maxAmountValue = maxAmount !== undefined && maxAmount !== '' ? Number(maxAmount) : null;
+    if (maxAmountValue !== null && !Number.isNaN(maxAmountValue)) {
+      whereSql += ' AND p.amount <= ?';
+      params.push(maxAmountValue);
+    }
+    if (notes) {
+      // LOWER + LIKE funciona em SQLite e Postgres; case-insensitive básico.
+      // Sem suporte a remoção de acentos nesta v1 (precisaria de unaccent/ICU).
+      whereSql += " AND LOWER(COALESCE(p.notes, '')) LIKE LOWER(?)";
+      params.push(`%${notes}%`);
+    }
+    if (hasAttachment === 'true') {
+      whereSql += ' AND p.attachment_id IS NOT NULL';
+    } else if (hasAttachment === 'false') {
+      whereSql += ' AND p.attachment_id IS NULL';
+    }
+    if (goalId) {
+      whereSql += ' AND p.goal_id = ?';
+      params.push(Number(goalId));
     }
 
     const [countRow] = await query(
