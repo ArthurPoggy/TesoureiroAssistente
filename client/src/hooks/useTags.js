@@ -18,7 +18,7 @@ export function useTags(showToast, handleError) {
     try {
       const data = await apiFetch('/api/tags', {
         method: 'POST',
-        body: JSON.stringify({ name })
+        body: { name }
       });
       setTags((prev) => {
         const exists = prev.some((t) => t.id === data.tag.id);

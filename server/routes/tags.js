@@ -35,6 +35,10 @@ router.post('/', requirePrivileged, async (req, res) => {
 router.delete('/:id', requirePrivileged, async (req, res) => {
   try {
     const { id } = req.params;
+    const existing = await queryOne('SELECT id FROM tags WHERE id = ?', [id]);
+    if (!existing) {
+      return fail(res, 'Tag não encontrada', 404);
+    }
     await execute('DELETE FROM tags WHERE id = ?', [id]);
     success(res);
   } catch (error) {
