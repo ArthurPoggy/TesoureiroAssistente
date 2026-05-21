@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { MemberAvatar } from './MemberAvatar';
+import { DEFAULT_AVATARS } from './defaultAvatars';
 
 const roleLabels = {
   admin: 'Tesoureiro',
@@ -7,10 +9,11 @@ const roleLabels = {
   viewer: 'Visualização'
 };
 
-export function MemberDetailView({ member, onInvite, onDelete, onRoleChange }) {
-  const { authUser } = useAuth();
+export function MemberDetailView({ member, onInvite, onDelete, onRoleChange, onAvatarUpload, onAvatarSelect, avatarUploading }) {
+  const { authUser, isAdmin } = useAuth();
   const [changingRole, setChangingRole] = useState(false);
   const isStrictAdmin = authUser.role === 'admin';
+  const canEditAvatar = isAdmin || authUser.memberId === member?.id;
 
   const handleRoleChange = async (e) => {
     const newRole = e.target.value;
@@ -25,7 +28,49 @@ export function MemberDetailView({ member, onInvite, onDelete, onRoleChange }) {
 
   return (
     <div className="user-detail">
-      <h3>Detalhes do membro</h3>
+      <div className="user-detail-header">
+        <div className="avatar-editor">
+          <MemberAvatar
+            member={member}
+            size="lg"
+            editable={canEditAvatar}
+            onUpload={(file) => onAvatarUpload && onAvatarUpload(member.id, file)}
+            uploading={avatarUploading}
+          />
+          {canEditAvatar && (
+            <>
+              <p className="avatar-editor-hint">
+                Clique na foto para enviar uma imagem ou escolha um avatar:
+              </p>
+              <div className="avatar-presets">
+                {DEFAULT_AVATARS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    className="avatar-preset"
+                    title={`Usar avatar ${preset.id}`}
+                    disabled={avatarUploading}
+                    onClick={() => onAvatarSelect && onAvatarSelect(member.id, preset.url)}
+                  >
+                    <img src={preset.url} alt={`Avatar ${preset.id}`} />
+                  </button>
+                ))}
+              </div>
+              {member.avatar_url && (
+                <button
+                  type="button"
+                  className="ghost"
+                  disabled={avatarUploading}
+                  onClick={() => onAvatarSelect && onAvatarSelect(member.id, null)}
+                >
+                  Remover foto
+                </button>
+              )}
+            </>
+          )}
+        </div>
+        <h3>Detalhes do membro</h3>
+      </div>
       <p>
         <strong>Nome:</strong> {member.name || '-'}
       </p>

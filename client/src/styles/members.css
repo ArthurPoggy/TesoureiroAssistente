@@ -1,0 +1,137 @@
+.member-avatar {
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.member-avatar-sm {
+  width: 44px;
+  height: 44px;
+}
+
+.member-avatar-md {
+  width: 64px;
+  height: 64px;
+}
+
+.member-avatar-lg {
+  width: 120px;
+  height: 120px;
+}
+
+.member-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.member-avatar span {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #fff;
+  user-select: none;
+}
+
+.member-avatar-sm span { font-size: 1rem; }
+.member-avatar-md span { font-size: 1.4rem; }
+.member-avatar-lg span { font-size: 2.6rem; }
+
+.member-avatar-editable {
+  cursor: pointer;
+}
+
+.member-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  font-size: 0.65rem;
+  color: #fff;
+  text-align: center;
+  border-radius: 50%;
+  line-height: 1.2;
+  padding: 4px;
+}
+
+.member-avatar-editable:hover .member-avatar-overlay {
+  opacity: 1;
+}
+
+/* Badge de câmera sempre visível para indicar que o avatar é editável */
+.member-avatar-camera {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--color-primary, #2563eb);
+  border: 2px solid var(--color-bg, #fff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.member-avatar-sm .member-avatar-camera {
+  width: 1.1rem;
+  height: 1.1rem;
+  font-size: 0.55rem;
+}
+
+/* Editor de avatar (foto + avatares padrão) */
+.avatar-editor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.avatar-editor-hint {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, #555);
+  margin: 0;
+}
+
+.avatar-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.avatar-preset {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  background: none;
+}
+
+.avatar-preset img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.avatar-preset:hover {
+  border-color: var(--color-primary, #2563eb);
+}

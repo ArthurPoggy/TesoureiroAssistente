@@ -67,7 +67,10 @@ function App() {
     handleMemberInvite,
     handleMemberDelete,
     handleRoleChange,
-    startEditMember
+    startEditMember,
+    handleAvatarUpload,
+    handleAvatarSelect,
+    avatarUploading
   } = useMembers(showToast, handleError);
 
   const { goals, goalForm, setGoalForm, editingGoalId, loadGoals, resetGoalForm, handleGoalSubmit, handleGoalDelete, startEditGoal } = useGoals(showToast, handleError);
@@ -240,6 +243,11 @@ function App() {
     setSelectedYear('');
   }, []);
 
+  const currentMember = useMemo(
+    () => members.find((m) => m.id === authUser?.memberId) || null,
+    [members, authUser]
+  );
+
   // Tela de login
   if (!authToken) {
     return <LoginScreen />;
@@ -269,6 +277,9 @@ function App() {
         resetFilters={resetFilters}
         settingsOpen={showSettings}
         onToggleSettings={() => setShowSettings((value) => !value)}
+        currentMember={currentMember}
+        onAvatarUpload={handleAvatarUpload}
+        avatarUploading={avatarUploading}
       />
 
       {toast && <Toast message={toast.message} type={toast.type} />}
@@ -323,6 +334,9 @@ function App() {
         onReset={resetMemberForm}
         onRoleChange={handleRoleChange}
         showToast={showToast}
+        onAvatarUpload={handleAvatarUpload}
+        onAvatarSelect={handleAvatarSelect}
+        avatarUploading={avatarUploading}
       />
 
       <PaymentsPanel

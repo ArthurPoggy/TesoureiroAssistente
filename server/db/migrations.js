@@ -107,6 +107,8 @@ const migrations = [
    VALUES ('dashboard_note', '', CURRENT_TIMESTAMP)`,
   `INSERT OR IGNORE INTO settings (key, value, updated_at)
    VALUES ('disclaimer_text', 'Sistema para uso interno. Os dados são confidenciais e de responsabilidade da organização.', CURRENT_TIMESTAMP)`,
+  `ALTER TABLE members ADD COLUMN avatar_url TEXT`,
+  `ALTER TABLE members ADD COLUMN avatar_drive_id TEXT`,
   `CREATE TABLE IF NOT EXISTS projects (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
