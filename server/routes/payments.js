@@ -10,34 +10,49 @@ const router = express.Router();
 
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { month, year, memberId } = req.query;
+    const { month, year, memberId, page, pageSize } = req.query;
     const isAdminRequest = isPrivilegedRequest(req);
     const effectiveMemberId = isAdminRequest ? memberId : req.user?.memberId;
     if (!isAdminRequest && !effectiveMemberId) {
-      return success(res, { payments: [] });
+      return success(res, { payments: [], total: 0, page: 1, pageSize: 25 });
     }
-    let sql = `
-      SELECT p.*, m.name AS member_name
-      FROM payments p
-      JOIN members m ON m.id = p.member_id
-      WHERE 1 = 1
-    `;
+
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const pageSizeNum = Math.min(100, Math.max(1, parseInt(pageSize) || 25));
+    const offset = (pageNum - 1) * pageSizeNum;
+
+    let whereSql = 'WHERE 1 = 1';
     const params = [];
     if (month) {
-      sql += ' AND p.month = ?';
+      whereSql += ' AND p.month = ?';
       params.push(Number(month));
     }
     if (year) {
-      sql += ' AND p.year = ?';
+      whereSql += ' AND p.year = ?';
       params.push(Number(year));
     }
     if (effectiveMemberId) {
-      sql += ' AND p.member_id = ?';
+      whereSql += ' AND p.member_id = ?';
       params.push(Number(effectiveMemberId));
     }
-    sql += ' ORDER BY p.year DESC, p.month DESC';
-    const payments = await query(sql, params);
-    success(res, { payments });
+
+    const [countRow] = await query(
+      `SELECT COUNT(*) as total FROM payments p JOIN members m ON m.id = p.member_id ${whereSql}`,
+      params
+    );
+    const total = countRow?.total || 0;
+
+    const payments = await query(
+      `SELECT p.*, m.name AS member_name
+       FROM payments p
+       JOIN members m ON m.id = p.member_id
+       ${whereSql}
+       ORDER BY p.year DESC, p.month DESC
+       LIMIT ? OFFSET ?`,
+      [...params, pageSizeNum, offset]
+    );
+
+    success(res, { payments, total, page: pageNum, pageSize: pageSizeNum });
   } catch (error) {
     fail(res, error.message);
   }
@@ -79,7 +94,7 @@ router.post('/', requirePrivileged, async (req, res) => {
     if (!memberId || !month || !year || !amount) {
       return fail(res, 'Campos obrigatórios não preenchidos');
     }
-    const paidValue = Boolean(paid);
+    const paidValue = paid ? 1 : 0;
     const existingPayment = await queryOne(
       'SELECT id, amount, paid FROM payments WHERE member_id = ? AND month = ? AND year = ?',
       [memberId, month, year]
@@ -128,7 +143,7 @@ router.put('/:id', requirePrivileged, async (req, res) => {
   try {
     const { id } = req.params;
     const { amount, paid, paidAt, notes, goalId, attachmentId, attachmentName, attachmentUrl } = req.body;
-    const paidValue = Boolean(paid);
+    const paidValue = paid ? 1 : 0;
     const existingPayment = await queryOne(
       'SELECT amount, paid FROM payments WHERE id = ?',
       [id]

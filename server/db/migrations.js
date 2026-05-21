@@ -108,7 +108,23 @@ const migrations = [
   `INSERT OR IGNORE INTO settings (key, value, updated_at)
    VALUES ('disclaimer_text', 'Sistema para uso interno. Os dados são confidenciais e de responsabilidade da organização.', CURRENT_TIMESTAMP)`,
   `ALTER TABLE members ADD COLUMN avatar_url TEXT`,
-  `ALTER TABLE members ADD COLUMN avatar_drive_id TEXT`
+  `ALTER TABLE members ADD COLUMN avatar_drive_id TEXT`,
+  `CREATE TABLE IF NOT EXISTS projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )`,
+  `CREATE TABLE IF NOT EXISTS member_projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      member_id INTEGER NOT NULL,
+      project_id INTEGER NOT NULL,
+      joined_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(member_id, project_id),
+      FOREIGN KEY(member_id) REFERENCES members(id) ON DELETE CASCADE,
+      FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
+    )`
 ];
 
 function runMigrations() {

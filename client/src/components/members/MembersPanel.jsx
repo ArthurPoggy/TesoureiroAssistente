@@ -46,7 +46,7 @@ export function MembersPanel({
             required
           />
           <input
-            placeholder="Registro"
+            placeholder="Registro Escoteiro"
             value={memberForm.cpf}
             onChange={(e) => setMemberForm({ ...memberForm, cpf: e.target.value })}
             required
@@ -96,7 +96,7 @@ export function MembersPanel({
               <th style={{ width: 40 }} />
               <th>Nome</th>
               <th>Email</th>
-              <th>Registro</th>
+              <th>Registro Escoteiro</th>
               <th>Apelido</th>
               {canEdit && <th>Ações</th>}
             </tr>
