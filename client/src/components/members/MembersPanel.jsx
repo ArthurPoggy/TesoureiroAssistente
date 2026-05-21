@@ -18,13 +18,17 @@ export function MembersPanel({
   onRoleChange,
   showToast
 }) {
-  const { canEdit, isAdmin } = useAuth();
+  const { canEdit, isAdmin, authUser } = useAuth();
+  const canViewDetails = isAdmin || authUser?.role === 'diretor_financeiro';
 
   return (
     <section className="panel">
       <div className="panel-header">
         <h2>Membros</h2>
-        <p>Todo membro possui acesso de visualização. Gere o link de primeiro acesso ao criar.</p>
+        <p>
+          Todo membro possui acesso de visualização. Gere o link de primeiro acesso ao criar.
+          {canViewDetails && ' Clique em um membro para ver os detalhes.'}
+        </p>
       </div>
 
       {canEdit ? (
@@ -102,9 +106,10 @@ export function MembersPanel({
               <tr
                 key={member.id}
                 className={selectedMemberDetail?.id === member.id ? 'selected' : ''}
+                style={{ cursor: canViewDetails ? 'pointer' : 'default' }}
                 onClick={() => {
-                  if (isAdmin) {
-                    setSelectedMemberDetail(member);
+                  if (canViewDetails) {
+                    setSelectedMemberDetail(selectedMemberDetail?.id === member.id ? null : member);
                   }
                 }}
               >
@@ -140,7 +145,7 @@ export function MembersPanel({
         </table>
       </div>
 
-      {isAdmin && selectedMemberDetail && (
+      {canViewDetails && selectedMemberDetail && (
         <MemberDetailView
           member={selectedMemberDetail}
           onInvite={onInvite}

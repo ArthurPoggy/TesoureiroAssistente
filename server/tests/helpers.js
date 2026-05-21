@@ -15,7 +15,7 @@ const auth = (token) => ({ Authorization: `Bearer ${token}` });
 const cleanTable = (table) => global.__testDb.prepare(`DELETE FROM ${table}`).run();
 
 const cleanAll = () => {
-  ['payments', 'member_projects', 'projects', 'members'].forEach(cleanTable);
+  ['member_projects', 'projects', 'payments', 'members'].forEach(cleanTable);
 };
 
 const insertMember = (overrides = {}) => {
@@ -57,4 +57,10 @@ const insertProject = (overrides = {}) => {
   return result.lastInsertRowid;
 };
 
-module.exports = { tokens, auth, cleanAll, cleanTable, insertMember, insertPayment, insertProject };
+const linkMemberProject = (memberId, projectId) => {
+  global.__testDb
+    .prepare('INSERT INTO member_projects (member_id, project_id) VALUES (?, ?)')
+    .run(memberId, projectId);
+};
+
+module.exports = { tokens, auth, cleanAll, cleanTable, insertMember, insertPayment, insertProject, linkMemberProject };
