@@ -8,14 +8,24 @@ const router = express.Router();
 router.get('/', requireAuth, async (req, res) => {
   try {
     const projects = await query('SELECT * FROM projects ORDER BY created_at DESC');
-    const memberships = await query(`
-      SELECT mp.project_id, mp.member_id, m.name, m.nickname
-      FROM member_projects mp
-      JOIN members m ON m.id = mp.member_id
-    `);
-    const enriched = projects.map((p) => ({
-      ...p,
-      members: memberships.filter((mp) => mp.project_id === p.id)
+    const memberRows = await query(
+      `SELECT mp.project_id, mp.member_id, m.name, m.nickname
+       FROM member_projects mp
+       JOIN members m ON m.id = mp.member_id
+       ORDER BY m.name`
+    );
+    const membersByProject = memberRows.reduce((acc, row) => {
+      if (!acc[row.project_id]) acc[row.project_id] = [];
+      acc[row.project_id].push({
+        member_id: row.member_id,
+        name: row.name,
+        nickname: row.nickname
+      });
+      return acc;
+    }, {});
+    const enriched = projects.map((project) => ({
+      ...project,
+      members: membersByProject[project.id] || []
     }));
     success(res, { projects: enriched });
   } catch (error) {
@@ -73,6 +83,7 @@ router.post('/:id/members', requirePrivileged, async (req, res) => {
   try {
     const { id } = req.params;
     const { memberId } = req.body;
+    if (!memberId) return fail(res, 'Membro é obrigatório');
     await execute(
       'INSERT OR IGNORE INTO member_projects (project_id, member_id) VALUES (?, ?)',
       [id, memberId]

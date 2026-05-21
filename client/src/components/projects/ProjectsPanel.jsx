@@ -153,7 +153,12 @@ export function ProjectsPanel({
             />
           </label>
           <div className="form-actions">
-            <button type="submit">Salvar projeto</button>
+            <button type="submit">{editingProjectId ? 'Atualizar projeto' : 'Salvar projeto'}</button>
+            {editingProjectId && (
+              <button type="button" className="ghost" onClick={onReset}>
+                Cancelar
+              </button>
+            )}
           </div>
         </form>
       )}

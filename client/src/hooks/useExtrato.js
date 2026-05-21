@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { downloadBinary } from '../services/api';
 
-export function useExtrato(handleError) {
+export function useExtrato(handleError, isAdmin) {
   const { apiFetch, authToken } = useAuth();
   const [entries, setEntries] = useState([]);
   const [summary, setSummary] = useState({ totalIncome: 0, totalExpense: 0, netBalance: 0, count: 0 });
@@ -15,9 +15,9 @@ export function useExtrato(handleError) {
     if (active.startDate) params.append('startDate', active.startDate);
     if (active.endDate) params.append('endDate', active.endDate);
     if (active.type) params.append('type', active.type);
-    if (active.memberId) params.append('memberId', active.memberId);
+    if (isAdmin && active.memberId) params.append('memberId', active.memberId);
     return params.toString();
-  }, [filters]);
+  }, [filters, isAdmin]);
 
   const loadExtrato = useCallback(async (overrideFilters) => {
     try {
