@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const connectionModule = require('../db/connection');
 
 const SECRET = 'test-secret-key-for-jest';
 
@@ -12,10 +13,33 @@ const tokens = {
 
 const auth = (token) => ({ Authorization: `Bearer ${token}` });
 
+const db = () => connectionModule.getSqliteDb();
 const cleanTable = (table) => global.__testDb.prepare(`DELETE FROM ${table}`).run();
 
 const cleanAll = () => {
-  ['member_projects', 'projects', 'payments', 'members'].forEach(cleanTable);
+  ['expense_tags', 'expenses', 'member_projects', 'projects', 'payments', 'members'].forEach(cleanTable);
+  global.__testDb.prepare('DELETE FROM tags WHERE id > 5').run();
+};
+
+const insertTag = (name) => {
+  const d = db();
+  const existing = d.prepare('SELECT * FROM tags WHERE name = ? COLLATE NOCASE').get(name);
+  if (existing) return existing;
+  return d.prepare('INSERT INTO tags (name) VALUES (?) RETURNING *').get(name);
+};
+
+const insertExpense = (fields = {}) => {
+  const d = db();
+  return d.prepare(
+    `INSERT INTO expenses (title, amount, expense_date, category, notes)
+     VALUES (?, ?, ?, ?, ?) RETURNING *`
+  ).get(
+    fields.title || 'Despesa teste',
+    fields.amount ?? 100,
+    fields.expense_date || '2024-01-15',
+    fields.category || null,
+    fields.notes || null
+  );
 };
 
 const insertMember = (overrides = {}) => {
@@ -63,4 +87,16 @@ const linkMemberProject = (memberId, projectId) => {
     .run(memberId, projectId);
 };
 
-module.exports = { tokens, auth, cleanAll, cleanTable, insertMember, insertPayment, insertProject, linkMemberProject };
+module.exports = {
+  tokens,
+  auth,
+  db,
+  cleanAll,
+  cleanTable,
+  insertTag,
+  insertExpense,
+  insertMember,
+  insertPayment,
+  insertProject,
+  linkMemberProject,
+};
