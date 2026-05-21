@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { EditProjectModal } from './EditProjectModal';
 
 const STATUS_LABEL = { active: 'Ativo', inactive: 'Inativo' };
 
@@ -14,12 +15,14 @@ export function ProjectsPanel({
   onEdit,
   onReset,
   onAddMember,
-  onRemoveMember
+  onRemoveMember,
+  saving
 }) {
   const { canEdit } = useAuth();
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [addingToProjectId, setAddingToProjectId] = useState(null);
   const [addMemberSelect, setAddMemberSelect] = useState('');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const checkedMember = useMemo(() => {
     if (!selectedMemberId) return null;
@@ -35,6 +38,21 @@ export function ProjectsPanel({
     await onAddMember(projectId, Number(addMemberSelect));
     setAddingToProjectId(null);
     setAddMemberSelect('');
+  };
+
+  const handleEditClick = (project) => {
+    onEdit(project);
+    setIsEditModalOpen(true);
+  };
+
+  const handleModalSave = async (e) => {
+    await onSubmit(e);
+    setIsEditModalOpen(false);
+  };
+
+  const handleModalClose = () => {
+    onReset();
+    setIsEditModalOpen(false);
   };
 
   return (
@@ -77,7 +95,7 @@ export function ProjectsPanel({
         )}
       </div>
 
-      {canEdit && (
+      {canEdit && !editingProjectId && (
         <form className="form-grid" onSubmit={onSubmit}>
           <input
             placeholder="Nome do projeto"
@@ -179,7 +197,7 @@ export function ProjectsPanel({
                   </div>
                 ) : (
                   <div className="goal-actions">
-                    <button type="button" onClick={() => onEdit(project)}>Editar</button>
+                    <button type="button" onClick={() => handleEditClick(project)}>Editar</button>
                     <button
                       type="button"
                       onClick={() => { setAddingToProjectId(project.id); setAddMemberSelect(''); }}
@@ -196,6 +214,16 @@ export function ProjectsPanel({
           </article>
         ))}
       </div>
+
+      {isEditModalOpen && editingProjectId && (
+        <EditProjectModal
+          projectForm={projectForm}
+          setProjectForm={setProjectForm}
+          onSave={handleModalSave}
+          onClose={handleModalClose}
+          saving={saving}
+        />
+      )}
     </section>
   );
 }

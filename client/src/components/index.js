@@ -43,6 +43,7 @@ export { ReportsSection } from './reports/ReportsSection';
 
 // Projects
 export { ProjectsPanel } from './projects/ProjectsPanel';
+export { EditProjectModal } from './projects/EditProjectModal';
 
 // Common
 export { Toast } from './common/Toast';
