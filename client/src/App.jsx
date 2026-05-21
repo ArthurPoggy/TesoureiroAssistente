@@ -41,7 +41,6 @@ function App() {
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
   const [selectedUserFilter, setSelectedUserFilter] = useState('all');
   const [showSettings, setShowSettings] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
 
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type });
@@ -285,8 +284,6 @@ function App() {
         resetFilters={resetFilters}
         settingsOpen={showSettings}
         onToggleSettings={() => setShowSettings((value) => !value)}
-        showHistory={showHistory}
-        onToggleHistory={() => setShowHistory((value) => !value)}
       />
 
       {toast && <Toast message={toast.message} type={toast.type} />}
@@ -422,20 +419,17 @@ function App() {
         isAdmin={isAdmin}
       />
 
-      {showHistory && (
-        <ClanHistoryPanel
-          records={historyRecords}
-          historyForm={historyForm}
-          setHistoryForm={setHistoryForm}
-          editingHistoryId={editingHistoryId}
-          fileInputKey={historyFileInputKey}
-          onSubmit={handleHistorySubmit}
-          onDelete={handleHistoryDelete}
-          onEdit={startEditHistory}
-          onReset={resetHistoryForm}
-          onClose={() => setShowHistory(false)}
-        />
-      )}
+      <ClanHistoryPanel
+        records={historyRecords}
+        historyForm={historyForm}
+        setHistoryForm={setHistoryForm}
+        editingHistoryId={editingHistoryId}
+        fileInputKey={historyFileInputKey}
+        onSubmit={handleHistorySubmit}
+        onDelete={handleHistoryDelete}
+        onEdit={startEditHistory}
+        onReset={resetHistoryForm}
+      />
 
       {isAdmin && (
         <ReportsSection

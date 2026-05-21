@@ -1,4 +1,15 @@
-/* Modal */
+/* Toolbar da seção */
+.history-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.form-span-full {
+  grid-column: 1 / -1;
+}
+
+/* Modal (apenas para adicionar/editar registro) */
 .history-modal-overlay {
   position: fixed;
   inset: 0;

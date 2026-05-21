@@ -70,7 +70,7 @@ export function useClanHistory(showToast, handleError) {
 
       const endpoint = editingHistoryId ? `/api/clan-history/${editingHistoryId}` : '/api/clan-history';
       const method = editingHistoryId ? 'PUT' : 'POST';
-      await apiFetch(endpoint, { method, body: JSON.stringify(payload) });
+      await apiFetch(endpoint, { method, body: payload });
       await loadRecords();
       resetHistoryForm();
       showToast(editingHistoryId ? 'Registro atualizado' : 'Registro adicionado');
