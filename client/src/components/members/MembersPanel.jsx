@@ -19,6 +19,7 @@ export function MembersPanel({
   onReset,
   onRoleChange,
   onAvatarUpload,
+  onAvatarSelect,
   showToast
 }) {
   const { canEdit, isAdmin } = useAuth();
@@ -154,6 +155,7 @@ export function MembersPanel({
           onDelete={onDelete}
           onRoleChange={onRoleChange}
           onAvatarUpload={onAvatarUpload}
+          onAvatarSelect={onAvatarSelect}
           avatarUploading={avatarUploading}
         />
       )}

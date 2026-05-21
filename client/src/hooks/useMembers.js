@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { uploadMemberAvatar } from '../services/memberAvatarApi';
+import { uploadMemberAvatar, setMemberAvatar } from '../services/memberAvatarApi';
 
 export function useMembers(showToast, handleError) {
   const { apiFetch, authToken } = useAuth();
@@ -118,6 +118,22 @@ export function useMembers(showToast, handleError) {
     }
   }, [authToken, handleError, loadMembers, selectedMemberDetail, showToast]);
 
+  const handleAvatarSelect = useCallback(async (memberId, avatarUrl) => {
+    setAvatarUploading(true);
+    try {
+      const data = await setMemberAvatar(memberId, avatarUrl, authToken);
+      await loadMembers();
+      if (selectedMemberDetail?.id === memberId) {
+        setSelectedMemberDetail(data.member);
+      }
+      showToast(avatarUrl ? 'Avatar atualizado' : 'Foto removida');
+    } catch (error) {
+      handleError(error);
+    } finally {
+      setAvatarUploading(false);
+    }
+  }, [authToken, handleError, loadMembers, selectedMemberDetail, showToast]);
+
   const startEditMember = useCallback((member) => {
     setMemberForm({
       name: member.name,
@@ -146,6 +162,7 @@ export function useMembers(showToast, handleError) {
     handleMemberDelete,
     handleRoleChange,
     handleAvatarUpload,
+    handleAvatarSelect,
     startEditMember
   };
 }

@@ -1,11 +1,9 @@
 const express = require('express');
-const { Readable } = require('stream');
 const { query, queryOne, execute } = require('../db/query');
 const { success, fail } = require('../utils/response');
 const { requireAuth, requireAdmin, requirePrivileged } = require('../middleware/auth');
 const { isPrivilegedRequest, isPrivilegedRole } = require('../utils/roles');
 const { upload } = require('../middleware/upload');
-const { getDriveClient, getDriveContext, resolveFolderPath } = require('../utils/google-drive');
 const {
   normalizeEmail,
   normalizeCpf,
@@ -206,12 +204,17 @@ router.get('/delinquent', requireAuth, async (req, res) => {
   }
 });
 
+const AVATAR_SELECT = 'id, name, email, nickname, cpf, role, active, must_reset_password, joined_at, avatar_url';
+
+const canEditAvatar = (req, targetId) =>
+  req.user?.memberId === targetId || isPrivilegedRole(req.user?.role);
+
+// Upload de foto: a imagem (já redimensionada no cliente) é guardada como data URL
+// na própria coluna avatar_url, sem dependência de armazenamento externo.
 router.post('/:id/avatar', requireAuth, upload.single('file'), async (req, res) => {
   try {
     const targetId = Number(req.params.id);
-    const isSelf = req.user?.memberId === targetId;
-    const isPrivileged = isPrivilegedRole(req.user?.role);
-    if (!isSelf && !isPrivileged) {
+    if (!canEditAvatar(req, targetId)) {
       return fail(res, 'Acesso restrito', 403);
     }
     if (!req.file) {
@@ -224,35 +227,34 @@ router.post('/:id/avatar', requireAuth, upload.single('file'), async (req, res) 
     if (req.file.size > 2 * 1024 * 1024) {
       return fail(res, 'Imagem muito grande. Máximo 2MB', 400);
     }
-    const existing = await queryOne('SELECT avatar_drive_id FROM members WHERE id = ?', [targetId]);
-    if (existing?.avatar_drive_id) {
-      try {
-        const driveForDelete = await getDriveClient();
-        await driveForDelete.files.delete({ fileId: existing.avatar_drive_id, supportsAllDrives: true });
-      } catch {
-        // arquivo já removido ou inacessível
-      }
-    }
-    const drive = await getDriveClient();
-    const { folderId, sharedDriveId } = getDriveContext();
-    const targetFolderId = await resolveFolderPath(drive, folderId, ['avatares', String(targetId)], sharedDriveId);
-    const ext = (req.file.originalname.split('.').pop() || 'jpg').toLowerCase();
-    const uploadResponse = await drive.files.create({
-      requestBody: { name: `avatar-${targetId}.${ext}`, parents: [targetFolderId] },
-      media: { mimeType: req.file.mimetype, body: Readable.from(req.file.buffer) },
-      fields: 'id, webContentLink',
-      supportsAllDrives: Boolean(sharedDriveId)
-    });
-    const avatarDriveId = uploadResponse.data.id;
-    const avatarUrl = uploadResponse.data.webContentLink;
-    await drive.permissions.create({
-      fileId: avatarDriveId,
-      requestBody: { role: 'reader', type: 'anyone' },
-      supportsAllDrives: Boolean(sharedDriveId)
-    });
+    const avatarUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     const [member] = await query(
-      'UPDATE members SET avatar_url = ?, avatar_drive_id = ? WHERE id = ? RETURNING id, name, email, nickname, cpf, role, active, must_reset_password, joined_at, avatar_url',
-      [avatarUrl, avatarDriveId, targetId]
+      `UPDATE members SET avatar_url = ? WHERE id = ? RETURNING ${AVATAR_SELECT}`,
+      [avatarUrl, targetId]
+    );
+    if (!member) {
+      return fail(res, 'Membro não encontrado', 404);
+    }
+    success(res, { member });
+  } catch (error) {
+    fail(res, error.message);
+  }
+});
+
+// Define um avatar padrão (preset SVG) ou remove a foto (avatarUrl nulo).
+router.put('/:id/avatar', requireAuth, async (req, res) => {
+  try {
+    const targetId = Number(req.params.id);
+    if (!canEditAvatar(req, targetId)) {
+      return fail(res, 'Acesso restrito', 403);
+    }
+    const { avatarUrl } = req.body || {};
+    if (avatarUrl && !(typeof avatarUrl === 'string' && avatarUrl.startsWith('data:image/svg+xml'))) {
+      return fail(res, 'Avatar inválido', 400);
+    }
+    const [member] = await query(
+      `UPDATE members SET avatar_url = ? WHERE id = ? RETURNING ${AVATAR_SELECT}`,
+      [avatarUrl || null, targetId]
     );
     if (!member) {
       return fail(res, 'Membro não encontrado', 404);

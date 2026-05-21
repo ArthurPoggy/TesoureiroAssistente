@@ -69,6 +69,7 @@ function App() {
     handleRoleChange,
     startEditMember,
     handleAvatarUpload,
+    handleAvatarSelect,
     avatarUploading
   } = useMembers(showToast, handleError);
 
@@ -334,6 +335,7 @@ function App() {
         onRoleChange={handleRoleChange}
         showToast={showToast}
         onAvatarUpload={handleAvatarUpload}
+        onAvatarSelect={handleAvatarSelect}
         avatarUploading={avatarUploading}
       />
 

@@ -35,7 +35,8 @@ export function MemberAvatar({ member, size = 'md', editable = false, onUpload, 
       )}
       {editable && (
         <>
-          <div className="member-avatar-overlay">{uploading ? '…' : 'Trocar foto'}</div>
+          <div className="member-avatar-overlay">{uploading ? 'Enviando…' : 'Trocar foto'}</div>
+          <span className="member-avatar-camera" aria-hidden="true">📷</span>
           <input
             ref={fileInputRef}
             type="file"

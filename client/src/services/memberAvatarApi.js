@@ -18,6 +18,27 @@ function resizeImage(file, maxSize = 256) {
   });
 }
 
+export const setMemberAvatar = async (memberId, avatarUrl, token) => {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(`/api/members/${memberId}/avatar`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify({ avatarUrl: avatarUrl || null })
+  });
+  if (!response.ok) {
+    let message = 'Falha ao definir avatar';
+    try {
+      const data = await response.json();
+      message = data.message || message;
+    } catch {
+      message = (await response.text()) || message;
+    }
+    throw new Error(message);
+  }
+  return response.json();
+};
+
 export const uploadMemberAvatar = async (memberId, file, token) => {
   const resized = await resizeImage(file);
   const formData = new FormData();
