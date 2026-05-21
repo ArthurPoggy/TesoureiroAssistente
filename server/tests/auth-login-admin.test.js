@@ -5,6 +5,9 @@ process.env.JWT_SECRET = 'test-secret-login-admin';
 process.env.ADMIN_EMAIL = 'admin@test.com';
 process.env.ADMIN_PASSWORD = 'admin-test-pass';
 
+// O jest.setup.js já carrega (e cacheia) o config com outras credenciais.
+// Reseta o registro para que o app releia as variáveis definidas acima.
+jest.resetModules();
 const app = require('../app');
 
 describe('POST /api/login — admin via variável de ambiente', () => {
