@@ -73,6 +73,21 @@ function App() {
 
   const { goals, goalForm, setGoalForm, editingGoalId, loadGoals, resetGoalForm, handleGoalSubmit, handleGoalDelete, startEditGoal } = useGoals(showToast, handleError);
 
+  const {
+    projects,
+    projectForm,
+    setProjectForm,
+    editingProjectId,
+    saving: projectSaving,
+    loadProjects,
+    resetProjectForm,
+    handleProjectSubmit,
+    handleProjectDelete,
+    startEditProject,
+    addMemberToProject,
+    removeMemberFromProject
+  } = useProjects(showToast, handleError);
+
   const { events, eventForm, setEventForm, editingEventId, loadEvents, resetEventForm, handleEventSubmit, handleEventDelete, startEditEvent } = useEvents(showToast, handleError);
 
   const {
@@ -195,20 +210,6 @@ function App() {
     handleHistoryDelete,
     startEditHistory
   } = useClanHistory(showToast, handleError);
-
-  const {
-    projects,
-    projectForm,
-    setProjectForm,
-    editingProjectId,
-    loadProjects,
-    resetProjectForm,
-    handleProjectSubmit,
-    handleProjectDelete,
-    startEditProject,
-    addMemberToProject,
-    removeMemberFromProject
-  } = useProjects(showToast, handleError);
 
   const {
     entries: extratoEntries,
@@ -398,12 +399,14 @@ function App() {
       </div>
 
       {isAdmin && <DelinquencyRanking delinquent={delinquent} ranking={ranking} />}
+
       <ProjectsPanel
         projects={projects}
         projectForm={projectForm}
         setProjectForm={setProjectForm}
         editingProjectId={editingProjectId}
         members={members}
+        saving={projectSaving}
         onSubmit={handleProjectSubmit}
         onDelete={handleProjectDelete}
         onEdit={startEditProject}
@@ -411,8 +414,6 @@ function App() {
         onAddMember={addMemberToProject}
         onRemoveMember={removeMemberFromProject}
       />
-
-      <DelinquencyRanking delinquent={delinquent} ranking={ranking} />
 
       <ExtratoPanel
         entries={extratoEntries}

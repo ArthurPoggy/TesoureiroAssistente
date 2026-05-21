@@ -142,17 +142,19 @@ const migrations = [
       name TEXT NOT NULL,
       description TEXT,
       status TEXT NOT NULL DEFAULT 'active',
+      start_date TEXT,
+      end_date TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )`,
   `CREATE TABLE IF NOT EXISTS member_projects (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      member_id INTEGER NOT NULL,
       project_id INTEGER NOT NULL,
-      joined_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(member_id, project_id),
-      FOREIGN KEY(member_id) REFERENCES members(id) ON DELETE CASCADE,
-      FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
-    )`
+      member_id INTEGER NOT NULL,
+      PRIMARY KEY (project_id, member_id),
+      FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
+      FOREIGN KEY(member_id) REFERENCES members(id) ON DELETE CASCADE
+    )`,
+  `ALTER TABLE projects ADD COLUMN start_date TEXT`,
+  `ALTER TABLE projects ADD COLUMN end_date TEXT`
 ];
 
 function runMigrations() {

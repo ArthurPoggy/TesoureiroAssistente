@@ -4,7 +4,14 @@ import { useAuth } from '../contexts/AuthContext';
 export function useProjects(showToast, handleError) {
   const { apiFetch } = useAuth();
   const [projects, setProjects] = useState([]);
-  const [projectForm, setProjectForm] = useState({ name: '', description: '', status: 'active' });
+  const [saving, setSaving] = useState(false);
+  const [projectForm, setProjectForm] = useState({
+    name: '',
+    description: '',
+    status: 'active',
+    start_date: '',
+    end_date: ''
+  });
   const [editingProjectId, setEditingProjectId] = useState(null);
 
   const loadProjects = useCallback(async () => {
@@ -17,13 +24,14 @@ export function useProjects(showToast, handleError) {
   }, [apiFetch, handleError]);
 
   const resetProjectForm = useCallback(() => {
-    setProjectForm({ name: '', description: '', status: 'active' });
+    setProjectForm({ name: '', description: '', status: 'active', start_date: '', end_date: '' });
     setEditingProjectId(null);
   }, []);
 
   const handleProjectSubmit = useCallback(async (e) => {
     e.preventDefault();
     try {
+      setSaving(true);
       const endpoint = editingProjectId ? `/api/projects/${editingProjectId}` : '/api/projects';
       const method = editingProjectId ? 'PUT' : 'POST';
       await apiFetch(endpoint, { method, body: JSON.stringify(projectForm) });
@@ -32,6 +40,8 @@ export function useProjects(showToast, handleError) {
       showToast(editingProjectId ? 'Projeto atualizado' : 'Projeto criado');
     } catch (error) {
       handleError(error);
+    } finally {
+      setSaving(false);
     }
   }, [apiFetch, editingProjectId, projectForm, handleError, loadProjects, resetProjectForm, showToast]);
 
@@ -50,7 +60,9 @@ export function useProjects(showToast, handleError) {
     setProjectForm({
       name: project.name,
       description: project.description || '',
-      status: project.status
+      status: project.status,
+      start_date: project.start_date || '',
+      end_date: project.end_date || ''
     });
     setEditingProjectId(project.id);
   }, []);
@@ -83,6 +95,7 @@ export function useProjects(showToast, handleError) {
     projectForm,
     setProjectForm,
     editingProjectId,
+    saving,
     loadProjects,
     resetProjectForm,
     handleProjectSubmit,
