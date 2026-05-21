@@ -20,6 +20,25 @@ const useDrive = async () => {
 
 const router = express.Router();
 
+// Tipos aceitos para anexos (recibos, comprovantes e registros da história).
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+]);
+const ALLOWED_EXTENSIONS = new Set([
+  '.jpg', '.jpeg', '.png', '.webp', '.gif', '.pdf', '.doc', '.docx'
+]);
+
+const isAllowedFile = (file) => {
+  const ext = path.extname(file.originalname || '').toLowerCase();
+  return ALLOWED_MIME_TYPES.has(file.mimetype) && ALLOWED_EXTENSIONS.has(ext);
+};
+
 const saveLocally = (file, name) => {
   if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
   const ext = path.extname(file.originalname);
@@ -75,6 +94,9 @@ router.post('/upload', requirePrivileged, upload.single('file'), async (req, res
   try {
     if (!req.file) {
       return fail(res, 'Selecione um arquivo', 400);
+    }
+    if (!isAllowedFile(req.file)) {
+      return fail(res, 'Tipo de arquivo não permitido. Use imagem (JPG, PNG, WebP, GIF), PDF ou DOC/DOCX', 400);
     }
     const fileName = req.body?.name || req.file.originalname;
     if (await useDrive()) {
