@@ -9,7 +9,7 @@ import {
 } from 'chart.js';
 import { useAuth } from './contexts/AuthContext';
 import { parseMonthFilter, parseYearFilter, currentMonth, currentYear } from './utils/formatters';
-import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard, useSettings, useExtrato, useClanHistory, useProjects } from './hooks';
+import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard, useSettings, useExtrato, useClanHistory, useTags, useProjects } from './hooks';
 import {
   LoginScreen,
   AuthCheckingScreen,
@@ -220,6 +220,8 @@ function App() {
     exportExtrato
   } = useExtrato(handleError, isAdmin);
 
+  const { tags, loadTags } = useTags(showToast, handleError);
+
   // Carregar dados iniciais
   useEffect(() => {
     if (!authToken || !authChecked) return;
@@ -228,8 +230,9 @@ function App() {
     loadExpenses();
     loadEvents();
     loadHistory();
+    loadTags();
     loadProjects();
-  }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents, loadHistory, loadProjects]);
+  }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents, loadHistory, loadTags, loadProjects]);
 
   useEffect(() => {
     if (!authToken || !authChecked) return;
@@ -245,10 +248,12 @@ function App() {
   useEffect(() => {
     if (!authToken || !authChecked) return;
     loadPayments();
-    loadDelinquent();
-    loadRanking();
     loadDashboard();
-  }, [selectedMonth, selectedYear, selectedMemberId, authToken, authChecked, loadPayments, loadDelinquent, loadRanking, loadDashboard]);
+    if (isAdmin) {
+      loadDelinquent();
+      loadRanking();
+    }
+  }, [selectedMonth, selectedYear, selectedMemberId, authToken, authChecked, isAdmin, loadPayments, loadDelinquent, loadRanking, loadDashboard]);
 
   const resetFilters = useCallback(() => {
     setSelectedMonth('all');
@@ -366,7 +371,7 @@ function App() {
         onFilterMemberChange={handlePaymentFilterMember}
       />
 
-      <section className="panel two-column">
+      <div className="two-column">
         <ExpensesPanel
           expenses={expenses}
           expenseForm={expenseForm}
@@ -374,6 +379,7 @@ function App() {
           editingExpenseId={editingExpenseId}
           fileInputKey={expenseFileInputKey}
           events={events}
+          tags={tags}
           onSubmit={(e) => handleExpenseSubmit(e, refreshAfterExpense)}
           onDelete={(id) => handleExpenseDelete(id, refreshAfterExpense)}
           onEdit={startEditExpense}
@@ -389,8 +395,9 @@ function App() {
           onEdit={startEditEvent}
           onReset={resetEventForm}
         />
-      </section>
+      </div>
 
+      {isAdmin && <DelinquencyRanking delinquent={delinquent} ranking={ranking} />}
       <ProjectsPanel
         projects={projects}
         projectForm={projectForm}

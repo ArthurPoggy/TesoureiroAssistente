@@ -119,6 +119,24 @@ const migrations = [
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(created_by) REFERENCES members(id) ON DELETE SET NULL
     )`,
+  `CREATE TABLE IF NOT EXISTS tags (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(name COLLATE NOCASE)
+    )`,
+  `CREATE TABLE IF NOT EXISTS expense_tags (
+      expense_id INTEGER NOT NULL,
+      tag_id INTEGER NOT NULL,
+      PRIMARY KEY (expense_id, tag_id),
+      FOREIGN KEY(expense_id) REFERENCES expenses(id) ON DELETE CASCADE,
+      FOREIGN KEY(tag_id) REFERENCES tags(id) ON DELETE CASCADE
+    )`,
+  `INSERT OR IGNORE INTO tags (name) VALUES ('Equipamentos')`,
+  `INSERT OR IGNORE INTO tags (name) VALUES ('Comida')`,
+  `INSERT OR IGNORE INTO tags (name) VALUES ('Acampamento')`,
+  `INSERT OR IGNORE INTO tags (name) VALUES ('Transporte')`,
+  `INSERT OR IGNORE INTO tags (name) VALUES ('Material')`,
   `CREATE TABLE IF NOT EXISTS projects (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,

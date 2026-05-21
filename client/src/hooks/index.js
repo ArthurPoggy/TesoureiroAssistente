@@ -8,4 +8,5 @@ export { useDashboard } from './useDashboard';
 export { useSettings } from './useSettings';
 export { useExtrato } from './useExtrato';
 export { useClanHistory } from './useClanHistory';
+export { useTags } from './useTags';
 export { useProjects } from './useProjects';
