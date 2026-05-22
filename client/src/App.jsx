@@ -73,21 +73,6 @@ function App() {
 
   const { goals, goalForm, setGoalForm, editingGoalId, loadGoals, resetGoalForm, handleGoalSubmit, handleGoalDelete, startEditGoal } = useGoals(showToast, handleError);
 
-  const {
-    projects,
-    projectForm,
-    setProjectForm,
-    editingProjectId,
-    saving: projectSaving,
-    loadProjects,
-    resetProjectForm,
-    handleProjectSubmit,
-    handleProjectDelete,
-    startEditProject,
-    addMemberToProject,
-    removeMemberFromProject
-  } = useProjects(showToast, handleError);
-
   const { events, eventForm, setEventForm, editingEventId, loadEvents, resetEventForm, handleEventSubmit, handleEventDelete, startEditEvent } = useEvents(showToast, handleError);
 
   const {
@@ -197,6 +182,34 @@ function App() {
     loadRanking,
     handleExport
   } = useDashboard(handleError, monthFilter, yearFilter, selectedMemberId);
+
+  const {
+    projects,
+    loading: projectsLoading,
+    projectForm,
+    setProjectForm,
+    editingProjectId,
+    saving: projectSaving,
+    loadProjects,
+    resetProjectForm,
+    handleProjectSubmit,
+    handleProjectDelete,
+    startEditProject,
+    addMemberToProject,
+    removeMemberFromProject,
+    filterName: projectFilterName,
+    filterStatus: projectFilterStatus,
+    filterStartDate: projectFilterStartDate,
+    filterEndDate: projectFilterEndDate,
+    filterMemberId: projectFilterMemberId,
+    activeFiltersCount: projectActiveFiltersCount,
+    onFilterNameChange: handleProjectFilterName,
+    onFilterStatusChange: handleProjectFilterStatus,
+    onFilterStartDateChange: handleProjectFilterStartDate,
+    onFilterEndDateChange: handleProjectFilterEndDate,
+    onFilterMemberIdChange: handleProjectFilterMemberId,
+    onClearFilters: handleProjectClearFilters
+  } = useProjects(showToast, handleError);
 
   const {
     records: historyRecords,
@@ -402,6 +415,7 @@ function App() {
 
       <ProjectsPanel
         projects={projects}
+        loading={projectsLoading}
         projectForm={projectForm}
         setProjectForm={setProjectForm}
         editingProjectId={editingProjectId}
@@ -413,6 +427,18 @@ function App() {
         onReset={resetProjectForm}
         onAddMember={addMemberToProject}
         onRemoveMember={removeMemberFromProject}
+        filterName={projectFilterName}
+        filterStatus={projectFilterStatus}
+        filterStartDate={projectFilterStartDate}
+        filterEndDate={projectFilterEndDate}
+        filterMemberId={projectFilterMemberId}
+        activeFiltersCount={projectActiveFiltersCount}
+        onFilterNameChange={handleProjectFilterName}
+        onFilterStatusChange={handleProjectFilterStatus}
+        onFilterStartDateChange={handleProjectFilterStartDate}
+        onFilterEndDateChange={handleProjectFilterEndDate}
+        onFilterMemberIdChange={handleProjectFilterMemberId}
+        onClearFilters={handleProjectClearFilters}
       />
 
       <ExtratoPanel
