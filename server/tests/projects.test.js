@@ -233,7 +233,7 @@ describe('DELETE /api/projects/:id', () => {
       .set(auth(tokens.admin()));
 
     const links = global.__testDb
-      .prepare('SELECT id FROM member_projects WHERE project_id = ?')
+      .prepare('SELECT project_id FROM member_projects WHERE project_id = ?')
       .all(projectId);
     expect(links).toHaveLength(0);
   });
@@ -285,7 +285,7 @@ describe('POST /api/projects/:id/members', () => {
     expect(res.body.ok).toBe(true);
 
     const link = global.__testDb
-      .prepare('SELECT id FROM member_projects WHERE project_id = ? AND member_id = ?')
+      .prepare('SELECT project_id FROM member_projects WHERE project_id = ? AND member_id = ?')
       .get(projectId, memberId);
     expect(link).toBeDefined();
   });
@@ -307,7 +307,7 @@ describe('POST /api/projects/:id/members', () => {
     expect(res.status).toBe(200);
 
     const links = global.__testDb
-      .prepare('SELECT id FROM member_projects WHERE project_id = ? AND member_id = ?')
+      .prepare('SELECT project_id FROM member_projects WHERE project_id = ? AND member_id = ?')
       .all(projectId, memberId);
     expect(links).toHaveLength(1);
   });
@@ -367,7 +367,7 @@ describe('DELETE /api/projects/:id/members/:memberId', () => {
     expect(res.body.ok).toBe(true);
 
     const link = global.__testDb
-      .prepare('SELECT id FROM member_projects WHERE project_id = ? AND member_id = ?')
+      .prepare('SELECT project_id FROM member_projects WHERE project_id = ? AND member_id = ?')
       .get(projectId, memberId);
     expect(link).toBeUndefined();
   });

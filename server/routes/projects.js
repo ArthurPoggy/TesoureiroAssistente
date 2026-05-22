@@ -42,7 +42,7 @@ router.get('/', requireAuth, async (req, res) => {
     );
 
     const memberRows = await query(
-      `SELECT mp.project_id, mp.member_id, mp.joined_at, m.name, m.nickname
+      `SELECT mp.project_id, mp.member_id, m.name, m.nickname
        FROM member_projects mp
        JOIN members m ON m.id = mp.member_id
        ORDER BY m.name`
@@ -52,8 +52,7 @@ router.get('/', requireAuth, async (req, res) => {
       acc[row.project_id].push({
         member_id: row.member_id,
         name: row.name,
-        nickname: row.nickname,
-        joined_at: row.joined_at
+        nickname: row.nickname
       });
       return acc;
     }, {});
@@ -69,11 +68,14 @@ router.get('/', requireAuth, async (req, res) => {
 
 router.post('/', requirePrivileged, async (req, res) => {
   try {
-    const { name, description, status = 'active' } = req.body;
-    if (!name) return fail(res, 'Nome do projeto é obrigatório');
+    const { name, description, status, start_date, end_date } = req.body;
+    if (!name) return fail(res, 'Nome é obrigatório');
+    if (start_date && end_date && end_date < start_date) {
+      return fail(res, 'Data de término não pode ser anterior à data de início');
+    }
     const [project] = await query(
-      'INSERT INTO projects (name, description, status) VALUES (?, ?, ?) RETURNING *',
-      [name, description, status]
+      'INSERT INTO projects (name, description, status, start_date, end_date) VALUES (?, ?, ?, ?, ?) RETURNING *',
+      [name, description || null, status || 'active', start_date || null, end_date || null]
     );
     success(res, { project: { ...project, members: [] } });
   } catch (error) {
@@ -84,12 +86,16 @@ router.post('/', requirePrivileged, async (req, res) => {
 router.put('/:id', requirePrivileged, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, status } = req.body;
-    if (!name) return fail(res, 'Nome do projeto é obrigatório');
+    const { name, description, status, start_date, end_date } = req.body;
+    if (!name) return fail(res, 'Nome é obrigatório');
+    if (start_date && end_date && end_date < start_date) {
+      return fail(res, 'Data de término não pode ser anterior à data de início');
+    }
     const [project] = await query(
-      'UPDATE projects SET name = ?, description = ?, status = ? WHERE id = ? RETURNING *',
-      [name, description, status, id]
+      'UPDATE projects SET name = ?, description = ?, status = ?, start_date = ?, end_date = ? WHERE id = ? RETURNING *',
+      [name, description || null, status || 'active', start_date || null, end_date || null, id]
     );
+    if (!project) return fail(res, 'Projeto não encontrado', 404);
     success(res, { project });
   } catch (error) {
     fail(res, error.message);
@@ -112,8 +118,8 @@ router.post('/:id/members', requirePrivileged, async (req, res) => {
     const { memberId } = req.body;
     if (!memberId) return fail(res, 'Membro é obrigatório');
     await execute(
-      'INSERT OR IGNORE INTO member_projects (member_id, project_id) VALUES (?, ?)',
-      [memberId, id]
+      'INSERT OR IGNORE INTO member_projects (project_id, member_id) VALUES (?, ?)',
+      [id, memberId]
     );
     success(res);
   } catch (error) {

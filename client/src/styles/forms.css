@@ -19,7 +19,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: var(--shadow-focus-ring);
   outline: none;
 }
 
@@ -38,7 +38,7 @@ textarea {
   align-items: center;
   gap: var(--spacing-sm);
   color: var(--color-text-muted);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .spinner {
@@ -82,13 +82,13 @@ textarea {
 }
 
 .settings-field label {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
 .settings-field small {
   color: var(--color-text-light);
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
 }
 
 .settings-field-full {
@@ -102,7 +102,7 @@ button {
   padding: 0.6rem 1rem;
   border-radius: var(--radius-md);
   cursor: pointer;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   transition: background var(--transition-fast), transform var(--transition-fast);
 }
 

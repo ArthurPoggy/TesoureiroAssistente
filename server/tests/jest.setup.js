@@ -18,6 +18,7 @@ migrations.forEach((sql) => {
     testDb.prepare(sql).run();
   } catch (e) {
     if (!/duplicate column|already exists/i.test(e.message)) {
+      // silently skip incompatible migrations
       // silently skip incompatible migrations (INSERT OR IGNORE, etc.)
     }
   }
