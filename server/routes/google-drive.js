@@ -6,7 +6,7 @@ const { success, fail } = require('../utils/response');
 const { requirePrivileged } = require('../middleware/auth');
 const { isPrivilegedRole } = require('../utils/roles');
 const { setSetting } = require('../utils/settings');
-const { loadServiceAccount, getStoredRefreshToken, hasOauthClient } = require('../utils/google-drive');
+const { loadServiceAccount, getStoredRefreshToken, hasOauthClient, getDriveStatus } = require('../utils/google-drive');
 
 const router = express.Router();
 
@@ -56,15 +56,24 @@ const renderHtml = (title, message) => `<!doctype html>
 
 router.get('/status', requirePrivileged, async (req, res) => {
   try {
-    const serviceAccount = loadServiceAccount();
-    const refreshToken = await getStoredRefreshToken();
-    const connected = Boolean(serviceAccount) || (hasOauthClient() && Boolean(refreshToken));
-    const source = serviceAccount
-      ? 'service_account'
-      : refreshToken
-        ? (config.GOOGLE_REFRESH_TOKEN ? 'env' : 'db')
-        : 'none';
-    success(res, { connected, source });
+    const status = await getDriveStatus();
+    const connected = status.mode !== 'none';
+    let source = 'none';
+    if (status.mode === 'service_account') {
+      source = 'service_account';
+    } else if (status.mode === 'oauth') {
+      source = config.GOOGLE_REFRESH_TOKEN ? 'env' : 'db';
+    }
+    success(res, {
+      connected,
+      source,
+      mode: status.mode,
+      hasServiceAccount: status.hasServiceAccount,
+      oauthConfigured: status.oauthConfigured,
+      hasRefreshToken: status.hasRefreshToken,
+      hasFolder: status.hasFolder,
+      configured: status.configured
+    });
   } catch (error) {
     fail(res, error.message);
   }

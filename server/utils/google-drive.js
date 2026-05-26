@@ -30,6 +30,32 @@ const getStoredRefreshToken = async () => {
 
 const hasOauthClient = () => Boolean(config.GOOGLE_CLIENT_ID && config.GOOGLE_CLIENT_SECRET);
 
+// Reporta o estado de configuração da integração com o Drive, sem
+// realizar nenhuma chamada autenticada — útil para a tela de reconfiguração.
+const getDriveStatus = async () => {
+  const hasServiceAccount = Boolean(loadServiceAccount());
+  const oauthConfigured = hasOauthClient();
+  const refreshToken = oauthConfigured ? await getStoredRefreshToken() : null;
+  const hasRefreshToken = Boolean(refreshToken);
+  const hasFolder = Boolean(config.GOOGLE_DRIVE_FOLDER_ID);
+
+  let mode = 'none';
+  if (oauthConfigured && hasRefreshToken) {
+    mode = 'oauth';
+  } else if (hasServiceAccount) {
+    mode = 'service_account';
+  }
+
+  return {
+    configured: mode !== 'none' && hasFolder,
+    mode,
+    hasServiceAccount,
+    oauthConfigured,
+    hasRefreshToken,
+    hasFolder
+  };
+};
+
 const getDriveClient = async () => {
   if (hasOauthClient()) {
     const refreshToken = await getStoredRefreshToken();
@@ -135,5 +161,6 @@ module.exports = {
   getDriveContext,
   resolveFolderPath,
   getStoredRefreshToken,
-  hasOauthClient
+  hasOauthClient,
+  getDriveStatus
 };
