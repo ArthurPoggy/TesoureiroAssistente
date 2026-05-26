@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
+import { ProjectTagSelector } from './ProjectTagSelector';
 
-export function EditProjectModal({ projectForm, setProjectForm, onSave, onClose, saving }) {
+export function EditProjectModal({ projectForm, setProjectForm, onSave, onClose, saving, tags = [] }) {
   useEffect(() => {
     const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handleKey);
@@ -80,6 +81,11 @@ export function EditProjectModal({ projectForm, setProjectForm, onSave, onClose,
                   onChange={(e) => setProjectForm({ ...projectForm, end_date: e.target.value })}
                 />
               </label>
+              <ProjectTagSelector
+                tags={tags}
+                selectedIds={projectForm.tagIds || []}
+                onChange={(ids) => setProjectForm({ ...projectForm, tagIds: ids })}
+              />
             </div>
           </div>
 

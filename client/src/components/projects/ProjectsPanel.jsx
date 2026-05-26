@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { EditProjectModal } from './EditProjectModal';
+import { ProjectTagSelector } from './ProjectTagSelector';
 
 const STATUS_LABEL = { active: 'Ativo', inactive: 'Inativo' };
 
@@ -98,7 +99,8 @@ export function ProjectsPanel({
   onFilterEndDateChange,
   onFilterMemberIdChange,
   onClearFilters,
-  saving
+  saving,
+  tags = []
 }) {
   const { canEdit } = useAuth();
   const [selectedMemberId, setSelectedMemberId] = useState('');
@@ -233,6 +235,11 @@ export function ProjectsPanel({
               onChange={(e) => setProjectForm({ ...projectForm, end_date: e.target.value })}
             />
           </label>
+          <ProjectTagSelector
+            tags={tags}
+            selectedIds={projectForm.tagIds || []}
+            onChange={(ids) => setProjectForm({ ...projectForm, tagIds: ids })}
+          />
           <div className="form-actions">
             <button type="submit">{editingProjectId ? 'Atualizar projeto' : 'Salvar projeto'}</button>
             {editingProjectId && (
@@ -359,6 +366,14 @@ export function ProjectsPanel({
               </div>
               {project.description && <p>{project.description}</p>}
 
+              {project.tags && project.tags.length > 0 && (
+                <div className="tag-pills">
+                  {project.tags.map((tag) => (
+                    <span key={tag.id} className="tag-pill">{tag.name}</span>
+                  ))}
+                </div>
+              )}
+
               {(project.start_date || project.end_date) && (
                 <div className="project-dates">
                   {project.start_date && (
@@ -457,6 +472,7 @@ export function ProjectsPanel({
           onSave={handleModalSave}
           onClose={handleModalClose}
           saving={saving}
+          tags={tags}
         />
       )}
     </section>

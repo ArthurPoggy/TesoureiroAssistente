@@ -125,3 +125,30 @@ CREATE TABLE IF NOT EXISTS member_projects (
   joined_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
   UNIQUE(member_id, project_id)
 );
+
+-- Sincronização com as migrations do SQLite (tags, datas de projeto e tags de projeto).
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS start_date TEXT;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS end_date TEXT;
+
+CREATE TABLE IF NOT EXISTS tags (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
+  UNIQUE(name)
+);
+
+CREATE TABLE IF NOT EXISTS expense_tags (
+  expense_id INTEGER NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
+  tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+  PRIMARY KEY (expense_id, tag_id)
+);
+
+CREATE TABLE IF NOT EXISTS project_tags (
+  project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+  PRIMARY KEY (project_id, tag_id)
+);
+
+INSERT INTO tags (name) VALUES
+  ('Equipamentos'), ('Comida'), ('Acampamento'), ('Transporte'), ('Material')
+ON CONFLICT (name) DO NOTHING;

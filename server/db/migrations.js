@@ -154,7 +154,14 @@ const migrations = [
       FOREIGN KEY(member_id) REFERENCES members(id) ON DELETE CASCADE
     )`,
   `ALTER TABLE projects ADD COLUMN start_date TEXT`,
-  `ALTER TABLE projects ADD COLUMN end_date TEXT`
+  `ALTER TABLE projects ADD COLUMN end_date TEXT`,
+  `CREATE TABLE IF NOT EXISTS project_tags (
+      project_id INTEGER NOT NULL,
+      tag_id INTEGER NOT NULL,
+      PRIMARY KEY (project_id, tag_id),
+      FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
+      FOREIGN KEY(tag_id) REFERENCES tags(id) ON DELETE CASCADE
+    )`
 ];
 
 function runMigrations() {
