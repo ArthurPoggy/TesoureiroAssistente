@@ -106,6 +106,20 @@ table tbody tr:hover {
   font-size: 0.85rem;
 }
 
+.expenses-search {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.85rem;
+}
+
+.table-empty {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-style: italic;
+  padding: var(--spacing-lg);
+}
+
 .table-toolbar-pagesize label {
   display: flex;
   align-items: center;

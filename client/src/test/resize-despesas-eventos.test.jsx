@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockUseAuth = vi.fn();
@@ -69,9 +69,9 @@ describe('ExpensesPanel — estrutura visual', () => {
     const expenses = [
       { id: 1, expense_date: '2024-01-15', title: 'Compra de material', amount: 150, category: 'Material' }
     ];
-    const { getByText } = render(<ExpensesPanel {...expenseProps} expenses={expenses} />);
+    const { getByText, getByRole } = render(<ExpensesPanel {...expenseProps} expenses={expenses} />);
     expect(getByText('Compra de material')).toBeInTheDocument();
-    expect(getByText('Material')).toBeInTheDocument();
+    expect(within(getByRole('table')).getByText('Material')).toBeInTheDocument();
   });
 
   it('exibe formulário de cadastro quando canEdit é true', () => {
