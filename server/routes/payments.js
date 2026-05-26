@@ -5,6 +5,7 @@ const { success, fail } = require('../utils/response');
 const { requireAuth, requirePrivileged } = require('../middleware/auth');
 const { isPrivilegedRequest } = require('../utils/roles');
 const { adjustCurrentBalance, getSettings, DEFAULT_SETTINGS } = require('../utils/settings');
+const { buildPixPayload } = require('../utils/pix');
 
 const router = express.Router();
 
@@ -190,6 +191,48 @@ router.delete('/:id', requirePrivileged, async (req, res) => {
     success(res);
   } catch (error) {
     fail(res, error.message);
+  }
+});
+
+router.get('/:id/pix', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const payment = await queryOne(
+      `SELECT p.*, m.name AS member_name
+       FROM payments p
+       JOIN members m ON m.id = p.member_id
+       WHERE p.id = ?`,
+      [id]
+    );
+    if (!payment) {
+      return fail(res, 'Pagamento não encontrado', 404);
+    }
+    if (!isPrivilegedRequest(req) && payment.member_id !== req.user?.memberId) {
+      return fail(res, 'Acesso restrito', 403);
+    }
+
+    const settings = await getSettings();
+    const pixKey = settings.pix_key;
+    if (!pixKey) {
+      return fail(res, 'Chave PIX não configurada nas configurações', 422);
+    }
+
+    const brcode = buildPixPayload({
+      pixKey,
+      merchantName: settings.pix_receiver || settings.org_name,
+      merchantCity: settings.pix_city,
+      amount: payment.amount,
+      txid: `MENS${payment.id}`
+    });
+
+    return success(res, {
+      brcode,
+      amount: Number(payment.amount),
+      pixKey,
+      receiver: settings.pix_receiver || settings.org_name || null
+    });
+  } catch (error) {
+    return fail(res, error.message);
   }
 });
 

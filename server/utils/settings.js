@@ -9,6 +9,7 @@ const DEFAULT_SETTINGS = {
   payment_due_day: '',
   pix_key: '',
   pix_receiver: '',
+  pix_city: '',
   dashboard_note: '',
   disclaimer_text: 'Sistema para uso interno. Os dados são confidenciais e de responsabilidade da organização.'
 };
@@ -74,6 +75,7 @@ const getPublicSettings = async () => {
     paymentDueDay,
     pixKey: settings.pix_key || '',
     pixReceiver: settings.pix_receiver || '',
+    pixCity: settings.pix_city || '',
     dashboardNote: settings.dashboard_note || '',
     disclaimerText: settings.disclaimer_text ?? DEFAULT_SETTINGS.disclaimer_text
   };

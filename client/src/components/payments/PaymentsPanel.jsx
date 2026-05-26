@@ -17,6 +17,7 @@ export function PaymentsPanel({
   onSubmit,
   onDelete,
   onReceipt,
+  onPix,
   fileInputKey,
   page = 1,
   pageSize = 25,
@@ -288,6 +289,9 @@ export function PaymentsPanel({
                     {canEdit && (
                       <td>
                         <button onClick={() => onReceipt(payment.id)}>Gerar recibo</button>
+                        {onPix && (
+                          <button className="ghost" onClick={() => onPix(payment.id)}>PIX</button>
+                        )}
                         <button className="ghost" onClick={() => onDelete(payment.id)}>Remover</button>
                       </td>
                     )}

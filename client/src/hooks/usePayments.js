@@ -176,6 +176,22 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
     }
   }, [authToken, handleError, showToast]);
 
+  const handlePixCode = useCallback(async (id) => {
+    try {
+      const data = await apiFetch(`/api/payments/${id}/pix`);
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(data.brcode);
+        showToast('Código PIX copiado para a área de transferência');
+      } else {
+        showToast('Código PIX gerado');
+      }
+      return data.brcode;
+    } catch (error) {
+      handleError(error);
+      return null;
+    }
+  }, [apiFetch, handleError, showToast]);
+
   return {
     payments,
     paymentForm,
@@ -186,6 +202,7 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
     handlePaymentSubmit,
     handlePaymentDelete,
     handleReceipt,
+    handlePixCode,
     fileInputKey,
     page,
     pageSize,
