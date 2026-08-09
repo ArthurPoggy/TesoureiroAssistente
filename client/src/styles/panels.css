@@ -18,6 +18,9 @@
 
 .panel-header h2 {
   margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
 }
 
 .two-column {
@@ -54,5 +57,5 @@
   display: block;
   margin-top: var(--spacing-md);
   color: var(--color-text-muted);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }

@@ -35,15 +35,15 @@
 }
 
 .extrato-card-label {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 600;
 }
 
 .extrato-card-value {
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
 }
 
 .extrato-income {
@@ -65,7 +65,7 @@
   display: inline-block;
   padding: 0.2rem 0.6rem;
   border-radius: var(--radius-full);
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
