@@ -9,6 +9,16 @@ const requireFields = (fields, message) => {
   return hasMissing ? message : null;
 };
 
+// Valida que `amount` é um número finito e não-negativo (usado em payments
+// e expenses, onde valores negativos ou não numéricos não fazem sentido de
+// negócio). Retorna `message` quando inválido, ou `null` quando ok.
+const validateNonNegativeAmount = (amount, message) => {
+  const numericAmount = Number(amount);
+  const isInvalid = Number.isNaN(numericAmount) || numericAmount < 0;
+  return isInvalid ? message : null;
+};
+
 module.exports = {
-  requireFields
+  requireFields,
+  validateNonNegativeAmount
 };

@@ -34,30 +34,41 @@ export function PaymentsPanel({
 }) {
   const { canEdit, memberId } = useAuth();
   const [errors, setErrors] = useState({});
-  const paymentInfoItems = [];
   const canViewOwnPix = (payment) => Boolean(onPix) && payment.member_id === memberId;
   const showActionsColumn = canEdit || payments.some(canViewOwnPix);
-  const validate = () => {
-  const newErrors = {};
 
-  if (!paymentForm.memberId) {
-    newErrors.memberId = "Selecione um membro";
-  }
+  const validatePaymentForm = () => {
+    const newErrors = {};
 
-  if (!paymentForm.amount || paymentForm.amount <= 0) {
-    newErrors.amount = "Valor deve ser maior que zero";
-  }
+    if (!paymentForm.memberId) {
+      newErrors.memberId = 'Selecione um membro';
+    }
+    if (!paymentForm.amount || paymentForm.amount <= 0) {
+      newErrors.amount = 'Valor deve ser maior que zero';
+    }
+    if (!paymentForm.year) {
+      newErrors.year = 'Ano obrigatório';
+    }
+    if (paymentForm.paid && !paymentForm.paidAt) {
+      newErrors.paidAt = 'Informe a data do pagamento';
+    }
 
-  if (!paymentForm.year) {
-    newErrors.year = "Ano obrigatório";
-  }
+    return newErrors;
+  };
 
-  if (paymentForm.paid && !paymentForm.paidAt) {
-    newErrors.paidAt = "Informe a data do pagamento";
-  }
+  const handleSubmit = (event) => {
+    event.preventDefault();
 
-  return newErrors;
-};
+    const validationErrors = validatePaymentForm();
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) {
+      return;
+    }
+
+    onSubmit(event);
+  };
+
+  const paymentInfoItems = [];
   if (paymentSettings?.paymentDueDay) {
     paymentInfoItems.push({
       label: 'Vencimento padrão',
@@ -98,28 +109,13 @@ export function PaymentsPanel({
       )}
 
       {canEdit ? (
-        <form
-  className="form-grid"
-  onSubmit={(e) => {
-    e.preventDefault();
-
-    const validationErrors = validate();
-
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    onSubmit(e);
-  }}
-  aria-busy={submitting}
->
+        <form className="form-grid" onSubmit={handleSubmit} aria-busy={submitting}>
+          {errors.memberId && <span className="error">{errors.memberId}</span>}
           <select
             value={paymentForm.memberId}
             onChange={(e) => setPaymentForm({ ...paymentForm, memberId: e.target.value })}
             required
           >
-            {errors.memberId && <span className="error">{errors.memberId}</span>}
             <option value="">Selecione um membro</option>
             {members.map((member) => (
               <option key={member.id} value={member.id}>

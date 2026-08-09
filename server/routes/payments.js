@@ -2,7 +2,7 @@ const express = require('express');
 const PDFDocument = require('pdfkit');
 const { query, queryOne, execute } = require('../db/query');
 const { success, fail, asyncHandler } = require('../utils/response');
-const { requireFields } = require('../utils/validation');
+const { requireFields, validateNonNegativeAmount } = require('../utils/validation');
 const { requireAuth, requirePrivileged } = require('../middleware/auth');
 const { isPrivilegedRequest } = require('../utils/roles');
 const { adjustCurrentBalance, getSettings, DEFAULT_SETTINGS } = require('../utils/settings');
@@ -71,6 +71,7 @@ router.get('/history/:memberId', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 const PAYMENT_REQUIRED_FIELDS_MESSAGE = 'Campos obrigatórios não preenchidos';
+const PAYMENT_INVALID_AMOUNT_MESSAGE = 'Valor do pagamento deve ser um número maior ou igual a zero';
 
 router.post('/', requirePrivileged, asyncHandler(async (req, res) => {
   const {
@@ -89,6 +90,10 @@ router.post('/', requirePrivileged, asyncHandler(async (req, res) => {
   const missing = requireFields({ memberId, month, year, amount }, PAYMENT_REQUIRED_FIELDS_MESSAGE);
   if (missing) {
     return fail(res, missing);
+  }
+  const invalidAmount = validateNonNegativeAmount(amount, PAYMENT_INVALID_AMOUNT_MESSAGE);
+  if (invalidAmount) {
+    return fail(res, invalidAmount);
   }
   const paidValue = paid ? 1 : 0;
   const existingPayment = await queryOne(
@@ -138,6 +143,10 @@ router.put('/:id', requirePrivileged, asyncHandler(async (req, res) => {
   const missing = requireFields({ amount }, PAYMENT_REQUIRED_FIELDS_MESSAGE);
   if (missing) {
     return fail(res, missing);
+  }
+  const invalidAmount = validateNonNegativeAmount(amount, PAYMENT_INVALID_AMOUNT_MESSAGE);
+  if (invalidAmount) {
+    return fail(res, invalidAmount);
   }
   const paidValue = paid ? 1 : 0;
   const existingPayment = await queryOne(

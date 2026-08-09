@@ -7,13 +7,6 @@ const roleLabels = {
   viewer: 'Visualização'
 };
 
-const maskCpf = (cpf) => {
-  if (!cpf) return '-';
-  const digits = cpf.replace(/\D/g, '');
-  if (digits.length !== 11) return cpf;
-  return `${digits.slice(0, 3)}.***.***-${digits.slice(9)}`;
-};
-
 const formatAmount = (value) =>
   Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -28,7 +21,7 @@ export function MemberDetailView({ member, onInvite, onDelete, onRoleChange }) {
   const isSelf = authUser?.memberId && String(authUser.memberId) === String(member?.id);
 
   useEffect(() => {
-    if (!member?.id) return;
+    if (!member?.id || typeof apiFetch !== 'function') return;
     let canceled = false;
     setLoadingSummary(true);
     setSummary(null);
@@ -74,8 +67,8 @@ export function MemberDetailView({ member, onInvite, onDelete, onRoleChange }) {
             <dd>{effectiveMember.email || '-'}</dd>
             <dt>Apelido</dt>
             <dd>{effectiveMember.nickname || '-'}</dd>
-            <dt>CPF / Registro</dt>
-            <dd>{maskCpf(effectiveMember.cpf)}</dd>
+            <dt>Registro Escoteiro:</dt>
+            <dd>{effectiveMember.cpf || '-'}</dd>
             <dt>Membro desde</dt>
             <dd>{effectiveMember.joined_at ? new Date(effectiveMember.joined_at).toLocaleDateString('pt-BR') : '-'}</dd>
             <dt>Primeiro acesso</dt>
