@@ -200,6 +200,7 @@ function App() {
     removeMemberFromProject,
     addMilestoneToProject,
     removeMilestoneFromProject,
+    toggleMilestoneCompletion,
     uploadProjectFiles,
     removeProjectFile,
     filterName: projectFilterName,
@@ -435,6 +436,7 @@ function App() {
         onRemoveMember={removeMemberFromProject}
         onAddMilestone={addMilestoneToProject}
         onRemoveMilestone={removeMilestoneFromProject}
+        onToggleMilestone={toggleMilestoneCompletion}
         onUploadProjectFiles={uploadProjectFiles}
         onRemoveProjectFile={removeProjectFile}
         filterName={projectFilterName}

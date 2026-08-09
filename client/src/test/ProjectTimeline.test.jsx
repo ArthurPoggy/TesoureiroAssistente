@@ -58,6 +58,7 @@ const defaultProps = {
   onRemoveMember: asyncNoop,
   onAddMilestone: asyncNoop,
   onRemoveMilestone: asyncNoop,
+  onToggleMilestone: asyncNoop,
   saving: false
 };
 
@@ -128,6 +129,30 @@ describe('Timeline de cronograma do projeto', () => {
 
       expect(onRemoveMilestone).toHaveBeenCalledWith(1, 101);
     });
+
+    it('permite marcar um marco pendente como concluído', () => {
+      const onToggleMilestone = vi.fn(async () => {});
+      render(<ProjectsPanel {...defaultProps} onToggleMilestone={onToggleMilestone} />);
+
+      const timeline = screen.getByRole('list', { name: /cronograma/i });
+      const items = within(timeline).getAllByRole('listitem');
+      const toggleButton = within(items[1]).getByRole('button', { name: /concluir marco/i });
+      fireEvent.click(toggleButton);
+
+      expect(onToggleMilestone).toHaveBeenCalledWith(1, 102, true);
+    });
+
+    it('permite reabrir um marco já concluído', () => {
+      const onToggleMilestone = vi.fn(async () => {});
+      render(<ProjectsPanel {...defaultProps} onToggleMilestone={onToggleMilestone} />);
+
+      const timeline = screen.getByRole('list', { name: /cronograma/i });
+      const items = within(timeline).getAllByRole('listitem');
+      const toggleButton = within(items[0]).getByRole('button', { name: /reabrir marco/i });
+      fireEvent.click(toggleButton);
+
+      expect(onToggleMilestone).toHaveBeenCalledWith(1, 101, false);
+    });
   });
 
   describe('viewer (canEdit=false)', () => {
@@ -148,6 +173,13 @@ describe('Timeline de cronograma do projeto', () => {
 
       const timeline = screen.getByRole('list', { name: /cronograma/i });
       expect(within(timeline).queryByRole('button', { name: /remover marco/i })).not.toBeInTheDocument();
+    });
+
+    it('não exibe botão de concluir/reabrir marco em nenhum item da timeline', () => {
+      render(<ProjectsPanel {...defaultProps} />);
+
+      const timeline = screen.getByRole('list', { name: /cronograma/i });
+      expect(within(timeline).queryByRole('button', { name: /conclu(ir|ído)|reabrir marco/i })).not.toBeInTheDocument();
     });
   });
 });

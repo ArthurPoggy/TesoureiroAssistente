@@ -91,6 +91,7 @@ export function ProjectsPanel({
   onRemoveMember,
   onAddMilestone,
   onRemoveMilestone,
+  onToggleMilestone,
   onUploadProjectFiles,
   onRemoveProjectFile,
   filterName = '',
@@ -402,6 +403,7 @@ export function ProjectsPanel({
                 canEdit={canEdit}
                 onAddMilestone={onAddMilestone}
                 onRemoveMilestone={onRemoveMilestone}
+                onToggleMilestone={onToggleMilestone}
               />
 
               <ProjectAttachments

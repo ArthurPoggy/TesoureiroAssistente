@@ -239,6 +239,19 @@ export function useProjects(showToast, handleError) {
     }
   }, [apiFetch, handleError, loadProjects, showToast]);
 
+  const toggleMilestoneCompletion = useCallback(async (projectId, milestoneId, concluido) => {
+    try {
+      await apiFetch(`/api/projects/${projectId}/milestones/${milestoneId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ concluido })
+      });
+      await loadProjects();
+      showToast(concluido ? 'Marco concluído' : 'Marco reaberto');
+    } catch (error) {
+      handleError(error);
+    }
+  }, [apiFetch, handleError, loadProjects, showToast]);
+
   const uploadProjectFiles = useCallback(async (projectId, files) => {
     try {
       const formData = new FormData();
@@ -287,6 +300,7 @@ export function useProjects(showToast, handleError) {
     removeMemberFromProject,
     addMilestoneToProject,
     removeMilestoneFromProject,
+    toggleMilestoneCompletion,
     uploadProjectFiles,
     removeProjectFile,
     filterName,

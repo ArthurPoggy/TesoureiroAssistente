@@ -303,6 +303,12 @@
   color: var(--color-text-muted);
 }
 
+.project-milestone-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
 .project-milestone-remove {
   all: unset;
   cursor: pointer;
@@ -312,6 +318,19 @@
 }
 
 .project-milestone-remove:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.project-milestone-toggle {
+  all: unset;
+  cursor: pointer;
+  color: var(--color-success);
+  font-size: 0.72rem;
+  opacity: 0.75;
+}
+
+.project-milestone-toggle:hover {
   opacity: 1;
   text-decoration: underline;
 }

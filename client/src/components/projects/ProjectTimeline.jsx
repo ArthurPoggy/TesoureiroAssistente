@@ -27,7 +27,7 @@ const STATUS_LABEL = {
   futuro: 'Futuro'
 };
 
-export function ProjectTimeline({ project, canEdit, onAddMilestone, onRemoveMilestone }) {
+export function ProjectTimeline({ project, canEdit, onAddMilestone, onRemoveMilestone, onToggleMilestone }) {
   const [isAdding, setIsAdding] = useState(false);
   const [titulo, setTitulo] = useState('');
   const [dataPrevista, setDataPrevista] = useState('');
@@ -65,13 +65,22 @@ export function ProjectTimeline({ project, canEdit, onAddMilestone, onRemoveMile
               )}
               <span className="project-milestone-status">{STATUS_LABEL[status]}</span>
               {canEdit && (
-                <button
-                  type="button"
-                  className="project-milestone-remove"
-                  onClick={() => onRemoveMilestone(project.id, milestone.id)}
-                >
-                  Remover marco
-                </button>
+                <div className="project-milestone-actions">
+                  <button
+                    type="button"
+                    className="project-milestone-toggle"
+                    onClick={() => onToggleMilestone(project.id, milestone.id, !milestone.concluido)}
+                  >
+                    {milestone.concluido ? 'Reabrir marco' : 'Concluir marco'}
+                  </button>
+                  <button
+                    type="button"
+                    className="project-milestone-remove"
+                    onClick={() => onRemoveMilestone(project.id, milestone.id)}
+                  >
+                    Remover marco
+                  </button>
+                </div>
               )}
             </li>
           );
