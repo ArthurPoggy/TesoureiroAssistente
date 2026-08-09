@@ -1,7 +1,8 @@
 const express = require('express');
 const config = require('../config');
 const { query, queryOne, execute } = require('../db/query');
-const { success, fail } = require('../utils/response');
+const { success, fail, asyncHandler } = require('../utils/response');
+const { requireFields } = require('../utils/validation');
 const { requireAuth } = require('../middleware/auth');
 const {
   normalizeEmail,
@@ -18,55 +19,52 @@ const router = express.Router();
 
 router.get('/health', (req, res) => success(res, { status: 'running' }));
 
-router.post('/login', async (req, res) => {
-  try {
-    if (!config.jwtConfigured) {
-      return fail(res, 'Autenticação não configurada', 500);
-    }
-    const { email, password } = req.body || {};
-    if (!email || !password) {
-      return fail(res, 'Informe email e senha', 400);
-    }
-    const normalizedEmail = normalizeEmail(email);
-
-    // Login via variável de ambiente (admin do sistema)
-    if (config.ADMIN_EMAIL && normalizedEmail === normalizeEmail(config.ADMIN_EMAIL)) {
-      if (!config.adminConfigured) {
-        return fail(res, 'Admin não configurado: defina ADMIN_PASSWORD no .env do servidor', 500);
-      }
-      if (password !== config.ADMIN_PASSWORD) {
-        return fail(res, 'Credenciais inválidas', 401);
-      }
-      const token = signToken({ role: 'admin', email: config.ADMIN_EMAIL, memberId: null });
-      return success(res, { token, role: 'admin', email: config.ADMIN_EMAIL, memberId: null });
-    }
-    const member = await queryOne(
-      'SELECT id, name, email, password_hash, role, active, must_reset_password FROM members WHERE LOWER(email) = ?',
-      [normalizedEmail]
-    );
-    if (!member || member.active === 0 || member.active === false || !member.password_hash) {
-      return fail(res, 'Credenciais inválidas', 401);
-    }
-    if (member.must_reset_password) {
-      return fail(res, 'Defina sua senha pelo link de primeiro acesso', 403);
-    }
-    const matches = await comparePassword(password, member.password_hash);
-    if (!matches) {
-      return fail(res, 'Credenciais inválidas', 401);
-    }
-    const role = member.role || 'viewer';
-    const token = signToken({ role, email: member.email, memberId: member.id, name: member.name || '' });
-    return success(res, {
-      token,
-      role,
-      email: member.email,
-      name: member.name || '',
-      memberId: member.id
-    });
-  } catch (error) {
-    fail(res, error.message);
+router.post('/login', asyncHandler(async (req, res) => {
+  if (!config.jwtConfigured) {
+    return fail(res, 'Autenticação não configurada', 500);
   }
-});
+  const { email, password } = req.body || {};
+  const missing = requireFields({ email, password }, 'Informe email e senha');
+  if (missing) {
+    return fail(res, missing, 400);
+  }
+  const normalizedEmail = normalizeEmail(email);
+
+  // Login via variável de ambiente (admin do sistema)
+  if (config.ADMIN_EMAIL && normalizedEmail === normalizeEmail(config.ADMIN_EMAIL)) {
+    if (!config.adminConfigured) {
+      return fail(res, 'Admin não configurado: defina ADMIN_PASSWORD no .env do servidor', 500);
+    }
+    if (password !== config.ADMIN_PASSWORD) {
+      return fail(res, 'Credenciais inválidas', 401);
+    }
+    const token = signToken({ role: 'admin', email: config.ADMIN_EMAIL, memberId: null });
+    return success(res, { token, role: 'admin', email: config.ADMIN_EMAIL, memberId: null });
+  }
+  const member = await queryOne(
+    'SELECT id, name, email, password_hash, role, active, must_reset_password FROM members WHERE LOWER(email) = ?',
+    [normalizedEmail]
+  );
+  if (!member || member.active === 0 || member.active === false || !member.password_hash) {
+    return fail(res, 'Credenciais inválidas', 401);
+  }
+  if (member.must_reset_password) {
+    return fail(res, 'Defina sua senha pelo link de primeiro acesso', 403);
+  }
+  const matches = await comparePassword(password, member.password_hash);
+  if (!matches) {
+    return fail(res, 'Credenciais inválidas', 401);
+  }
+  const role = member.role || 'viewer';
+  const token = signToken({ role, email: member.email, memberId: member.id, name: member.name || '' });
+  return success(res, {
+    token,
+    role,
+    email: member.email,
+    name: member.name || '',
+    memberId: member.id
+  });
+}));
 
 router.post('/register', async (req, res) => {
   try {
@@ -74,8 +72,9 @@ router.post('/register', async (req, res) => {
       return fail(res, 'Autenticação não configurada', 500);
     }
     const { name, email, password, cpf } = req.body || {};
-    if (!name || !email || !password || !cpf) {
-      return fail(res, 'Informe nome, email, registro e senha', 400);
+    const missing = requireFields({ name, email, password, cpf }, 'Informe nome, email, registro e senha');
+    if (missing) {
+      return fail(res, missing, 400);
     }
     if (!isValidCpf(cpf)) {
       return fail(res, 'Informe um registro válido', 400);
@@ -118,40 +117,37 @@ router.post('/register', async (req, res) => {
   }
 });
 
-router.post('/setup-password', async (req, res) => {
-  try {
-    if (!config.jwtConfigured) {
-      return fail(res, 'Autenticação não configurada', 500);
-    }
-    const { token, password } = req.body || {};
-    if (!token || !password) {
-      return fail(res, 'Informe token e senha', 400);
-    }
-    const tokenHash = hashSetupToken(token);
-    const member = await queryOne(
-      'SELECT id, name, email, role, active FROM members WHERE setup_token_hash = ?',
-      [tokenHash]
-    );
-    if (!member || member.active === 0 || member.active === false) {
-      return fail(res, 'Token inválido', 400);
-    }
-    const passwordHash = await hashPassword(password);
-    await execute(
-      'UPDATE members SET password_hash = ?, must_reset_password = 0, setup_token_hash = NULL, setup_token_created_at = NULL WHERE id = ?',
-      [passwordHash, member.id]
-    );
-    const authToken = signToken({ role: member.role || 'viewer', email: member.email, memberId: member.id, name: member.name || '' });
-    return success(res, {
-      token: authToken,
-      role: member.role || 'viewer',
-      email: member.email,
-      name: member.name || '',
-      memberId: member.id
-    });
-  } catch (error) {
-    fail(res, error.message);
+router.post('/setup-password', asyncHandler(async (req, res) => {
+  if (!config.jwtConfigured) {
+    return fail(res, 'Autenticação não configurada', 500);
   }
-});
+  const { token, password } = req.body || {};
+  const missing = requireFields({ token, password }, 'Informe token e senha');
+  if (missing) {
+    return fail(res, missing, 400);
+  }
+  const tokenHash = hashSetupToken(token);
+  const member = await queryOne(
+    'SELECT id, name, email, role, active FROM members WHERE setup_token_hash = ?',
+    [tokenHash]
+  );
+  if (!member || member.active === 0 || member.active === false) {
+    return fail(res, 'Token inválido', 400);
+  }
+  const passwordHash = await hashPassword(password);
+  await execute(
+    'UPDATE members SET password_hash = ?, must_reset_password = 0, setup_token_hash = NULL, setup_token_created_at = NULL WHERE id = ?',
+    [passwordHash, member.id]
+  );
+  const authToken = signToken({ role: member.role || 'viewer', email: member.email, memberId: member.id, name: member.name || '' });
+  return success(res, {
+    token: authToken,
+    role: member.role || 'viewer',
+    email: member.email,
+    name: member.name || '',
+    memberId: member.id
+  });
+}));
 
 router.get('/me', requireAuth, (req, res) => {
   success(res, {
