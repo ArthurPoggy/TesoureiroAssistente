@@ -46,13 +46,13 @@
 }
 
 .member-status-badge.status-active {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .member-status-badge.status-inactive {
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--color-gray-100);
+  color: var(--color-gray-500);
 }
 
 .member-detail-sections {
