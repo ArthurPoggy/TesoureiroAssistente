@@ -55,7 +55,9 @@ export function useSettings(showToast, handleError) {
 
   const loadPublicSettings = useCallback(async () => {
     try {
-      const data = await apiFetch('/api/settings/public');
+      // Endpoint autenticado (qualquer papel): traz chave PIX e aviso interno
+      // do tesoureiro, que não podem ser expostos pela rota pública /public.
+      const data = await apiFetch('/api/settings/member');
       setPublicSettings(normalizePublic(data));
     } catch (error) {
       handleError(error);

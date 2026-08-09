@@ -73,7 +73,9 @@ const buildVersionedBackgroundUrl = (url, version) => {
   return version ? `${url}?v=${version}` : url;
 };
 
-const getPublicSettings = async () => {
+// Retorna os dados de settings acessíveis a membros autenticados (qualquer papel),
+// incluindo chave PIX e aviso interno do tesoureiro exibidos no painel.
+const getMemberSettings = async () => {
   const settings = await getSettings();
   const defaultAmount = Number(settings.default_payment_amount);
   const paymentDueDay = normalizeDueDay(settings.payment_due_day);
@@ -90,6 +92,20 @@ const getPublicSettings = async () => {
     loginBackgroundUrl: buildVersionedBackgroundUrl(settings.login_background_url, settings.login_background_version),
     dashboardBackgroundUrl: buildVersionedBackgroundUrl(settings.dashboard_background_url, settings.dashboard_background_version)
   };
+};
+
+// Subconjunto seguro para expor sem autenticação (alimenta a LoginScreen, que
+// ainda não tem sessão). Nunca deve incluir chave PIX, recebedor, cidade do PIX
+// ou o aviso interno do tesoureiro — esses dados só vão para membros autenticados.
+const getPublicSettings = async () => {
+  const {
+    pixKey: _pixKey,
+    pixReceiver: _pixReceiver,
+    pixCity: _pixCity,
+    dashboardNote: _dashboardNote,
+    ...publicSafeSettings
+  } = await getMemberSettings();
+  return publicSafeSettings;
 };
 
 const setSetting = async (key, value) => {
@@ -174,6 +190,7 @@ module.exports = {
   getSetting,
   getSettings,
   getPublicSettings,
+  getMemberSettings,
   setSetting,
   setSettings,
   getCurrentBalance,

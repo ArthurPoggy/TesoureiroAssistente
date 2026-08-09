@@ -141,3 +141,38 @@ describe('GET /api/settings/public — imagens de fundo', () => {
     expect(res.body).toHaveProperty('dashboardBackgroundUrl');
   });
 });
+
+describe('GET /api/settings/member', () => {
+  beforeEach(() => {
+    clearBackgroundSettings();
+  });
+
+  afterAll(() => {
+    clearBackgroundSettings();
+  });
+
+  it('exige autenticação (401 sem token)', async () => {
+    const res = await request(app).get('/api/settings/member');
+    expect(res.status).toBe(401);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('retorna chave PIX e aviso interno do tesoureiro para qualquer membro autenticado (inclusive viewer)', async () => {
+    const upsertSetting = (key, value) => {
+      global.__testDb
+        .prepare(
+          `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+           ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+        )
+        .run(key, value);
+    };
+    upsertSetting('pix_key', 'chave-pix-secreta@clan.com');
+    upsertSetting('dashboard_note', 'Aviso interno: reserva de caixa não divulgada aos membros');
+
+    const res = await request(app).get('/api/settings/member').set(auth(tokens.viewer()));
+
+    expect(res.status).toBe(200);
+    expect(res.body.pixKey).toBe('chave-pix-secreta@clan.com');
+    expect(res.body.dashboardNote).toBe('Aviso interno: reserva de caixa não divulgada aos membros');
+  });
+});

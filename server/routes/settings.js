@@ -4,11 +4,12 @@ const fs = require('fs');
 const crypto = require('crypto');
 const multer = require('multer');
 const { success, fail } = require('../utils/response');
-const { requireAdmin, requirePrivileged } = require('../middleware/auth');
+const { requireAuth, requireAdmin, requirePrivileged } = require('../middleware/auth');
 const {
   DEFAULT_SETTINGS,
   getSettings,
   getPublicSettings,
+  getMemberSettings,
   setSettings,
   getCurrentBalance,
   setCurrentBalance,
@@ -85,9 +86,22 @@ router.get('/disclaimer', async (req, res) => {
 });
 
 // Deslogado por natureza: alimenta a tela de login, que não tem sessão ainda.
+// Retorna apenas o subconjunto seguro (sem chave PIX, recebedor, cidade do PIX
+// ou aviso interno do tesoureiro) — ver getPublicSettings em utils/settings.js.
 router.get('/public', async (req, res) => {
   try {
     const settings = await getPublicSettings();
+    success(res, settings);
+  } catch (error) {
+    fail(res, error.message);
+  }
+});
+
+// Autenticado (qualquer papel): alimenta o painel já logado, que exibe chave
+// PIX e aviso interno do tesoureiro para os membros.
+router.get('/member', requireAuth, async (req, res) => {
+  try {
+    const settings = await getMemberSettings();
     success(res, settings);
   } catch (error) {
     fail(res, error.message);
