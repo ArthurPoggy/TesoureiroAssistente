@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { ScrollToTop } from '../routes/ScrollToTop';
 
@@ -35,9 +35,11 @@ describe('ScrollToTop — rola para o topo na troca de rota', () => {
 
     window.scrollTo.mockClear();
 
-    screen.getByRole('button', { name: 'ir para pagamentos' }).click();
+    fireEvent.click(screen.getByRole('button', { name: 'ir para pagamentos' }));
 
     expect(await screen.findByText('Página de pagamentos')).toBeInTheDocument();
-    expect(window.scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
+    await waitFor(() => {
+      expect(window.scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
+    });
   });
 });
