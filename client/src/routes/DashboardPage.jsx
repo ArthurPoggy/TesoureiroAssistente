@@ -7,19 +7,16 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { parseMonthFilter, parseYearFilter, currentMonth, currentYear } from '../utils/formatters';
-import { useMembers, useGoals, useEvents, useDashboard, useSettings, useExtrato, useClanHistory, useTags, useProjects } from '../hooks';
+import { useMembers, useGoals, useDashboard, useSettings, useClanHistory } from '../hooks';
 import {
   Header,
-  SettingsPanel,
   GoalsPanel,
-  EventsPanel,
   DelinquencyRanking,
   ReportsSection,
-  ExtratoPanel,
   ClanHistoryPanel,
-  ProjectsPanel,
   Toast
 } from '../components';
 
@@ -31,18 +28,19 @@ const DashboardSection = lazy(() =>
 );
 
 // Rota /dashboard: mantém, por ora, os módulos ainda não migrados para rotas
-// próprias (metas, eventos, configurações, extrato, histórico, projetos e
-// relatórios). Membros, Pagamentos e Despesas passaram a ter suas próprias
-// rotas (ver MembersPage, PaymentsPage, ExpensesPage).
+// próprias (metas, histórico do clã e relatórios). Membros, Pagamentos,
+// Despesas, Eventos, Projetos, Extrato e Configurações passaram a ter suas
+// próprias rotas (ver MembersPage, PaymentsPage, ExpensesPage, EventsPage,
+// ProjectsPage, ExtratoPage, SettingsPage).
 export function DashboardPage() {
   const { authToken, authChecked, authUser, isAdmin } = useAuth();
+  const navigate = useNavigate();
 
   // Estado de UI
   const [toast, setToast] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(String(currentMonth));
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
   const [selectedUserFilter, setSelectedUserFilter] = useState('all');
-  const [showSettings, setShowSettings] = useState(false);
 
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type });
@@ -59,18 +57,7 @@ export function DashboardPage() {
 
   const { goals, goalForm, setGoalForm, editingGoalId, loadGoals, resetGoalForm, handleGoalSubmit, handleGoalDelete, startEditGoal } = useGoals(showToast, handleError);
 
-  const { events, eventForm, setEventForm, editingEventId, loadEvents, resetEventForm, handleEventSubmit, handleEventDelete, startEditEvent } = useEvents(showToast, handleError);
-
-  const {
-    publicSettings,
-    settingsForm,
-    setSettingsForm,
-    loading: settingsLoading,
-    saving: settingsSaving,
-    loadPublicSettings,
-    loadSettings,
-    saveSettings
-  } = useSettings(showToast, handleError);
+  const { publicSettings, loadPublicSettings } = useSettings(showToast, handleError);
 
   // Filtros computados
   const monthFilter = useMemo(() => parseMonthFilter(selectedMonth), [selectedMonth]);
@@ -127,34 +114,6 @@ export function DashboardPage() {
   } = useDashboard(handleError, monthFilter, yearFilter, selectedMemberId);
 
   const {
-    projects,
-    loading: projectsLoading,
-    projectForm,
-    setProjectForm,
-    editingProjectId,
-    saving: projectSaving,
-    loadProjects,
-    resetProjectForm,
-    handleProjectSubmit,
-    handleProjectDelete,
-    startEditProject,
-    addMemberToProject,
-    removeMemberFromProject,
-    filterName: projectFilterName,
-    filterStatus: projectFilterStatus,
-    filterStartDate: projectFilterStartDate,
-    filterEndDate: projectFilterEndDate,
-    filterMemberId: projectFilterMemberId,
-    activeFiltersCount: projectActiveFiltersCount,
-    onFilterNameChange: handleProjectFilterName,
-    onFilterStatusChange: handleProjectFilterStatus,
-    onFilterStartDateChange: handleProjectFilterStartDate,
-    onFilterEndDateChange: handleProjectFilterEndDate,
-    onFilterMemberIdChange: handleProjectFilterMemberId,
-    onClearFilters: handleProjectClearFilters
-  } = useProjects(showToast, handleError);
-
-  const {
     records: historyRecords,
     historyForm,
     setHistoryForm,
@@ -167,38 +126,18 @@ export function DashboardPage() {
     startEditHistory
   } = useClanHistory(showToast, handleError);
 
-  const {
-    entries: extratoEntries,
-    summary: extratoSummary,
-    loading: extratoLoading,
-    filters: extratoFilters,
-    setFilters: setExtratoFilters,
-    loadExtrato,
-    exportExtrato
-  } = useExtrato(handleError, isAdmin);
-
-  const { tags, loadTags } = useTags(showToast, handleError);
-
   // Carregar dados iniciais
   useEffect(() => {
     if (!authToken || !authChecked) return;
     loadMembers();
     loadGoals();
-    loadEvents();
     loadHistory();
-    loadTags();
-    loadProjects();
-  }, [authToken, authChecked, loadMembers, loadGoals, loadEvents, loadHistory, loadTags, loadProjects]);
+  }, [authToken, authChecked, loadMembers, loadGoals, loadHistory]);
 
   useEffect(() => {
     if (!authToken || !authChecked) return;
     loadPublicSettings();
   }, [authToken, authChecked, loadPublicSettings]);
-
-  useEffect(() => {
-    if (!authToken || !authChecked || !isAdmin || !showSettings) return;
-    loadSettings();
-  }, [authToken, authChecked, isAdmin, loadSettings, showSettings]);
 
   // Recarregar dados filtrados
   useEffect(() => {
@@ -228,8 +167,8 @@ export function DashboardPage() {
         selectedUserFilter={selectedUserFilter}
         setSelectedUserFilter={setSelectedUserFilter}
         resetFilters={resetFilters}
-        settingsOpen={showSettings}
-        onToggleSettings={() => setShowSettings((value) => !value)}
+        settingsOpen={false}
+        onToggleSettings={() => navigate('/configuracoes')}
       />
 
       {toast && <Toast message={toast.message} type={toast.type} />}
@@ -244,24 +183,6 @@ export function DashboardPage() {
         />
       </Suspense>
 
-      {showSettings && isAdmin && (
-        <SettingsPanel
-          settingsForm={settingsForm}
-          setSettingsForm={setSettingsForm}
-          loading={settingsLoading}
-          saving={settingsSaving}
-          onSave={async () => {
-            const saved = await saveSettings();
-            if (saved) {
-              loadDashboard();
-            }
-          }}
-          onClose={() => setShowSettings(false)}
-          showToast={showToast}
-          handleError={handleError}
-        />
-      )}
-
       <GoalsPanel
         goalForm={goalForm}
         setGoalForm={setGoalForm}
@@ -270,59 +191,7 @@ export function DashboardPage() {
         onReset={resetGoalForm}
       />
 
-      <EventsPanel
-        events={events}
-        eventForm={eventForm}
-        setEventForm={setEventForm}
-        editingEventId={editingEventId}
-        onSubmit={handleEventSubmit}
-        onDelete={handleEventDelete}
-        onEdit={startEditEvent}
-        onReset={resetEventForm}
-      />
-
       {isAdmin && <DelinquencyRanking delinquent={delinquent} ranking={ranking} />}
-
-      <ProjectsPanel
-        projects={projects}
-        loading={projectsLoading}
-        projectForm={projectForm}
-        setProjectForm={setProjectForm}
-        editingProjectId={editingProjectId}
-        members={members}
-        saving={projectSaving}
-        onSubmit={handleProjectSubmit}
-        onDelete={handleProjectDelete}
-        onEdit={startEditProject}
-        onReset={resetProjectForm}
-        onAddMember={addMemberToProject}
-        onRemoveMember={removeMemberFromProject}
-        filterName={projectFilterName}
-        filterStatus={projectFilterStatus}
-        filterStartDate={projectFilterStartDate}
-        filterEndDate={projectFilterEndDate}
-        filterMemberId={projectFilterMemberId}
-        activeFiltersCount={projectActiveFiltersCount}
-        onFilterNameChange={handleProjectFilterName}
-        onFilterStatusChange={handleProjectFilterStatus}
-        onFilterStartDateChange={handleProjectFilterStartDate}
-        onFilterEndDateChange={handleProjectFilterEndDate}
-        onFilterMemberIdChange={handleProjectFilterMemberId}
-        onClearFilters={handleProjectClearFilters}
-        tags={tags}
-      />
-
-      <ExtratoPanel
-        entries={extratoEntries}
-        summary={extratoSummary}
-        loading={extratoLoading}
-        filters={extratoFilters}
-        setFilters={setExtratoFilters}
-        onLoad={loadExtrato}
-        onExport={exportExtrato}
-        members={isAdmin ? members : []}
-        isAdmin={isAdmin}
-      />
 
       <ClanHistoryPanel
         records={historyRecords}
