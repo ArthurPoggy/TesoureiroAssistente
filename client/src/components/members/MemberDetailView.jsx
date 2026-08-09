@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { maskCpf } from '../../utils/formatters';
 
 const roleLabels = {
   admin: 'Tesoureiro',
@@ -68,7 +69,7 @@ export function MemberDetailView({ member, onInvite, onDelete, onRoleChange }) {
             <dt>Apelido</dt>
             <dd>{effectiveMember.nickname || '-'}</dd>
             <dt>Registro Escoteiro:</dt>
-            <dd>{effectiveMember.cpf || '-'}</dd>
+            <dd>{maskCpf(effectiveMember.cpf)}</dd>
             <dt>Membro desde</dt>
             <dd>{effectiveMember.joined_at ? new Date(effectiveMember.joined_at).toLocaleDateString('pt-BR') : '-'}</dd>
             <dt>Primeiro acesso</dt>

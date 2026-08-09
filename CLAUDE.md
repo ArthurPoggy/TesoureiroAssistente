@@ -85,6 +85,16 @@ máximo **50 linhas**. Ao ultrapassar esse limite:
   `handleSubmit`) em vez de deixar lógica anônima inline em props como
   `onSubmit={(e) => { ... }}`.
 
+## Dados pessoais sensíveis (LGPD)
+
+Identificadores sensíveis (CPF/Registro Escoteiro) nunca são exibidos em
+texto puro na UI, mesmo quando o rótulo visível foi trocado para "Registro
+Escoteiro" (ver `docs/lgpd.md`, item 5). Use `maskCpf` de
+`client/src/utils/formatters.js` em todo componente que renderiza o valor
+(`MembersPanel`, `MemberDetailView`, ...) — não remova a máscara para
+"alinhar" um componente a outro que porventura esteja exibindo o valor sem
+proteção; o correto é aplicar a máscara nos dois lugares.
+
 ## Outras convenções de código morto/legibilidade
 
 - Sem `console.log`/`debugger` em código de produção — usar apenas em testes
