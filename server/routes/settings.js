@@ -29,6 +29,7 @@ router.get('/', requirePrivileged, async (req, res) => {
       paymentDueDay,
       pixKey: settings.pix_key || '',
       pixReceiver: settings.pix_receiver || '',
+      pixCity: settings.pix_city || '',
       dashboardNote: settings.dashboard_note || '',
       disclaimerText: settings.disclaimer_text ?? DEFAULT_SETTINGS.disclaimer_text,
       currentBalance
@@ -67,6 +68,7 @@ router.put('/', requirePrivileged, async (req, res) => {
       paymentDueDay,
       pixKey,
       pixReceiver,
+      pixCity,
       dashboardNote,
       disclaimerText
     } = req.body || {};
@@ -94,6 +96,7 @@ router.put('/', requirePrivileged, async (req, res) => {
       payment_due_day: dueDayValue,
       pix_key: pixKey ?? '',
       pix_receiver: pixReceiver ?? '',
+      pix_city: pixCity ?? '',
       dashboard_note: dashboardNote ?? '',
       disclaimer_text: disclaimerText ?? DEFAULT_SETTINGS.disclaimer_text
     });
@@ -112,6 +115,7 @@ router.put('/', requirePrivileged, async (req, res) => {
       paymentDueDay: refreshedDueDay,
       pixKey: settings.pix_key || '',
       pixReceiver: settings.pix_receiver || '',
+      pixCity: settings.pix_city || '',
       dashboardNote: settings.dashboard_note || '',
       disclaimerText: settings.disclaimer_text ?? DEFAULT_SETTINGS.disclaimer_text,
       currentBalance: refreshedBalance

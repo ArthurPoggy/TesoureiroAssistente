@@ -168,6 +168,7 @@ export function AuthProvider({ children }) {
     isAdmin,
     isDiretor,
     canEdit,
+    memberId: authUser.memberId,
     apiFetch,
     login,
     register,

@@ -17,6 +17,7 @@ export function PaymentsPanel({
   onSubmit,
   onDelete,
   onReceipt,
+  onPix,
   fileInputKey,
   page = 1,
   pageSize = 25,
@@ -31,9 +32,11 @@ export function PaymentsPanel({
   onFilterMemberChange,
   children
 }) {
-  const { canEdit } = useAuth();
+  const { canEdit, memberId } = useAuth();
   const [errors, setErrors] = useState({});
   const paymentInfoItems = [];
+  const canViewOwnPix = (payment) => Boolean(onPix) && payment.member_id === memberId;
+  const showActionsColumn = canEdit || payments.some(canViewOwnPix);
   const validate = () => {
   const newErrors = {};
 
@@ -272,7 +275,7 @@ export function PaymentsPanel({
                   <th>Valor</th>
                   <th>Status</th>
                   <th>Meta</th>
-                  {canEdit && <th>Ações</th>}
+                  {showActionsColumn && <th>Ações</th>}
                 </tr>
               </thead>
               <tbody>
@@ -285,10 +288,17 @@ export function PaymentsPanel({
                       {payment.paid ? 'Pago' : 'Pendente'}
                     </td>
                     <td>{payment.goal_id ? goals.find((g) => g.id === payment.goal_id)?.title : '-'}</td>
-                    {canEdit && (
+                    {(canEdit || canViewOwnPix(payment)) && (
                       <td>
-                        <button onClick={() => onReceipt(payment.id)}>Gerar recibo</button>
-                        <button className="ghost" onClick={() => onDelete(payment.id)}>Remover</button>
+                        {canEdit && (
+                          <button onClick={() => onReceipt(payment.id)}>Gerar recibo</button>
+                        )}
+                        {(canEdit || canViewOwnPix(payment)) && onPix && (
+                          <button className="ghost" onClick={() => onPix(payment.id)}>PIX</button>
+                        )}
+                        {canEdit && (
+                          <button className="ghost" onClick={() => onDelete(payment.id)}>Remover</button>
+                        )}
                       </td>
                     )}
                   </tr>

@@ -146,6 +146,7 @@ function App() {
     handlePaymentSubmit,
     handlePaymentDelete,
     handleReceipt,
+    handlePixCode,
     page: paymentPage,
     pageSize: paymentPageSize,
     total: paymentTotal,
@@ -371,6 +372,7 @@ function App() {
         onSubmit={(e) => handlePaymentSubmit(e, refreshAfterPayment)}
         onDelete={(id) => handlePaymentDelete(id, refreshAfterPayment)}
         onReceipt={handleReceipt}
+        onPix={handlePixCode}
         fileInputKey={paymentFileInputKey}
         page={paymentPage}
         pageSize={paymentPageSize}
