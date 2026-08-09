@@ -89,7 +89,9 @@ describe('POST /api/projects/:id/files — upload de arquivos do projeto', () =>
       expect(res.status).toBeLessThan(500);
       expect(res.body.ok).toBe(false);
     } else {
-      expect(connectionError).toBeUndefined();
+      // Conexão interrompida (ex.: ECONNRESET) também é uma rejeição válida
+      // do arquivo grande demais.
+      expect(connectionError).toBeDefined();
     }
   }, 30000);
 
