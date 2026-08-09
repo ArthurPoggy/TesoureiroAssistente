@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // Verifica que a fonte Inter é carregada localmente via @fontsource (offline-first),
 // com os pesos 400/500/600/700 e font-display: swap, em vez de depender apenas do
 // fallback system-ui (que é o que acontece hoje, já que nenhum arquivo de fonte é
 // efetivamente baixado/importado no projeto).
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientRoot = path.resolve(__dirname, '..', '..');
 const srcRoot = path.resolve(clientRoot, 'src');
 
