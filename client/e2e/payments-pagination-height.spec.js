@@ -3,11 +3,17 @@ import { test, expect, request as playwrightRequest } from '@playwright/test';
 // A API roda em porta separada do dev server do Vite (baseURL do playwright.config.js).
 const API_BASE_URL = 'http://localhost:4000';
 
-// Credenciais do usuário de teste (seed de dev): sobrescrevíveis via env para
-// não deixar segredo em texto plano no código (ver server/routes/seed.js,
-// que usa SEED_TEST_PASSWORD com o mesmo fallback local).
+// Credenciais do usuário de teste (seed de dev). A senha NÃO tem fallback
+// literal no código (evita alertas de "segredo hardcoded" em scanners como o
+// GitGuardian): exporte E2E_DIRETOR_PASSWORD com o mesmo valor configurado em
+// SEED_TEST_PASSWORD (ver server/routes/seed.js) antes de rodar `npm run test:e2e`.
 const DIRETOR_EMAIL = process.env.E2E_DIRETOR_EMAIL || 'diretor_teste@clan.com';
-const DIRETOR_PASSWORD = process.env.E2E_DIRETOR_PASSWORD || 'test123';
+const DIRETOR_PASSWORD = process.env.E2E_DIRETOR_PASSWORD;
+if (!DIRETOR_PASSWORD) {
+  throw new Error(
+    'E2E_DIRETOR_PASSWORD não definida: exporte a senha do usuário de teste antes de rodar os specs de e2e.'
+  );
+}
 
 // Ano "no futuro", isolado de outros specs que também usam anos futuros
 // (ex.: payments-pagination.spec.js usa 2098/2099).
