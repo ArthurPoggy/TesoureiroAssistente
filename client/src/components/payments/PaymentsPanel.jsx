@@ -296,16 +296,20 @@ export function PaymentsPanel({
                       {payment.paid ? 'Pago' : 'Pendente'}
                     </td>
                     <td>{payment.goal_id ? goals.find((g) => g.id === payment.goal_id)?.title : '-'}</td>
-                    {(canEdit || canViewOwnPix(payment)) && (
+                    {showActionsColumn && (
                       <td>
-                        {canEdit && (
-                          <button onClick={() => onReceipt(payment.id)}>Gerar recibo</button>
-                        )}
-                        {(canEdit || canViewOwnPix(payment)) && onPix && (
-                          <button className="ghost" onClick={() => onPix(payment.id)}>PIX</button>
-                        )}
-                        {canEdit && (
-                          <button className="ghost" onClick={() => onDelete(payment.id)}>Remover</button>
+                        {(canEdit || canViewOwnPix(payment)) && (
+                          <>
+                            {canEdit && (
+                              <button onClick={() => onReceipt(payment.id)}>Gerar recibo</button>
+                            )}
+                            {(canEdit || canViewOwnPix(payment)) && onPix && (
+                              <button className="ghost" onClick={() => onPix(payment.id)}>PIX</button>
+                            )}
+                            {canEdit && (
+                              <button className="ghost" onClick={() => onDelete(payment.id)}>Remover</button>
+                            )}
+                          </>
                         )}
                       </td>
                     )}
