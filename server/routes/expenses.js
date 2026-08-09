@@ -1,7 +1,8 @@
 const express = require('express');
-const { query, execute } = require('../db/query');
+const { query, queryOne, execute } = require('../db/query');
 const { success, fail } = require('../utils/response');
 const { requireAuth, requirePrivileged } = require('../middleware/auth');
+const { computeRateio } = require('../utils/rateio');
 
 const router = express.Router();
 
@@ -135,6 +136,45 @@ router.delete('/:id', requirePrivileged, async (req, res) => {
     const { id } = req.params;
     await execute('DELETE FROM expenses WHERE id = ?', [id]);
     success(res);
+  } catch (error) {
+    fail(res, error.message);
+  }
+});
+
+// Calcula (preview) o rateio do valor de uma despesa entre os participantes
+// informados. Não persiste cobranças — retorna a divisão proporcional.
+router.post('/:id/rateio', requirePrivileged, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { participantIds } = req.body || {};
+    if (!Array.isArray(participantIds) || participantIds.length === 0) {
+      return fail(res, 'Informe ao menos um participante', 400);
+    }
+    const expense = await queryOne('SELECT * FROM expenses WHERE id = ?', [id]);
+    if (!expense) {
+      return fail(res, 'Despesa não encontrada', 404);
+    }
+    const ids = [...new Set(participantIds.map((v) => Number(v)).filter(Boolean))];
+    if (ids.length === 0) {
+      return fail(res, 'Participantes inválidos', 400);
+    }
+    const placeholders = ids.map(() => '?').join(', ');
+    const members = await query(
+      `SELECT id, name FROM members WHERE id IN (${placeholders})`,
+      ids
+    );
+    const nameById = members.reduce((acc, m) => { acc[m.id] = m.name; return acc; }, {});
+    const idsInexistentes = ids.filter((memberId) => !nameById[memberId]);
+    if (idsInexistentes.length > 0) {
+      return fail(res, `Participante(s) inexistente(s): ${idsInexistentes.join(', ')}`, 400);
+    }
+    const shares = computeRateio(expense.amount, ids);
+    const participants = shares.map((s) => ({ ...s, name: nameById[s.memberId] || null }));
+    success(res, {
+      expenseId: Number(id),
+      total: Number(expense.amount),
+      perMember: participants
+    });
   } catch (error) {
     fail(res, error.message);
   }
