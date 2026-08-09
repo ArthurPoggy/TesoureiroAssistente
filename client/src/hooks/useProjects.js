@@ -46,6 +46,8 @@ export function useProjects(showToast, handleError) {
     status: 'active',
     start_date: '',
     end_date: '',
+    data_inicio: '',
+    data_fim_planejada: '',
     tagIds: []
   });
   const [editingProjectId, setEditingProjectId] = useState(null);
@@ -122,17 +124,40 @@ export function useProjects(showToast, handleError) {
   }, []);
 
   const resetProjectForm = useCallback(() => {
-    setProjectForm({ name: '', description: '', status: 'active', start_date: '', end_date: '', tagIds: [] });
+    setProjectForm({
+      name: '',
+      description: '',
+      status: 'active',
+      start_date: '',
+      end_date: '',
+      data_inicio: '',
+      data_fim_planejada: '',
+      tagIds: []
+    });
     setEditingProjectId(null);
   }, []);
+
+  const updateProjectDates = useCallback(async (projectId, { data_inicio, data_fim_planejada }) => {
+    await apiFetch(`/api/projects/${projectId}/dates`, {
+      method: 'PUT',
+      body: JSON.stringify({ data_inicio: data_inicio || null, data_fim_planejada: data_fim_planejada || null })
+    });
+  }, [apiFetch]);
 
   const handleProjectSubmit = useCallback(async (e) => {
     e.preventDefault();
     try {
       setSaving(true);
+      const { data_inicio, data_fim_planejada, ...projectFields } = projectForm;
       const endpoint = editingProjectId ? `/api/projects/${editingProjectId}` : '/api/projects';
       const method = editingProjectId ? 'PUT' : 'POST';
-      await apiFetch(endpoint, { method, body: JSON.stringify(projectForm) });
+      const data = await apiFetch(endpoint, { method, body: JSON.stringify(projectFields) });
+      const projectId = editingProjectId || data?.project?.id;
+      // Ao editar, sempre sincroniza o cronograma previsto (permite limpar as datas);
+      // ao criar, só chama o endpoint se o usuário informou alguma data prevista.
+      if (projectId && (editingProjectId || data_inicio || data_fim_planejada)) {
+        await updateProjectDates(projectId, { data_inicio, data_fim_planejada });
+      }
       await loadProjects();
       resetProjectForm();
       showToast(editingProjectId ? 'Projeto atualizado' : 'Projeto criado');
@@ -141,7 +166,7 @@ export function useProjects(showToast, handleError) {
     } finally {
       setSaving(false);
     }
-  }, [apiFetch, editingProjectId, projectForm, handleError, loadProjects, resetProjectForm, showToast]);
+  }, [apiFetch, editingProjectId, projectForm, handleError, loadProjects, resetProjectForm, showToast, updateProjectDates]);
 
   const handleProjectDelete = useCallback(async (id) => {
     if (!window.confirm('Excluir este projeto?')) return;
@@ -161,6 +186,8 @@ export function useProjects(showToast, handleError) {
       status: project.status,
       start_date: project.start_date || '',
       end_date: project.end_date || '',
+      data_inicio: project.data_inicio || '',
+      data_fim_planejada: project.data_fim_planejada || '',
       tagIds: (project.tags || []).map((t) => t.id)
     });
     setEditingProjectId(project.id);
@@ -255,6 +282,7 @@ export function useProjects(showToast, handleError) {
     handleProjectSubmit,
     handleProjectDelete,
     startEditProject,
+    updateProjectDates,
     addMemberToProject,
     removeMemberFromProject,
     addMilestoneToProject,

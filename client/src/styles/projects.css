@@ -500,11 +500,21 @@
   box-sizing: border-box;
 }
 
+.project-modal-section--wide {
+  grid-column: 1 / -1;
+}
+
 .project-modal-section-label {
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.project-modal-section-hint {
+  margin: -0.2rem 0 0;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
 }
 
