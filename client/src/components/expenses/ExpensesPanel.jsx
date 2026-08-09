@@ -1,7 +1,8 @@
+import { useState, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatCurrency } from '../../utils/formatters';
 
-function TagSelector({ tags, selectedIds = [], onChange, canEdit }) {
+function TagSelector({ tags = [], selectedIds = [], onChange, canEdit }) {
   const toggle = (id) => {
     if (!canEdit) return;
     onChange(
@@ -52,13 +53,34 @@ export function ExpensesPanel({
   editingExpenseId,
   fileInputKey,
   events,
-  tags,
+  tags = [],
   onSubmit,
   onDelete,
   onEdit,
   onReset
 }) {
   const { canEdit } = useAuth();
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+
+  const categories = useMemo(
+    () => [...new Set(expenses.map((e) => e.category).filter(Boolean))].sort(),
+    [expenses]
+  );
+
+  const filteredExpenses = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return expenses.filter((expense) => {
+      const matchesCategory = !categoryFilter || expense.category === categoryFilter;
+      if (!matchesCategory) return false;
+      if (!term) return true;
+      const haystack = [expense.title, expense.category, expense.notes]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(term);
+    });
+  }, [expenses, search, categoryFilter]);
 
   return (
     <section className="panel">
@@ -145,6 +167,29 @@ export function ExpensesPanel({
         <p className="lock-hint">Somente o tesoureiro pode registrar despesas.</p>
       )}
 
+      <div className="table-toolbar">
+        <div className="table-toolbar-filters">
+          <input
+            type="search"
+            className="expenses-search"
+            placeholder="Buscar despesas..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label="Buscar despesas"
+          />
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            aria-label="Filtrar por categoria"
+          >
+            <option value="">Todas as categorias</option>
+            {categories.map((category) => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <div className="table-wrapper compact">
         <table>
           <thead>
@@ -158,23 +203,31 @@ export function ExpensesPanel({
             </tr>
           </thead>
           <tbody>
-            {expenses.map((expense) => (
-              <tr key={expense.id}>
-                <td>{expense.expense_date}</td>
-                <td>{expense.title}</td>
-                <td>{formatCurrency(expense.amount)}</td>
-                <td>{expense.category}</td>
-                <td><TagPills tags={expense.tags} /></td>
-                {canEdit && (
-                  <td>
-                    <button onClick={() => onEdit(expense)}>Editar</button>
-                    <button className="ghost" onClick={() => onDelete(expense.id)}>
-                      Remover
-                    </button>
-                  </td>
-                )}
+            {filteredExpenses.length === 0 ? (
+              <tr>
+                <td colSpan={canEdit ? 6 : 5} className="table-empty">
+                  Nenhuma despesa encontrada.
+                </td>
               </tr>
-            ))}
+            ) : (
+              filteredExpenses.map((expense) => (
+                <tr key={expense.id}>
+                  <td>{expense.expense_date}</td>
+                  <td>{expense.title}</td>
+                  <td>{formatCurrency(expense.amount)}</td>
+                  <td>{expense.category}</td>
+                  <td><TagPills tags={expense.tags} /></td>
+                  {canEdit && (
+                    <td>
+                      <button onClick={() => onEdit(expense)}>Editar</button>
+                      <button className="ghost" onClick={() => onDelete(expense.id)}>
+                        Remover
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
