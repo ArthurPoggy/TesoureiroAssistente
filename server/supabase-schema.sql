@@ -179,3 +179,57 @@ CREATE TABLE IF NOT EXISTS project_files (
 INSERT INTO tags (name) VALUES
   ('Equipamentos'), ('Comida'), ('Acampamento'), ('Transporte'), ('Material')
 ON CONFLICT (name) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS permissions (
+  code TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  category TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS member_permissions (
+  id SERIAL PRIMARY KEY,
+  member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  permission_code TEXT NOT NULL REFERENCES permissions(code) ON DELETE CASCADE,
+  allowed BOOLEAN NOT NULL DEFAULT TRUE,
+  origem TEXT DEFAULT 'manual',
+  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
+  UNIQUE(member_id, permission_code)
+);
+
+-- Catálogo de permissões: mantido em sincronia com server/utils/permissions.js
+-- (PERMISSIONS_CATALOG). Ver também a matriz role x permissão documentada lá.
+INSERT INTO permissions (code, name, category) VALUES
+  ('pagamentos.ver', 'Visualizar pagamentos', 'Pagamentos'),
+  ('pagamentos.criar', 'Registrar novos pagamentos', 'Pagamentos'),
+  ('pagamentos.editar', 'Editar pagamentos existentes', 'Pagamentos'),
+  ('pagamentos.excluir', 'Excluir pagamentos', 'Pagamentos'),
+  ('despesas.ver', 'Visualizar despesas', 'Despesas'),
+  ('despesas.criar', 'Registrar novas despesas', 'Despesas'),
+  ('despesas.editar', 'Editar despesas existentes', 'Despesas'),
+  ('despesas.excluir', 'Excluir despesas', 'Despesas'),
+  ('membros.ver', 'Visualizar membros', 'Membros'),
+  ('membros.gerenciar', 'Criar, editar, convidar e remover membros', 'Membros'),
+  ('membros.alterar_role', 'Alterar o papel (role) de um membro', 'Membros'),
+  ('relatorios.ver', 'Visualizar relatórios e extratos', 'Relatórios'),
+  ('relatorios.exportar', 'Exportar relatórios e extratos', 'Relatórios'),
+  ('metas.ver', 'Visualizar metas', 'Metas'),
+  ('metas.gerenciar', 'Criar, editar e excluir metas', 'Metas'),
+  ('eventos.ver', 'Visualizar eventos', 'Eventos'),
+  ('eventos.gerenciar', 'Criar, editar e excluir eventos', 'Eventos'),
+  ('projetos.ver', 'Visualizar projetos', 'Projetos'),
+  ('projetos.gerenciar', 'Criar, editar, excluir projetos e gerenciar membros do projeto', 'Projetos'),
+  ('configuracoes.ver', 'Visualizar configurações do sistema', 'Configurações'),
+  ('configuracoes.gerenciar', 'Alterar configurações do sistema', 'Configurações'),
+  ('arquivos.ver', 'Visualizar arquivos anexados', 'Arquivos'),
+  ('arquivos.gerenciar', 'Enviar e gerenciar arquivos (Google Drive)', 'Arquivos')
+ON CONFLICT (code) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS permission_audit_log (
+  id SERIAL PRIMARY KEY,
+  member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  permission_code TEXT NOT NULL REFERENCES permissions(code) ON DELETE CASCADE,
+  previous_value BOOLEAN,
+  new_value BOOLEAN NOT NULL,
+  changed_by INTEGER REFERENCES members(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+);

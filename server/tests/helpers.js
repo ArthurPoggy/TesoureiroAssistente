@@ -5,10 +5,17 @@ const SECRET = 'test-secret-key-for-jest';
 
 const makeToken = (payload) => jwt.sign(payload, SECRET, { expiresIn: '1h' });
 
+// Os tokens de conveniência abaixo precisam corresponder a um membro real no
+// banco de testes: requirePermission calcula a permissão efetiva consultando
+// o role (e eventuais overrides) do membro autenticado, não apenas o role
+// embutido no payload do JWT.
+const tokenForRole = (role, email) => () =>
+  makeToken({ role, email, memberId: insertMember({ role, email }) });
+
 const tokens = {
-  admin: () => makeToken({ role: 'admin', email: 'admin@test.com', memberId: null }),
-  diretor: () => makeToken({ role: 'diretor_financeiro', email: 'diretor@test.com', memberId: null }),
-  viewer: () => makeToken({ role: 'viewer', email: 'viewer@test.com', memberId: null }),
+  admin: tokenForRole('admin', 'admin@test.com'),
+  diretor: tokenForRole('diretor_financeiro', 'diretor@test.com'),
+  viewer: tokenForRole('viewer', 'viewer@test.com'),
 };
 
 const auth = (token) => ({ Authorization: `Bearer ${token}` });

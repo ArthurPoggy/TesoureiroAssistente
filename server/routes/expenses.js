@@ -1,7 +1,7 @@
 const express = require('express');
 const { query, queryOne, execute } = require('../db/query');
 const { success, fail } = require('../utils/response');
-const { requireAuth, requirePrivileged } = require('../middleware/auth');
+const { requireAuth, requirePermission } = require('../middleware/auth');
 const { computeRateio } = require('../utils/rateio');
 
 const router = express.Router();
@@ -46,7 +46,7 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/', requirePrivileged, async (req, res) => {
+router.post('/', requireAuth, requirePermission('despesas.criar'), async (req, res) => {
   try {
     const {
       title,
@@ -86,7 +86,7 @@ router.post('/', requirePrivileged, async (req, res) => {
   }
 });
 
-router.put('/:id', requirePrivileged, async (req, res) => {
+router.put('/:id', requireAuth, requirePermission('despesas.editar'), async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -131,7 +131,7 @@ router.put('/:id', requirePrivileged, async (req, res) => {
   }
 });
 
-router.delete('/:id', requirePrivileged, async (req, res) => {
+router.delete('/:id', requireAuth, requirePermission('despesas.excluir'), async (req, res) => {
   try {
     const { id } = req.params;
     await execute('DELETE FROM expenses WHERE id = ?', [id]);
@@ -143,7 +143,7 @@ router.delete('/:id', requirePrivileged, async (req, res) => {
 
 // Calcula (preview) o rateio do valor de uma despesa entre os participantes
 // informados. Não persiste cobranças — retorna a divisão proporcional.
-router.post('/:id/rateio', requirePrivileged, async (req, res) => {
+router.post('/:id/rateio', requireAuth, requirePermission('despesas.criar'), async (req, res) => {
   try {
     const { id } = req.params;
     const { participantIds } = req.body || {};
