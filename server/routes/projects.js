@@ -91,12 +91,31 @@ router.get('/', requireAuth, async (req, res) => {
       return acc;
     }, {});
 
+    const fileRows = await query(
+      `SELECT id, project_id, name, mime_type, size, download_url, created_at
+       FROM project_files ORDER BY created_at DESC`
+    );
+    const filesByProject = fileRows.reduce((acc, row) => {
+      if (!acc[row.project_id]) acc[row.project_id] = [];
+      acc[row.project_id].push({
+        id: row.id,
+        name: row.name,
+        mimeType: row.mime_type,
+        size: row.size,
+        downloadUrl: row.download_url,
+        webViewLink: row.download_url,
+        createdAt: row.created_at
+      });
+      return acc;
+    }, {});
+
     const today = new Date().toISOString().slice(0, 10);
     const enriched = projects.map((project) => ({
       ...project,
       members: membersByProject[project.id] || [],
       tags: tagsByProject[project.id] || [],
       milestones: milestonesByProject[project.id] || [],
+      files: filesByProject[project.id] || [],
       atrasado: Boolean(
         project.status === 'active' &&
         project.data_fim_planejada &&

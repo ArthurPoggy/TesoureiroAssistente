@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { EditProjectModal } from './EditProjectModal';
 import { ProjectTagSelector } from './ProjectTagSelector';
 import { ProjectTimeline } from './ProjectTimeline';
+import { ProjectAttachments } from './ProjectAttachments';
 
 const STATUS_LABEL = { active: 'Ativo', inactive: 'Inativo' };
 
@@ -90,6 +91,8 @@ export function ProjectsPanel({
   onRemoveMember,
   onAddMilestone,
   onRemoveMilestone,
+  onUploadProjectFiles,
+  onRemoveProjectFile,
   filterName = '',
   filterStatus = '',
   filterStartDate = '',
@@ -399,6 +402,13 @@ export function ProjectsPanel({
                 canEdit={canEdit}
                 onAddMilestone={onAddMilestone}
                 onRemoveMilestone={onRemoveMilestone}
+              />
+
+              <ProjectAttachments
+                project={project}
+                canEdit={canEdit}
+                onUploadProjectFiles={onUploadProjectFiles}
+                onRemoveProjectFile={onRemoveProjectFile}
               />
 
               <div className="project-members">

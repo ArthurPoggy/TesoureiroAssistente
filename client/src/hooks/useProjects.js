@@ -36,7 +36,7 @@ function persistFilters(filters) {
 }
 
 export function useProjects(showToast, handleError) {
-  const { apiFetch } = useAuth();
+  const { apiFetch, authToken } = useAuth();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -212,6 +212,37 @@ export function useProjects(showToast, handleError) {
     }
   }, [apiFetch, handleError, loadProjects, showToast]);
 
+  const uploadProjectFiles = useCallback(async (projectId, files) => {
+    try {
+      const formData = new FormData();
+      Array.from(files).forEach((file) => formData.append('files', file));
+      const headers = authToken ? { Authorization: `Bearer ${authToken}` } : undefined;
+      const response = await fetch(`/api/projects/${projectId}/files`, {
+        method: 'POST',
+        headers,
+        body: formData
+      });
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || 'Falha ao enviar arquivo');
+      }
+      await loadProjects();
+      showToast('Arquivo(s) enviado(s)');
+    } catch (error) {
+      handleError(error);
+    }
+  }, [authToken, handleError, loadProjects, showToast]);
+
+  const removeProjectFile = useCallback(async (projectId, fileId) => {
+    try {
+      await apiFetch(`/api/projects/${projectId}/files/${fileId}`, { method: 'DELETE' });
+      await loadProjects();
+      showToast('Anexo removido');
+    } catch (error) {
+      handleError(error);
+    }
+  }, [apiFetch, handleError, loadProjects, showToast]);
+
   return {
     projects,
     loading,
@@ -228,6 +259,8 @@ export function useProjects(showToast, handleError) {
     removeMemberFromProject,
     addMilestoneToProject,
     removeMilestoneFromProject,
+    uploadProjectFiles,
+    removeProjectFile,
     filterName,
     filterStatus,
     filterStartDate,
