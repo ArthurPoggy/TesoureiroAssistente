@@ -44,7 +44,8 @@ describe('LoginScreen — imagem de fundo', () => {
       expect(screenEl.style.backgroundImage).toContain(CUSTOM_LOGIN_BG);
     });
     expect(screenEl.style.backgroundSize).toBe('cover');
-    expect(screenEl.style.backgroundPosition).toBe('center');
+    // jsdom (e navegadores) serializam o shorthand "center" como "center center".
+    expect(screenEl.style.backgroundPosition).toBe('center center');
 
     // Overlay deve existir para garantir legibilidade do formulário sobre a imagem.
     const overlay = screen.getByTestId('login-screen-overlay');
