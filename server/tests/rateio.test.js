@@ -74,6 +74,20 @@ describe('POST /api/expenses/:id/rateio', () => {
     expect(res.body.perMember[0]).toHaveProperty('name');
   });
 
+  it('rejeita participante com id inexistente em vez de diluir a cota dos demais', async () => {
+    const m1 = insertMember({ name: 'Ana' });
+    const idInexistente = 999999;
+    const expense = insertExpense({ amount: 100 });
+
+    const res = await request(app)
+      .post(`/api/expenses/${expense.id}/rateio`)
+      .set(auth(tokens.admin()))
+      .send({ participantIds: [m1, idInexistente] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.perMember).toBeUndefined();
+  });
+
   it('ignora ids duplicados de participante', async () => {
     const m1 = insertMember({ name: 'Ana' });
     const expense = insertExpense({ amount: 50 });
