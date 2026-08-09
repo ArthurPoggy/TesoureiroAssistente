@@ -1,4 +1,5 @@
 const path = require('path');
+const crypto = require('crypto');
 const express = require('express');
 const { query, queryOne, execute } = require('../db/query');
 const { success, fail } = require('../utils/response');
@@ -7,10 +8,16 @@ const { hashPassword } = require('../utils/auth');
 
 const router = express.Router();
 
-const SEED_DEFAULT_PASSWORD = process.env.SEED_DEFAULT_PASSWORD || 'teste-2026-clan';
+// Sem valor padrão fixo em texto plano: se a env var não for definida, gera uma
+// senha aleatória por processo (suficiente para uso local/CI, nunca em produção).
+function randomTestPassword() {
+  return crypto.randomBytes(12).toString('base64url');
+}
+
+const SEED_DEFAULT_PASSWORD = process.env.SEED_DEFAULT_PASSWORD || randomTestPassword();
 const { createMemberUser, normalizeEmail } = require('../utils/auth');
 
-const TEST_USER_PASSWORD = process.env.SEED_TEST_PASSWORD || 'teste-2026-clan';
+const TEST_USER_PASSWORD = process.env.SEED_TEST_PASSWORD || randomTestPassword();
 
 const TEST_PROFILES = [
   { name: 'Admin Teste',   email: 'admin_teste@clan.com',   cpf: 'TEST-ADMIN',   role: 'admin' },

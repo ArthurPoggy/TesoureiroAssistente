@@ -4,8 +4,11 @@ const { execute } = require('../db/query');
 process.env.JWT_SECRET = 'test-secret-seed';
 process.env.ADMIN_EMAIL = 'admin@test.com';
 process.env.ADMIN_PASSWORD = 'admin-test-pass';
+process.env.SEED_TEST_PASSWORD = 'seed-fixture-test-pass';
 
 const app = require('../app');
+
+const TEST_PASSWORD = process.env.SEED_TEST_PASSWORD;
 
 const TEST_EMAILS = [
   'admin_teste@clan.com',
@@ -100,7 +103,7 @@ describe('POST /api/seed/test-users — login com perfis criados', () => {
   it('admin_teste consegue fazer login e recebe role admin', async () => {
     const res = await request(app)
       .post('/api/login')
-      .send({ email: 'admin_teste@clan.com', password: 'teste-2026-clan' });
+      .send({ email: 'admin_teste@clan.com', password: TEST_PASSWORD });
 
     expect(res.status).toBe(200);
     expect(res.body.role).toBe('admin');
@@ -110,7 +113,7 @@ describe('POST /api/seed/test-users — login com perfis criados', () => {
   it('diretor_teste consegue fazer login e recebe role diretor_financeiro', async () => {
     const res = await request(app)
       .post('/api/login')
-      .send({ email: 'diretor_teste@clan.com', password: 'teste-2026-clan' });
+      .send({ email: 'diretor_teste@clan.com', password: TEST_PASSWORD });
 
     expect(res.status).toBe(200);
     expect(res.body.role).toBe('diretor_financeiro');
@@ -120,7 +123,7 @@ describe('POST /api/seed/test-users — login com perfis criados', () => {
   it('viewer_teste consegue fazer login e recebe role viewer', async () => {
     const res = await request(app)
       .post('/api/login')
-      .send({ email: 'viewer_teste@clan.com', password: 'teste-2026-clan' });
+      .send({ email: 'viewer_teste@clan.com', password: TEST_PASSWORD });
 
     expect(res.status).toBe(200);
     expect(res.body.role).toBe('viewer');
