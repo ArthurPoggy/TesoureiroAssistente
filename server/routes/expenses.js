@@ -158,13 +158,17 @@ router.post('/:id/rateio', requirePrivileged, async (req, res) => {
     if (ids.length === 0) {
       return fail(res, 'Participantes inválidos', 400);
     }
-    const shares = computeRateio(expense.amount, ids);
     const placeholders = ids.map(() => '?').join(', ');
     const members = await query(
       `SELECT id, name FROM members WHERE id IN (${placeholders})`,
       ids
     );
     const nameById = members.reduce((acc, m) => { acc[m.id] = m.name; return acc; }, {});
+    const idsInexistentes = ids.filter((memberId) => !nameById[memberId]);
+    if (idsInexistentes.length > 0) {
+      return fail(res, `Participante(s) inexistente(s): ${idsInexistentes.join(', ')}`, 400);
+    }
+    const shares = computeRateio(expense.amount, ids);
     const participants = shares.map((s) => ({ ...s, name: nameById[s.memberId] || null }));
     success(res, {
       expenseId: Number(id),
