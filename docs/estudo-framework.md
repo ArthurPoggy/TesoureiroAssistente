@@ -44,8 +44,10 @@ resolve-se com `react-router` (card de roteamento), sem trocar de framework.
 
 ## 5. Banco de dados
 
-Coberto em detalhe em [`arquitetura-bd.md`](arquitetura-bd.md). Resumo: Supabase/Postgres
-continua adequado; o ponto de atenção é manter `supabase-schema.sql` em sincronia com as migrations.
+Coberto em detalhe em `arquitetura-bd.md` (documento em preparação na branch `docs/arquitetura-bd`,
+ainda não mesclada — o link será adicionado aqui assim que ela for integrada). Resumo:
+Supabase/Postgres continua adequado; o ponto de atenção é manter `supabase-schema.sql` em
+sincronia com as migrations.
 
 ## 6. Conclusão e roadmap incremental
 
