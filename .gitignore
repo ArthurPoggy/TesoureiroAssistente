@@ -47,6 +47,12 @@ Thumbs.db
 coverage/
 *.tsbuildinfo
 
+# Playwright (E2E)
+client/test-results/
+client/playwright-report/
+client/blob-report/
+client/.playwright/
+
 # Temp
 tmp/
 temp/
