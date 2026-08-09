@@ -6,8 +6,11 @@ import { test, expect, request as playwrightRequest } from '@playwright/test';
 // e cada chamada usa o prefixo "/api" explicitamente.
 const API_BASE_URL = 'http://localhost:4000';
 
-const DIRETOR_EMAIL = 'diretor_teste@clan.com';
-const DIRETOR_PASSWORD = 'test123';
+// Credenciais do usuário de teste (seed de dev): sobrescrevíveis via env para
+// não deixar segredo em texto plano no código (ver server/routes/seed.js,
+// que usa SEED_TEST_PASSWORD com o mesmo fallback local).
+const DIRETOR_EMAIL = process.env.E2E_DIRETOR_EMAIL || 'diretor_teste@clan.com';
+const DIRETOR_PASSWORD = process.env.E2E_DIRETOR_PASSWORD || 'test123';
 
 // Anos "no futuro" garantem que nossos registros de teste fiquem sempre nas
 // primeiras páginas (ORDER BY year DESC, month DESC), sem interferir/depender

@@ -3,8 +3,11 @@ import { test, expect, request as playwrightRequest } from '@playwright/test';
 // A API roda em porta separada do dev server do Vite (baseURL do playwright.config.js).
 const API_BASE_URL = 'http://localhost:4000';
 
-const DIRETOR_EMAIL = 'diretor_teste@clan.com';
-const DIRETOR_PASSWORD = 'test123';
+// Credenciais do usuário de teste (seed de dev): sobrescrevíveis via env para
+// não deixar segredo em texto plano no código (ver server/routes/seed.js,
+// que usa SEED_TEST_PASSWORD com o mesmo fallback local).
+const DIRETOR_EMAIL = process.env.E2E_DIRETOR_EMAIL || 'diretor_teste@clan.com';
+const DIRETOR_PASSWORD = process.env.E2E_DIRETOR_PASSWORD || 'test123';
 
 // Ano "no futuro", isolado de outros specs que também usam anos futuros
 // (ex.: payments-pagination.spec.js usa 2098/2099).
