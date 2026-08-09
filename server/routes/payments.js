@@ -2,7 +2,7 @@ const express = require('express');
 const PDFDocument = require('pdfkit');
 const { query, queryOne, execute } = require('../db/query');
 const { success, fail } = require('../utils/response');
-const { requireAuth, requirePrivileged } = require('../middleware/auth');
+const { requireAuth, requirePermission } = require('../middleware/auth');
 const { isPrivilegedRequest } = require('../utils/roles');
 const { adjustCurrentBalance, getSettings, DEFAULT_SETTINGS } = require('../utils/settings');
 const { buildPixPayload } = require('../utils/pix');
@@ -77,7 +77,7 @@ router.get('/history/:memberId', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/', requirePrivileged, async (req, res) => {
+router.post('/', requireAuth, requirePermission('pagamentos.criar'), async (req, res) => {
   try {
     const {
       memberId,
@@ -140,7 +140,7 @@ router.post('/', requirePrivileged, async (req, res) => {
   }
 });
 
-router.put('/:id', requirePrivileged, async (req, res) => {
+router.put('/:id', requireAuth, requirePermission('pagamentos.editar'), async (req, res) => {
   try {
     const { id } = req.params;
     const { amount, paid, paidAt, notes, goalId, attachmentId, attachmentName, attachmentUrl } = req.body;
@@ -180,7 +180,7 @@ router.put('/:id', requirePrivileged, async (req, res) => {
   }
 });
 
-router.delete('/:id', requirePrivileged, async (req, res) => {
+router.delete('/:id', requireAuth, requirePermission('pagamentos.excluir'), async (req, res) => {
   try {
     const { id } = req.params;
     const existingPayment = await queryOne('SELECT amount, paid FROM payments WHERE id = ?', [id]);

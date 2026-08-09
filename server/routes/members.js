@@ -1,7 +1,7 @@
 const express = require('express');
 const { query, queryOne, execute } = require('../db/query');
 const { success, fail } = require('../utils/response');
-const { requireAuth, requireAdmin, requirePrivileged } = require('../middleware/auth');
+const { requireAuth, requireAdmin, requirePrivileged, requirePermission } = require('../middleware/auth');
 const { isPrivilegedRequest } = require('../utils/roles');
 const {
   normalizeEmail,
@@ -78,7 +78,7 @@ router.get('/delinquent', requirePrivileged, async (req, res) => {
   }
 });
 
-router.post('/', requirePrivileged, async (req, res) => {
+router.post('/', requireAuth, requirePermission('membros.gerenciar'), async (req, res) => {
   try {
     const { name, email, nickname, cpf } = req.body || {};
     if (!name || !email || !cpf) {
@@ -113,7 +113,7 @@ router.post('/', requirePrivileged, async (req, res) => {
   }
 });
 
-router.put('/:id', requirePrivileged, async (req, res) => {
+router.put('/:id', requireAuth, requirePermission('membros.gerenciar'), async (req, res) => {
   try {
     const { id } = req.params;
     const { name, email, nickname, cpf } = req.body || {};
@@ -142,7 +142,7 @@ router.put('/:id', requirePrivileged, async (req, res) => {
   }
 });
 
-router.post('/:id/invite', requirePrivileged, async (req, res) => {
+router.post('/:id/invite', requireAuth, requirePermission('membros.gerenciar'), async (req, res) => {
   try {
     const { id } = req.params;
     const member = await queryOne(
@@ -172,7 +172,7 @@ router.post('/:id/invite', requirePrivileged, async (req, res) => {
   }
 });
 
-router.delete('/:id', requirePrivileged, async (req, res) => {
+router.delete('/:id', requireAuth, requirePermission('membros.gerenciar'), async (req, res) => {
   try {
     const { id } = req.params;
     await execute('DELETE FROM members WHERE id = ?', [id]);
