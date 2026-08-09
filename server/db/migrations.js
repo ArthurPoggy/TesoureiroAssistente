@@ -1,5 +1,6 @@
 const config = require('../config');
 const { getSqliteDb } = require('./connection');
+const { PERMISSIONS_CATALOG } = require('../utils/permissions');
 
 const migrations = [
   `CREATE TABLE IF NOT EXISTS members (
@@ -161,7 +162,27 @@ const migrations = [
       PRIMARY KEY (project_id, tag_id),
       FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
       FOREIGN KEY(tag_id) REFERENCES tags(id) ON DELETE CASCADE
-    )`
+    )`,
+  `CREATE TABLE IF NOT EXISTS permissions (
+      code TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      category TEXT NOT NULL
+    )`,
+  `CREATE TABLE IF NOT EXISTS member_permissions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      member_id INTEGER NOT NULL,
+      permission_code TEXT NOT NULL,
+      allowed INTEGER NOT NULL DEFAULT 1,
+      origem TEXT DEFAULT 'manual',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(member_id, permission_code),
+      FOREIGN KEY(member_id) REFERENCES members(id) ON DELETE CASCADE,
+      FOREIGN KEY(permission_code) REFERENCES permissions(code) ON DELETE CASCADE
+    )`,
+  ...PERMISSIONS_CATALOG.map(
+    ({ code, name, category }) =>
+      `INSERT OR IGNORE INTO permissions (code, name, category) VALUES ('${code}', '${name.replace(/'/g, "''")}', '${category}')`
+  )
 ];
 
 function runMigrations() {
