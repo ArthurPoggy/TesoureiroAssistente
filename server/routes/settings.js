@@ -1,6 +1,10 @@
 const express = require('express');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
+const multer = require('multer');
 const { success, fail } = require('../utils/response');
-const { requireAdmin, requireAuth, requirePrivileged } = require('../middleware/auth');
+const { requireAdmin, requirePrivileged } = require('../middleware/auth');
 const {
   DEFAULT_SETTINGS,
   getSettings,
@@ -12,6 +16,38 @@ const {
 } = require('../utils/settings');
 
 const router = express.Router();
+
+const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
+const MAX_BACKGROUND_IMAGE_SIZE = 5 * 1024 * 1024;
+const ALLOWED_BACKGROUND_MIME_TYPES = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp'
+};
+const BACKGROUND_TARGETS = {
+  login: { urlKey: 'login_background_url', versionKey: 'login_background_version' },
+  dashboard: { urlKey: 'dashboard_background_url', versionKey: 'dashboard_background_version' }
+};
+
+const backgroundImageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_BACKGROUND_IMAGE_SIZE }
+}).single('image');
+
+const handleBackgroundImageUpload = (req, res, next) => {
+  backgroundImageUpload(req, res, (error) => {
+    if (error instanceof multer.MulterError) {
+      if (error.code === 'LIMIT_FILE_SIZE') {
+        return fail(res, 'Imagem acima de 5 MB', 400);
+      }
+      return fail(res, error.message || 'Erro ao processar a imagem', 400);
+    }
+    if (error) {
+      return fail(res, error.message || 'Erro ao processar a imagem', 400);
+    }
+    return next();
+  });
+};
 
 router.get('/', requirePrivileged, async (req, res) => {
   try {
@@ -48,10 +84,42 @@ router.get('/disclaimer', async (req, res) => {
   }
 });
 
-router.get('/public', requireAuth, async (req, res) => {
+// Deslogado por natureza: alimenta a tela de login, que não tem sessão ainda.
+router.get('/public', async (req, res) => {
   try {
     const settings = await getPublicSettings();
     success(res, settings);
+  } catch (error) {
+    fail(res, error.message);
+  }
+});
+
+router.post('/background-image', requireAdmin, handleBackgroundImageUpload, async (req, res) => {
+  try {
+    const target = req.body?.target;
+    const targetConfig = BACKGROUND_TARGETS[target];
+    if (!targetConfig) {
+      return fail(res, 'Informe um destino válido (login ou dashboard)', 400);
+    }
+    if (!req.file) {
+      return fail(res, 'Selecione uma imagem', 400);
+    }
+    const extension = ALLOWED_BACKGROUND_MIME_TYPES[req.file.mimetype];
+    if (!extension) {
+      return fail(res, 'Formato inválido. Envie uma imagem JPG, PNG ou WebP', 400);
+    }
+    if (!fs.existsSync(UPLOADS_DIR)) {
+      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    }
+    const filename = `${crypto.randomUUID()}${extension}`;
+    fs.writeFileSync(path.join(UPLOADS_DIR, filename), req.file.buffer);
+    const version = String(Date.now());
+    const url = `/uploads/${filename}`;
+    await setSettings({
+      [targetConfig.urlKey]: url,
+      [targetConfig.versionKey]: version
+    });
+    success(res, { url: `${url}?v=${version}` });
   } catch (error) {
     fail(res, error.message);
   }

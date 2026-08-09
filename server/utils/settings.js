@@ -11,7 +11,11 @@ const DEFAULT_SETTINGS = {
   pix_receiver: '',
   pix_city: '',
   dashboard_note: '',
-  disclaimer_text: 'Sistema para uso interno. Os dados são confidenciais e de responsabilidade da organização.'
+  disclaimer_text: 'Sistema para uso interno. Os dados são confidenciais e de responsabilidade da organização.',
+  login_background_url: '',
+  login_background_version: '',
+  dashboard_background_url: '',
+  dashboard_background_version: ''
 };
 
 const normalizeDueDay = (value) => {
@@ -64,6 +68,11 @@ const getSetting = async (key) => {
   return row?.value ?? null;
 };
 
+const buildVersionedBackgroundUrl = (url, version) => {
+  if (!url) return null;
+  return version ? `${url}?v=${version}` : url;
+};
+
 const getPublicSettings = async () => {
   const settings = await getSettings();
   const defaultAmount = Number(settings.default_payment_amount);
@@ -77,7 +86,9 @@ const getPublicSettings = async () => {
     pixReceiver: settings.pix_receiver || '',
     pixCity: settings.pix_city || '',
     dashboardNote: settings.dashboard_note || '',
-    disclaimerText: settings.disclaimer_text ?? DEFAULT_SETTINGS.disclaimer_text
+    disclaimerText: settings.disclaimer_text ?? DEFAULT_SETTINGS.disclaimer_text,
+    loginBackgroundUrl: buildVersionedBackgroundUrl(settings.login_background_url, settings.login_background_version),
+    dashboardBackgroundUrl: buildVersionedBackgroundUrl(settings.dashboard_background_url, settings.dashboard_background_version)
   };
 };
 
