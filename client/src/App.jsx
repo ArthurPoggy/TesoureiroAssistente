@@ -4,6 +4,7 @@ import { LoginScreen } from './components';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { RoleRoute } from './routes/RoleRoute';
 import { AppLayout } from './routes/AppLayout';
+import { ScrollToTop } from './routes/ScrollToTop';
 import { AccessDeniedPage } from './routes/AccessDeniedPage';
 import { DashboardPage } from './routes/DashboardPage';
 import { MembersPage } from './routes/MembersPage';
@@ -26,29 +27,32 @@ function App() {
   const { authToken } = useAuth();
 
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to={authToken ? '/dashboard' : '/login'} replace />} />
-      <Route path="/login" element={authToken ? <Navigate to="/dashboard" replace /> : <LoginScreen />} />
-      <Route path="/acesso-negado" element={<AccessDeniedPage />} />
+    <>
+      <ScrollToTop />
+      <Routes>
+        <Route path="/" element={<Navigate to={authToken ? '/dashboard' : '/login'} replace />} />
+        <Route path="/login" element={authToken ? <Navigate to="/dashboard" replace /> : <LoginScreen />} />
+        <Route path="/acesso-negado" element={<AccessDeniedPage />} />
 
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AppLayout />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/membros" element={<MembersPage />} />
-          <Route path="/pagamentos" element={<PaymentsPage />} />
-          <Route path="/despesas" element={<ExpensesPage />} />
-          <Route path="/eventos" element={<EventsPage />} />
-          <Route path="/projetos" element={<ProjectsPage />} />
-          <Route path="/extrato" element={<ExtratoPage />} />
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/membros" element={<MembersPage />} />
+            <Route path="/pagamentos" element={<PaymentsPage />} />
+            <Route path="/despesas" element={<ExpensesPage />} />
+            <Route path="/eventos" element={<EventsPage />} />
+            <Route path="/projetos" element={<ProjectsPage />} />
+            <Route path="/extrato" element={<ExtratoPage />} />
 
-          <Route element={<RoleRoute allowedRoles={['admin', 'diretor_financeiro']} />}>
-            <Route path="/configuracoes" element={<SettingsPage />} />
+            <Route element={<RoleRoute allowedRoles={['admin', 'diretor_financeiro']} />}>
+              <Route path="/configuracoes" element={<SettingsPage />} />
+            </Route>
           </Route>
         </Route>
-      </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
 

@@ -219,10 +219,10 @@ describe('Rotas dedicadas por módulo (dashboard, membros, pagamentos, despesas)
     renderAt('/dashboard');
 
     expect(screen.getByTestId('current-path')).toHaveTextContent('/dashboard');
-    await waitFor(() => expect(screen.getByText(HEADINGS.dashboard)).toBeInTheDocument());
-    expect(screen.queryByText(HEADINGS.membros)).not.toBeInTheDocument();
-    expect(screen.queryByText(HEADINGS.pagamentos)).not.toBeInTheDocument();
-    expect(screen.queryByText(HEADINGS.despesas)).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('heading', { name: HEADINGS.dashboard })).toBeInTheDocument());
+    expect(screen.queryByRole('heading', { name: HEADINGS.membros })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: HEADINGS.pagamentos })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: HEADINGS.despesas })).not.toBeInTheDocument();
     await waitFor(() => expect(loadDashboard).toHaveBeenCalled());
   });
 
@@ -231,10 +231,10 @@ describe('Rotas dedicadas por módulo (dashboard, membros, pagamentos, despesas)
     renderAt('/membros');
 
     expect(screen.getByTestId('current-path')).toHaveTextContent('/membros');
-    await waitFor(() => expect(screen.getByText(HEADINGS.membros)).toBeInTheDocument());
-    expect(screen.queryByText(HEADINGS.dashboard)).not.toBeInTheDocument();
-    expect(screen.queryByText(HEADINGS.pagamentos)).not.toBeInTheDocument();
-    expect(screen.queryByText(HEADINGS.despesas)).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('heading', { name: HEADINGS.membros })).toBeInTheDocument());
+    expect(screen.queryByRole('heading', { name: HEADINGS.dashboard })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: HEADINGS.pagamentos })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: HEADINGS.despesas })).not.toBeInTheDocument();
     await waitFor(() => expect(loadMembers).toHaveBeenCalled());
   });
 
@@ -243,10 +243,10 @@ describe('Rotas dedicadas por módulo (dashboard, membros, pagamentos, despesas)
     renderAt('/pagamentos');
 
     expect(screen.getByTestId('current-path')).toHaveTextContent('/pagamentos');
-    await waitFor(() => expect(screen.getByText(HEADINGS.pagamentos)).toBeInTheDocument());
-    expect(screen.queryByText(HEADINGS.dashboard)).not.toBeInTheDocument();
-    expect(screen.queryByText(HEADINGS.membros)).not.toBeInTheDocument();
-    expect(screen.queryByText(HEADINGS.despesas)).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('heading', { name: HEADINGS.pagamentos })).toBeInTheDocument());
+    expect(screen.queryByRole('heading', { name: HEADINGS.dashboard })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: HEADINGS.membros })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: HEADINGS.despesas })).not.toBeInTheDocument();
     await waitFor(() => expect(loadPayments).toHaveBeenCalled());
   });
 
@@ -255,10 +255,10 @@ describe('Rotas dedicadas por módulo (dashboard, membros, pagamentos, despesas)
     renderAt('/despesas');
 
     expect(screen.getByTestId('current-path')).toHaveTextContent('/despesas');
-    await waitFor(() => expect(screen.getByText(HEADINGS.despesas)).toBeInTheDocument());
-    expect(screen.queryByText(HEADINGS.dashboard)).not.toBeInTheDocument();
-    expect(screen.queryByText(HEADINGS.membros)).not.toBeInTheDocument();
-    expect(screen.queryByText(HEADINGS.pagamentos)).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('heading', { name: HEADINGS.despesas })).toBeInTheDocument());
+    expect(screen.queryByRole('heading', { name: HEADINGS.dashboard })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: HEADINGS.membros })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: HEADINGS.pagamentos })).not.toBeInTheDocument();
     await waitFor(() => expect(loadExpenses).toHaveBeenCalled());
   });
 });

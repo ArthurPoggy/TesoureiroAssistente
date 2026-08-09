@@ -225,10 +225,10 @@ describe('Rotas dedicadas por módulo (eventos, projetos, extrato, configuraçõ
     renderAt('/eventos');
 
     expect(screen.getByTestId('current-path')).toHaveTextContent('/eventos');
-    await waitFor(() => expect(screen.getByText(HEADINGS.eventos)).toBeInTheDocument());
-    expect(screen.queryByText(HEADINGS.projetos)).not.toBeInTheDocument();
-    expect(screen.queryByText(HEADINGS.extrato)).not.toBeInTheDocument();
-    expect(screen.queryByText(HEADINGS.configuracoes)).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('heading', { name: HEADINGS.eventos })).toBeInTheDocument());
+    expect(screen.queryByRole('heading', { name: HEADINGS.projetos })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: HEADINGS.extrato })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: HEADINGS.configuracoes })).not.toBeInTheDocument();
     await waitFor(() => expect(loadEvents).toHaveBeenCalled());
   });
 
@@ -237,10 +237,10 @@ describe('Rotas dedicadas por módulo (eventos, projetos, extrato, configuraçõ
     renderAt('/projetos');
 
     expect(screen.getByTestId('current-path')).toHaveTextContent('/projetos');
-    await waitFor(() => expect(screen.getByText(HEADINGS.projetos)).toBeInTheDocument());
-    expect(screen.queryByText(HEADINGS.eventos)).not.toBeInTheDocument();
-    expect(screen.queryByText(HEADINGS.extrato)).not.toBeInTheDocument();
-    expect(screen.queryByText(HEADINGS.configuracoes)).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('heading', { name: HEADINGS.projetos })).toBeInTheDocument());
+    expect(screen.queryByRole('heading', { name: HEADINGS.eventos })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: HEADINGS.extrato })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: HEADINGS.configuracoes })).not.toBeInTheDocument();
     await waitFor(() => expect(loadProjects).toHaveBeenCalled());
   });
 
@@ -249,10 +249,10 @@ describe('Rotas dedicadas por módulo (eventos, projetos, extrato, configuraçõ
     renderAt('/extrato');
 
     expect(screen.getByTestId('current-path')).toHaveTextContent('/extrato');
-    await waitFor(() => expect(screen.getByText(HEADINGS.extrato)).toBeInTheDocument());
-    expect(screen.queryByText(HEADINGS.eventos)).not.toBeInTheDocument();
-    expect(screen.queryByText(HEADINGS.projetos)).not.toBeInTheDocument();
-    expect(screen.queryByText(HEADINGS.configuracoes)).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('heading', { name: HEADINGS.extrato })).toBeInTheDocument());
+    expect(screen.queryByRole('heading', { name: HEADINGS.eventos })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: HEADINGS.projetos })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: HEADINGS.configuracoes })).not.toBeInTheDocument();
     await waitFor(() => expect(loadExtrato).toHaveBeenCalled());
   });
 
@@ -261,10 +261,10 @@ describe('Rotas dedicadas por módulo (eventos, projetos, extrato, configuraçõ
     renderAt('/configuracoes');
 
     expect(screen.getByTestId('current-path')).toHaveTextContent('/configuracoes');
-    await waitFor(() => expect(screen.getByText(HEADINGS.configuracoes)).toBeInTheDocument());
-    expect(screen.queryByText(HEADINGS.eventos)).not.toBeInTheDocument();
-    expect(screen.queryByText(HEADINGS.projetos)).not.toBeInTheDocument();
-    expect(screen.queryByText(HEADINGS.extrato)).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('heading', { name: HEADINGS.configuracoes })).toBeInTheDocument());
+    expect(screen.queryByRole('heading', { name: HEADINGS.eventos })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: HEADINGS.projetos })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: HEADINGS.extrato })).not.toBeInTheDocument();
     await waitFor(() => expect(loadSettings).toHaveBeenCalled());
   });
 
@@ -274,6 +274,6 @@ describe('Rotas dedicadas por módulo (eventos, projetos, extrato, configuraçõ
 
     await waitFor(() => expect(screen.getByText('Acesso negado')).toBeInTheDocument());
     expect(screen.getByTestId('current-path')).not.toHaveTextContent('/configuracoes');
-    expect(screen.queryByText(HEADINGS.configuracoes)).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: HEADINGS.configuracoes })).not.toBeInTheDocument();
   });
 });
