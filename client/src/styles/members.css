@@ -1,4 +1,6 @@
 .member-detail-panel {
+  position: relative;
+  z-index: var(--z-base);
   margin-top: var(--spacing-xl);
   padding: var(--spacing-xl);
   background: var(--color-bg-primary, #fff);

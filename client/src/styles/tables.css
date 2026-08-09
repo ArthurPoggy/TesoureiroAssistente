@@ -5,6 +5,7 @@
      observada para a página/filtro atuais, evitando colapso de altura
      (reflow perceptível) ao trocar para uma página com menos linhas. */
   min-height: var(--table-min-height, auto);
+  z-index: var(--z-base);
 }
 
 .table-wrapper--loading table {
@@ -16,6 +17,7 @@
 
 .table-loading-overlay {
   position: absolute;
+  z-index: var(--z-sticky);
   inset: 0;
   display: flex;
   align-items: center;
