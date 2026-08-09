@@ -116,6 +116,7 @@ describe('GET /api/settings/public — imagens de fundo', () => {
     upsertSetting('pix_receiver', 'Tesoureiro Fulano de Tal');
     upsertSetting('pix_city', 'Cidade Sigilosa');
     upsertSetting('dashboard_note', 'Aviso interno: reserva de caixa não divulgada aos membros');
+    upsertSetting('org_name', 'Clã Exemplo');
 
     const res = await request(app).get('/api/settings/public');
 
@@ -128,5 +129,15 @@ describe('GET /api/settings/public — imagens de fundo', () => {
     expect(res.body.pixReceiver).toBeUndefined();
     expect(res.body.pixCity).toBeUndefined();
     expect(res.body.dashboardNote).toBeUndefined();
+
+    // Campos legitimamente públicos devem continuar presentes — uma
+    // correção que zerasse o payload inteiro (em vez de remover só os
+    // campos sensíveis) também precisa falhar neste teste.
+    expect(res.body.orgName).toBe('Clã Exemplo');
+    expect(typeof res.body.orgTagline).toBe('string');
+    expect(typeof res.body.defaultPaymentAmount).toBe('number');
+    expect(typeof res.body.disclaimerText).toBe('string');
+    expect(res.body).toHaveProperty('loginBackgroundUrl');
+    expect(res.body).toHaveProperty('dashboardBackgroundUrl');
   });
 });
