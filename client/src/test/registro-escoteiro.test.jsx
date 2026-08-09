@@ -106,7 +106,10 @@ describe('Rótulo "Registro Escoteiro"', () => {
 
   describe('MemberDetailView', () => {
     beforeEach(() => {
-      useAuth.mockReturnValue({ authUser: { role: 'admin' } });
+      useAuth.mockReturnValue({
+        authUser: { role: 'admin' },
+        apiFetch: vi.fn().mockResolvedValue({})
+      });
     });
 
     it('exibe "Registro Escoteiro:" no painel de detalhes do membro', () => {
