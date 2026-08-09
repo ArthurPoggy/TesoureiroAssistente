@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useMembers, useProjects, useTags, useToast } from '../hooks';
+import { useProjects, useTags, useToast } from '../hooks';
+import { useSharedData } from '../contexts/SharedDataContext';
 import { Toast } from '../components';
 
 // Painel de projetos carregado sob demanda (rota dedicada /projetos).
@@ -10,13 +11,14 @@ const ProjectsPanel = lazy(() =>
 
 // Rota /projetos: cadastro, filtros e vínculo de membros a projetos,
 // isolados em sua própria rota. O hook useProjects segue funcionando como
-// antes; membros e tags são carregados aqui apenas para alimentar os
-// seletores do formulário.
+// antes; membros vêm de SharedDataContext (já carregados ao entrar na área
+// autenticada, ver AppLayout) e tags são carregadas aqui apenas para
+// alimentar os seletores do formulário.
 export function ProjectsPage() {
   const { authToken, authChecked } = useAuth();
   const { toast, showToast, handleError } = useToast();
 
-  const { members, loadMembers } = useMembers(showToast, handleError);
+  const { members } = useSharedData();
   const { tags, loadTags } = useTags(showToast, handleError);
 
   const {
@@ -49,10 +51,9 @@ export function ProjectsPage() {
 
   useEffect(() => {
     if (!authToken || !authChecked) return;
-    loadMembers();
     loadTags();
     loadProjects();
-  }, [authToken, authChecked, loadMembers, loadTags, loadProjects]);
+  }, [authToken, authChecked, loadTags, loadProjects]);
 
   return (
     <div className="app-shell">

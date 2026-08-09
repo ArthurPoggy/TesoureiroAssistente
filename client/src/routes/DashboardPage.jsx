@@ -10,7 +10,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { parseMonthFilter, parseYearFilter, currentMonth, currentYear } from '../utils/formatters';
-import { useMembers, useGoals, useDashboard, useSettings, useClanHistory, useToast } from '../hooks';
+import { useDashboard, useClanHistory, useToast } from '../hooks';
+import { useSharedData } from '../contexts/SharedDataContext';
 import {
   Header,
   GoalsPanel,
@@ -42,12 +43,22 @@ export function DashboardPage() {
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
   const [selectedUserFilter, setSelectedUserFilter] = useState('all');
 
-  // Hooks de dados
-  const { members, loadMembers } = useMembers(showToast, handleError);
-
-  const { goals, goalForm, setGoalForm, editingGoalId, loadGoals, resetGoalForm, handleGoalSubmit, handleGoalDelete, startEditGoal } = useGoals(showToast, handleError);
-
-  const { publicSettings, loadPublicSettings } = useSettings(showToast, handleError);
+  // Membros, metas e configurações públicas vêm de SharedDataContext (já
+  // carregados ao entrar na área autenticada, ver AppLayout); esta página só
+  // consome os dados e as ações de CRUD de metas da mesma instância
+  // compartilhada.
+  const {
+    members,
+    goals,
+    goalForm,
+    setGoalForm,
+    editingGoalId,
+    resetGoalForm,
+    handleGoalSubmit,
+    handleGoalDelete,
+    startEditGoal,
+    publicSettings
+  } = useSharedData();
 
   // Filtros computados
   const monthFilter = useMemo(() => parseMonthFilter(selectedMonth), [selectedMonth]);
@@ -116,18 +127,12 @@ export function DashboardPage() {
     startEditHistory
   } = useClanHistory(showToast, handleError);
 
-  // Carregar dados iniciais
+  // Carregar dados iniciais (membros, metas e configurações públicas já são
+  // carregados por SharedDataProvider ao entrar na área autenticada)
   useEffect(() => {
     if (!authToken || !authChecked) return;
-    loadMembers();
-    loadGoals();
     loadHistory();
-  }, [authToken, authChecked, loadMembers, loadGoals, loadHistory]);
-
-  useEffect(() => {
-    if (!authToken || !authChecked) return;
-    loadPublicSettings();
-  }, [authToken, authChecked, loadPublicSettings]);
+  }, [authToken, authChecked, loadHistory]);
 
   // Recarregar dados filtrados
   useEffect(() => {

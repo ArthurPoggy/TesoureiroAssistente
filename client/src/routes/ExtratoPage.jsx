@@ -1,6 +1,7 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useMembers, useExtrato, useToast } from '../hooks';
+import { useExtrato, useToast } from '../hooks';
+import { useSharedData } from '../contexts/SharedDataContext';
 import { Toast } from '../components';
 
 // Painel de extrato carregado sob demanda (rota dedicada /extrato).
@@ -9,13 +10,14 @@ const ExtratoPanel = lazy(() =>
 );
 
 // Rota /extrato: extrato consolidado de movimentações, isolado em sua
-// própria rota. O hook useExtrato segue funcionando como antes; membros são
-// carregados aqui apenas para alimentar o filtro por membro (admin).
+// própria rota. O hook useExtrato segue funcionando como antes; membros vêm
+// de SharedDataContext (já carregados ao entrar na área autenticada, ver
+// AppLayout) e alimentam o filtro por membro (admin).
 export function ExtratoPage() {
-  const { authToken, authChecked, isAdmin } = useAuth();
-  const { toast, showToast, handleError } = useToast();
+  const { isAdmin } = useAuth();
+  const { toast, handleError } = useToast();
 
-  const { members, loadMembers } = useMembers(showToast, handleError);
+  const { members } = useSharedData();
 
   const {
     entries,
@@ -26,11 +28,6 @@ export function ExtratoPage() {
     loadExtrato,
     exportExtrato
   } = useExtrato(handleError, isAdmin);
-
-  useEffect(() => {
-    if (!authToken || !authChecked || !isAdmin) return;
-    loadMembers();
-  }, [authToken, authChecked, isAdmin, loadMembers]);
 
   return (
     <div className="app-shell">

@@ -1,6 +1,6 @@
-import { lazy, Suspense, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useMembers, useToast } from '../hooks';
+import { lazy, Suspense } from 'react';
+import { useToast } from '../hooks';
+import { useSharedData } from '../contexts/SharedDataContext';
 import { Toast } from '../components';
 
 // Painel de membros carregado sob demanda (rota dedicada /membros).
@@ -9,10 +9,13 @@ const MembersPanel = lazy(() =>
 );
 
 // Rota /membros: cadastro, edição e detalhamento de membros, isolados em sua
-// própria rota. O hook useMembers segue funcionando como antes.
+// própria rota. Os dados de membros vêm de SharedDataContext (ver
+// AppLayout), que já carrega a lista uma única vez ao entrar na área
+// autenticada — esta página só lê o que já está carregado e usa as ações de
+// CRUD (submit, convite, exclusão, troca de cargo) da mesma instância
+// compartilhada do hook.
 export function MembersPage() {
-  const { authToken, authChecked } = useAuth();
-  const { toast, showToast, handleError } = useToast();
+  const { toast, showToast } = useToast();
 
   const {
     members,
@@ -23,19 +26,13 @@ export function MembersPage() {
     setSelectedMemberDetail,
     inviteLink,
     setInviteLink,
-    loadMembers,
     resetMemberForm,
     handleMemberSubmit,
     handleMemberInvite,
     handleMemberDelete,
     handleRoleChange,
     startEditMember
-  } = useMembers(showToast, handleError);
-
-  useEffect(() => {
-    if (!authToken || !authChecked) return;
-    loadMembers();
-  }, [authToken, authChecked, loadMembers]);
+  } = useSharedData();
 
   return (
     <div className="app-shell">
