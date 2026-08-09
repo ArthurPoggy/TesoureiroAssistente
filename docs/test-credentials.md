@@ -10,11 +10,15 @@ Nenhum token necessário. Bloqueado em `NODE_ENV=production`.
 
 ## Credenciais
 
-| Role               | Email                      | Senha   |
-|--------------------|----------------------------|---------|
-| admin              | admin_teste@clan.com       | test123 |
-| diretor_financeiro | diretor_teste@clan.com     | test123 |
-| viewer             | viewer_teste@clan.com      | test123 |
+| Role               | Email                      | Senha            |
+|--------------------|----------------------------|------------------|
+| admin              | admin_teste@clan.com       | teste-2026-clan  |
+| diretor_financeiro | diretor_teste@clan.com     | teste-2026-clan  |
+| viewer             | viewer_teste@clan.com      | teste-2026-clan  |
+
+> A senha padrão pode ser sobrescrita via `SEED_DEFAULT_PASSWORD` / `SEED_TEST_PASSWORD`.
+> O valor anterior (`test123`) foi rotacionado após alerta do GitGuardian sobre exposição
+> em commits antigos dos specs de e2e; não deve mais ser usado em nenhum ambiente.
 
 ## O que cada role pode fazer
 

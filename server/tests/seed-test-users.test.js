@@ -100,7 +100,7 @@ describe('POST /api/seed/test-users — login com perfis criados', () => {
   it('admin_teste consegue fazer login e recebe role admin', async () => {
     const res = await request(app)
       .post('/api/login')
-      .send({ email: 'admin_teste@clan.com', password: 'test123' });
+      .send({ email: 'admin_teste@clan.com', password: 'teste-2026-clan' });
 
     expect(res.status).toBe(200);
     expect(res.body.role).toBe('admin');
@@ -110,7 +110,7 @@ describe('POST /api/seed/test-users — login com perfis criados', () => {
   it('diretor_teste consegue fazer login e recebe role diretor_financeiro', async () => {
     const res = await request(app)
       .post('/api/login')
-      .send({ email: 'diretor_teste@clan.com', password: 'test123' });
+      .send({ email: 'diretor_teste@clan.com', password: 'teste-2026-clan' });
 
     expect(res.status).toBe(200);
     expect(res.body.role).toBe('diretor_financeiro');
@@ -120,7 +120,7 @@ describe('POST /api/seed/test-users — login com perfis criados', () => {
   it('viewer_teste consegue fazer login e recebe role viewer', async () => {
     const res = await request(app)
       .post('/api/login')
-      .send({ email: 'viewer_teste@clan.com', password: 'test123' });
+      .send({ email: 'viewer_teste@clan.com', password: 'teste-2026-clan' });
 
     expect(res.status).toBe(200);
     expect(res.body.role).toBe('viewer');

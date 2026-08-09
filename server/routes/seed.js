@@ -7,10 +7,10 @@ const { hashPassword } = require('../utils/auth');
 
 const router = express.Router();
 
-const SEED_DEFAULT_PASSWORD = process.env.SEED_DEFAULT_PASSWORD || 'test123';
+const SEED_DEFAULT_PASSWORD = process.env.SEED_DEFAULT_PASSWORD || 'teste-2026-clan';
 const { createMemberUser, normalizeEmail } = require('../utils/auth');
 
-const TEST_USER_PASSWORD = process.env.SEED_TEST_PASSWORD || 'test123';
+const TEST_USER_PASSWORD = process.env.SEED_TEST_PASSWORD || 'teste-2026-clan';
 
 const TEST_PROFILES = [
   { name: 'Admin Teste',   email: 'admin_teste@clan.com',   cpf: 'TEST-ADMIN',   role: 'admin' },
