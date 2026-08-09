@@ -264,7 +264,14 @@ export function useProjects(showToast, handleError) {
       });
       if (!response.ok) {
         const message = await response.text();
-        throw new Error(message || 'Falha ao enviar arquivo');
+        let errorMessage = message;
+        try {
+          const parsed = JSON.parse(message);
+          errorMessage = parsed.message || message;
+        } catch {
+          // mantém mensagem crua
+        }
+        throw new Error(errorMessage || 'Falha ao enviar arquivo');
       }
       await loadProjects();
       showToast('Arquivo(s) enviado(s)');

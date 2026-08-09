@@ -93,3 +93,48 @@ describe('useProjects — cronograma previsto (data_inicio / data_fim_planejada)
     );
   });
 });
+
+describe('useProjects — uploadProjectFiles', () => {
+  let apiFetch;
+  let handleError;
+
+  beforeEach(() => {
+    apiFetch = vi.fn().mockResolvedValue({ projects: [] });
+    handleError = vi.fn();
+    useAuth.mockReturnValue({ apiFetch, authToken: 'token' });
+    vi.stubGlobal('fetch', vi.fn());
+  });
+
+  it('extrai a mensagem amigável do JSON de erro em vez de exibir o corpo cru', async () => {
+    global.fetch.mockResolvedValue({
+      ok: false,
+      text: async () => JSON.stringify({ ok: false, message: 'Arquivo excede o tamanho máximo permitido' })
+    });
+
+    const { result } = renderHook(() => useProjects(noop, handleError));
+
+    await act(async () => {
+      await result.current.uploadProjectFiles(5, [new File(['a'], 'a.txt')]);
+    });
+
+    expect(handleError).toHaveBeenCalledTimes(1);
+    const error = handleError.mock.calls[0][0];
+    expect(error.message).toBe('Arquivo excede o tamanho máximo permitido');
+  });
+
+  it('mantém o texto cru quando a resposta de erro não é JSON', async () => {
+    global.fetch.mockResolvedValue({
+      ok: false,
+      text: async () => 'Erro inesperado'
+    });
+
+    const { result } = renderHook(() => useProjects(noop, handleError));
+
+    await act(async () => {
+      await result.current.uploadProjectFiles(5, [new File(['a'], 'a.txt')]);
+    });
+
+    const error = handleError.mock.calls[0][0];
+    expect(error.message).toBe('Erro inesperado');
+  });
+});
