@@ -5,6 +5,19 @@ const { requireAuth, requirePrivileged } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Sincroniza as tags de um projeto: remove as antigas e insere as informadas.
+async function syncProjectTags(projectId, tagIds) {
+  if (!Array.isArray(tagIds)) return;
+  await execute('DELETE FROM project_tags WHERE project_id = ?', [projectId]);
+  const uniqueIds = [...new Set(tagIds.map((id) => Number(id)).filter(Boolean))];
+  for (const tagId of uniqueIds) {
+    await execute(
+      'INSERT OR IGNORE INTO project_tags (project_id, tag_id) VALUES (?, ?)',
+      [projectId, tagId]
+    );
+  }
+}
+
 router.get('/', requireAuth, async (req, res) => {
   try {
     const { name, status, startDate, endDate, memberId } = req.query;
@@ -56,9 +69,23 @@ router.get('/', requireAuth, async (req, res) => {
       });
       return acc;
     }, {});
+
+    const tagRows = await query(
+      `SELECT pt.project_id, t.id, t.name
+       FROM project_tags pt
+       JOIN tags t ON t.id = pt.tag_id
+       ORDER BY t.name`
+    );
+    const tagsByProject = tagRows.reduce((acc, row) => {
+      if (!acc[row.project_id]) acc[row.project_id] = [];
+      acc[row.project_id].push({ id: row.id, name: row.name });
+      return acc;
+    }, {});
+
     const enriched = projects.map((project) => ({
       ...project,
-      members: membersByProject[project.id] || []
+      members: membersByProject[project.id] || [],
+      tags: tagsByProject[project.id] || []
     }));
     success(res, { projects: enriched });
   } catch (error) {
@@ -68,7 +95,7 @@ router.get('/', requireAuth, async (req, res) => {
 
 router.post('/', requirePrivileged, async (req, res) => {
   try {
-    const { name, description, status, start_date, end_date } = req.body;
+    const { name, description, status, start_date, end_date, tagIds } = req.body;
     if (!name) return fail(res, 'Nome é obrigatório');
     if (start_date && end_date && end_date < start_date) {
       return fail(res, 'Data de término não pode ser anterior à data de início');
@@ -77,7 +104,13 @@ router.post('/', requirePrivileged, async (req, res) => {
       'INSERT INTO projects (name, description, status, start_date, end_date) VALUES (?, ?, ?, ?, ?) RETURNING *',
       [name, description || null, status || 'active', start_date || null, end_date || null]
     );
-    success(res, { project: { ...project, members: [] } });
+    await syncProjectTags(project.id, tagIds);
+    const tags = await query(
+      `SELECT t.id, t.name FROM project_tags pt JOIN tags t ON t.id = pt.tag_id
+       WHERE pt.project_id = ? ORDER BY t.name`,
+      [project.id]
+    );
+    success(res, { project: { ...project, members: [], tags } });
   } catch (error) {
     fail(res, error.message);
   }
@@ -86,7 +119,7 @@ router.post('/', requirePrivileged, async (req, res) => {
 router.put('/:id', requirePrivileged, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, status, start_date, end_date } = req.body;
+    const { name, description, status, start_date, end_date, tagIds } = req.body;
     if (!name) return fail(res, 'Nome é obrigatório');
     if (start_date && end_date && end_date < start_date) {
       return fail(res, 'Data de término não pode ser anterior à data de início');
@@ -96,7 +129,13 @@ router.put('/:id', requirePrivileged, async (req, res) => {
       [name, description || null, status || 'active', start_date || null, end_date || null, id]
     );
     if (!project) return fail(res, 'Projeto não encontrado', 404);
-    success(res, { project });
+    await syncProjectTags(project.id, tagIds);
+    const tags = await query(
+      `SELECT t.id, t.name FROM project_tags pt JOIN tags t ON t.id = pt.tag_id
+       WHERE pt.project_id = ? ORDER BY t.name`,
+      [project.id]
+    );
+    success(res, { project: { ...project, tags } });
   } catch (error) {
     fail(res, error.message);
   }

@@ -441,6 +441,7 @@ function App() {
         onFilterEndDateChange={handleProjectFilterEndDate}
         onFilterMemberIdChange={handleProjectFilterMemberId}
         onClearFilters={handleProjectClearFilters}
+        tags={tags}
       />
 
       <ExtratoPanel

@@ -45,7 +45,8 @@ export function useProjects(showToast, handleError) {
     description: '',
     status: 'active',
     start_date: '',
-    end_date: ''
+    end_date: '',
+    tagIds: []
   });
   const [editingProjectId, setEditingProjectId] = useState(null);
 
@@ -121,7 +122,7 @@ export function useProjects(showToast, handleError) {
   }, []);
 
   const resetProjectForm = useCallback(() => {
-    setProjectForm({ name: '', description: '', status: 'active', start_date: '', end_date: '' });
+    setProjectForm({ name: '', description: '', status: 'active', start_date: '', end_date: '', tagIds: [] });
     setEditingProjectId(null);
   }, []);
 
@@ -159,7 +160,8 @@ export function useProjects(showToast, handleError) {
       description: project.description || '',
       status: project.status,
       start_date: project.start_date || '',
-      end_date: project.end_date || ''
+      end_date: project.end_date || '',
+      tagIds: (project.tags || []).map((t) => t.id)
     });
     setEditingProjectId(project.id);
   }, []);
