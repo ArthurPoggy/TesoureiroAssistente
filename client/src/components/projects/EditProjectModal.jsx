@@ -87,6 +87,30 @@ export function EditProjectModal({ projectForm, setProjectForm, onSave, onClose,
                 onChange={(ids) => setProjectForm({ ...projectForm, tagIds: ids })}
               />
             </div>
+
+            <div className="project-modal-section project-modal-section--wide">
+              <span className="project-modal-section-label">Cronograma previsto</span>
+              <p className="project-modal-section-hint">
+                Usado para calcular o indicador de projeto atrasado.
+              </p>
+              <label>
+                Data prevista de início
+                <input
+                  type="date"
+                  value={projectForm.data_inicio || ''}
+                  onChange={(e) => setProjectForm({ ...projectForm, data_inicio: e.target.value })}
+                />
+              </label>
+              <label>
+                Data prevista de término
+                <input
+                  type="date"
+                  value={projectForm.data_fim_planejada || ''}
+                  min={projectForm.data_inicio || undefined}
+                  onChange={(e) => setProjectForm({ ...projectForm, data_fim_planejada: e.target.value })}
+                />
+              </label>
+            </div>
           </div>
 
           <div className="form-actions" style={{ marginTop: 'var(--spacing-lg)' }}>

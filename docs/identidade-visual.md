@@ -31,7 +31,7 @@ Guia do design system mínimo do projeto. Todos os tokens visuais estão central
 | `--color-gray-100` | `#f1f5f9` | Fundo da página |
 | `--color-gray-200` | `#e2e8f0` | Bordas leves, divisores |
 | `--color-gray-300` | `#cbd5f5` | Bordas padrão |
-| `--color-gray-400` | `#94a3b8` | Texto desabilitado, placeholder |
+| `--color-gray-400` | `#5b6b80` | Texto desabilitado, placeholder, texto light (`--color-text-light`) |
 | `--color-gray-500` | `#64748b` | Texto auxiliar |
 | `--color-gray-600` | `#475569` | Texto secundário |
 | `--color-gray-700` | `#334155` | Texto sobre fundo claro |
@@ -45,9 +45,13 @@ Cada status tem 5 variações: foreground (`--color-X`), variante escura (`--col
 | Status | foreground | bg | text |
 |--------|------------|-----|------|
 | `success` | `#22c55e` | `#dcfce7` | `#166534` |
-| `error` | `#ef4444` | `#fee2e2` | `#991b1b` |
+| `error` | `#e02424` | `#fee2e2` | `#991b1b` |
 | `warning` | `#fb923c` | `#fff7ed` | `#9a3412` |
 | `info` | `#38bdf8` | `#e0f2fe` | `#0369a1` |
+
+> `--color-error` foi escurecido de `#ef4444` para `#e02424` porque o token também é usado
+> diretamente como cor de texto (ex.: botão de remover tag em `projects.css`), e o tom
+> original não atingia 4.5:1 sobre `--color-bg-secondary`. Ver seção [Contraste WCAG AA](#contraste-wcag-aa--evidência).
 
 **Exemplo de pill de sucesso:**
 
@@ -63,8 +67,8 @@ Cada status tem 5 variações: foreground (`--color-X`), variante escura (`--col
 
 | Posição | foreground | bg |
 |---------|------------|-----|
-| 1º (ouro) | `--color-rank-gold` (`#f59e0b`) | `--color-rank-gold-bg` (`#fffbeb`) |
-| 2º (prata) | `--color-rank-silver` (`#94a3b8`) | `--color-rank-silver-bg` (`#f8fafc`) |
+| 1º (ouro) | `--color-rank-gold` (`#b45309`) | `--color-rank-gold-bg` (`#fffbeb`) |
+| 2º (prata) | `--color-rank-silver` (`#5b6b80`) | `--color-rank-silver-bg` (`#f8fafc`) |
 | 3º (bronze) | `--color-rank-bronze` (`#f97316`) | `--color-rank-bronze-bg` (`#fff7ed`) |
 
 ### Gradientes
@@ -108,6 +112,18 @@ Família: **Inter** (com fallback para system-ui). Monoespaçada para código: *
 | `--line-height-tight` | `1.25` | Títulos |
 | `--line-height-base` | `1.5` | Corpo |
 | `--line-height-relaxed` | `1.65` | Parágrafos longos, leitura confortável |
+
+### Hierarquia de títulos aplicada
+
+Mapeamento efetivo entre elemento e tokens, para manter a hierarquia consistente em toda a aplicação:
+
+| Elemento | `font-size` | `font-weight` | `line-height` |
+|----------|-------------|----------------|----------------|
+| `h1` (`header h1`, `.login-card h1`) | `--font-size-2xl` | `--font-weight-bold` | `--line-height-tight` |
+| `h2` (`.panel-header h2`, `.modal-header h2`) | `--font-size-xl` | `--font-weight-bold` | `--line-height-tight` |
+| `h3` (`.panel-note h3`, `.goal-header h3`, `.history-content h3`, `.member-project-check h3`, `.member-detail-header h3`) | `--font-size-lg` | `--font-weight-bold` | `--line-height-tight` |
+| `body` / corpo de texto | `--font-size-base` | `--font-weight-normal` | `--line-height-base` (mínimo 1.5) |
+| Labels e captions (`.member-status-badge`, `.extrato-card-label`) | `--font-size-xs`/`--font-size-sm` | `--font-weight-medium` ou `--font-weight-semibold` | — |
 
 ---
 
@@ -229,6 +245,37 @@ input:focus {
 - **Foco visível:** todo elemento interativo deve manter foco visível via `--shadow-focus-ring` ou borda em `--color-primary`.
 - **Tamanho de toque mínimo:** 44×44px em mobile (usar `--spacing-lg` ou maior em padding).
 - **Reduzir movimento:** respeitar `prefers-reduced-motion` em animações maiores.
+
+### Contraste WCAG AA — evidência
+
+Cálculo de razão de contraste (fórmula da relative luminance do WCAG 2.1) para cada par
+texto/fundo efetivamente usado no app. Cobertura automatizada em
+[`client/src/test/contraste-cores.test.jsx`](../client/src/test/contraste-cores.test.jsx),
+rodada a cada `npm test` no client.
+
+| Par (texto / fundo) | Razão | Mínimo exigido | Resultado |
+|---|---|---|---|
+| `--color-text-primary` / `--color-bg-secondary` | 14.76:1 | 4.5:1 | ✅ |
+| `--color-text-primary` / `--color-bg-primary` | 13.47:1 | 4.5:1 | ✅ |
+| `--color-gray-600` (texto secundário) / `--color-bg-secondary` | 7.58:1 | 4.5:1 | ✅ |
+| `--color-gray-500` (texto muted) / `--color-bg-secondary` | 4.76:1 | 4.5:1 | ✅ |
+| `--color-gray-400` (`--color-text-light`, usado no footer) / `--color-bg-secondary` | 5.44:1 | 4.5:1 | ✅ |
+| `--color-gray-400` (`--color-text-light`) / `--color-bg-primary` | 4.97:1 | 4.5:1 | ✅ |
+| `--color-primary` (usado como texto/link) / `--color-bg-secondary` | 5.17:1 | 4.5:1 | ✅ |
+| `--color-success-text` / `--color-success-bg` | 6.49:1 | 4.5:1 | ✅ |
+| `--color-error-text` / `--color-error-bg` | 6.80:1 | 4.5:1 | ✅ |
+| `--color-warning-text` / `--color-warning-bg` | 6.88:1 | 4.5:1 | ✅ |
+| `--color-info-text` / `--color-info-bg` | 5.17:1 | 4.5:1 | ✅ |
+| `--color-error` (usado como texto, botão remover tag) / `--color-bg-secondary` | 4.72:1 | 4.5:1 | ✅ |
+| `--color-rank-gold` / `--color-rank-gold-bg` (badge/medalha, texto grande) | 4.84:1 | 3:1 | ✅ |
+
+Três tokens foram ajustados nesta revisão porque não atingiam o mínimo com o tom original:
+
+| Token | Antes | Depois | Motivo |
+|---|---|---|---|
+| `--color-gray-400` | `#94a3b8` (2.56:1 sobre branco) | `#5b6b80` (5.44:1) | Também usado como `--color-text-light`, cor de texto real no footer e em labels de formulário — precisava do mesmo piso de 4.5:1 dos demais tokens de texto. |
+| `--color-error` | `#ef4444` (3.76:1 sobre branco) | `#e02424` (4.72:1) | Usado diretamente como `color` (não só background) no botão de remover integrante (`.member-tag-remove`). |
+| `--color-rank-gold` | `#f59e0b` (2.07:1 sobre `--color-rank-gold-bg`) | `#b45309` (4.84:1) | Borda/fundo do card de 1º lugar no ranking não atingia nem o piso de 3:1 para elementos grandes. |
 
 ---
 

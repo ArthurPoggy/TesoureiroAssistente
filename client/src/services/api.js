@@ -2,11 +2,12 @@
 
 export const fetchJSON = async (url, options = {}) => {
   const config = { ...options };
-  if (config.body && typeof config.body !== 'string') {
+  const isFormData = typeof FormData !== 'undefined' && config.body instanceof FormData;
+  if (config.body && typeof config.body !== 'string' && !isFormData) {
     config.body = JSON.stringify(config.body);
   }
   const headers = { ...(options.headers || {}) };
-  if (config.body && !headers['Content-Type']) {
+  if (config.body && !isFormData && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
   if (Object.keys(headers).length) {

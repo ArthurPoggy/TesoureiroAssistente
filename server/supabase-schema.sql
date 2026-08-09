@@ -103,7 +103,11 @@ VALUES
   ('pix_key', '', TIMEZONE('utc', NOW())),
   ('pix_receiver', '', TIMEZONE('utc', NOW())),
   ('dashboard_note', '', TIMEZONE('utc', NOW())),
-  ('disclaimer_text', 'Sistema para uso interno. Os dados são confidenciais e de responsabilidade da organização.', TIMEZONE('utc', NOW()))
+  ('disclaimer_text', 'Sistema para uso interno. Os dados são confidenciais e de responsabilidade da organização.', TIMEZONE('utc', NOW())),
+  ('login_background_url', '', TIMEZONE('utc', NOW())),
+  ('login_background_version', '', TIMEZONE('utc', NOW())),
+  ('dashboard_background_url', '', TIMEZONE('utc', NOW())),
+  ('dashboard_background_version', '', TIMEZONE('utc', NOW()))
 ON CONFLICT (key) DO NOTHING;
 
 ALTER TABLE expenses ADD COLUMN IF NOT EXISTS attachment_id TEXT;
@@ -129,6 +133,17 @@ CREATE TABLE IF NOT EXISTS member_projects (
 -- Sincronização com as migrations do SQLite (tags, datas de projeto e tags de projeto).
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS start_date TEXT;
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS end_date TEXT;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS data_inicio TEXT;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS data_fim_planejada TEXT;
+
+CREATE TABLE IF NOT EXISTS project_milestones (
+  id SERIAL PRIMARY KEY,
+  project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  titulo TEXT NOT NULL,
+  data_prevista TEXT,
+  concluido INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+);
 
 CREATE TABLE IF NOT EXISTS tags (
   id SERIAL PRIMARY KEY,
@@ -147,6 +162,18 @@ CREATE TABLE IF NOT EXISTS project_tags (
   project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
   PRIMARY KEY (project_id, tag_id)
+);
+
+CREATE TABLE IF NOT EXISTS project_files (
+  id SERIAL PRIMARY KEY,
+  project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  mime_type TEXT,
+  size INTEGER,
+  storage TEXT NOT NULL DEFAULT 'local',
+  storage_ref TEXT NOT NULL,
+  download_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );
 
 INSERT INTO tags (name) VALUES

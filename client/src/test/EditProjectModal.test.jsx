@@ -118,6 +118,45 @@ describe('EditProjectModal', () => {
     expect(onSave).toHaveBeenCalledOnce();
   });
 
+  it('renderiza os campos de cronograma previsto (data_inicio / data_fim_planejada)', () => {
+    const formWithSchedule = {
+      ...defaultForm,
+      data_inicio: '2026-01-10',
+      data_fim_planejada: '2026-02-20'
+    };
+    render(
+      <EditProjectModal
+        projectForm={formWithSchedule}
+        setProjectForm={noop}
+        onSave={asyncNoop}
+        onClose={noop}
+        saving={false}
+      />
+    );
+
+    expect(screen.getByDisplayValue('2026-01-10')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('2026-02-20')).toBeInTheDocument();
+  });
+
+  it('chama setProjectForm ao alterar a data prevista de término', () => {
+    const setProjectForm = vi.fn();
+    render(
+      <EditProjectModal
+        projectForm={defaultForm}
+        setProjectForm={setProjectForm}
+        onSave={asyncNoop}
+        onClose={noop}
+        saving={false}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/data prevista de término/i), {
+      target: { value: '2026-03-15' }
+    });
+
+    expect(setProjectForm).toHaveBeenCalledWith({ ...defaultForm, data_fim_planejada: '2026-03-15' });
+  });
+
   it('desabilita os botões e mostra "Salvando..." durante saving=true', () => {
     render(
       <EditProjectModal

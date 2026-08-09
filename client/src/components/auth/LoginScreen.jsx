@@ -3,6 +3,12 @@ import { useAuth } from '../../contexts/AuthContext';
 import { fetchJSON } from '../../services/api';
 import { Toast } from '../common/Toast';
 
+// Imagem padrão da identidade visual, usada quando nenhum fundo é configurado em settings.
+const DEFAULT_LOGIN_BACKGROUND = 'var(--gradient-login-default)';
+// Overlay consome o token --color-overlay-dark de client/src/styles/variables.css
+// (já importado globalmente via styles/index.css) em vez de duplicar a cor como literal.
+const OVERLAY_COLOR = 'var(--color-overlay-dark)';
+
 export function LoginScreen() {
   const { login, register, setupPassword, authLoading } = useAuth();
   const [authMode, setAuthMode] = useState('login');
@@ -17,6 +23,8 @@ export function LoginScreen() {
   });
   const [toast, setToast] = useState(null);
   const [disclaimerText, setDisclaimerText] = useState('');
+  const [loginBackgroundUrl, setLoginBackgroundUrl] = useState('');
+  const [loadedBackgroundUrl, setLoadedBackgroundUrl] = useState(null);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -39,6 +47,34 @@ export function LoginScreen() {
       .then((data) => setDisclaimerText(data.disclaimerText || ''))
       .catch(() => {});
   }, []);
+
+  // Carregar imagem de fundo configurada em settings públicos (sem exigir autenticação).
+  useEffect(() => {
+    fetchJSON('/api/settings/public')
+      .then((data) => setLoginBackgroundUrl(data.loginBackgroundUrl || ''))
+      .catch(() => setLoginBackgroundUrl(''));
+  }, []);
+
+  // Pré-carrega a imagem custom (quando houver) para não bloquear a interação com o formulário
+  // enquanto a imagem baixa; o fallback padrão (gradiente) não precisa de pré-carregamento.
+  useEffect(() => {
+    if (!loginBackgroundUrl) {
+      return undefined;
+    }
+    const img = new Image();
+    img.onload = () => setLoadedBackgroundUrl(loginBackgroundUrl);
+    img.onerror = () => setLoadedBackgroundUrl(loginBackgroundUrl);
+    img.src = loginBackgroundUrl;
+    return () => {
+      img.onload = null;
+      img.onerror = null;
+    };
+  }, [loginBackgroundUrl]);
+
+  const backgroundImage = loginBackgroundUrl ? `url(${loginBackgroundUrl})` : DEFAULT_LOGIN_BACKGROUND;
+  // Sem imagem custom (gradiente padrão) não há carregamento a aguardar: considerar pronto direto na renderização.
+  // Com imagem custom, só é considerado pronto quando a URL atual terminou de pré-carregar (onload/onerror).
+  const isBackgroundLoaded = !loginBackgroundUrl || loadedBackgroundUrl === loginBackgroundUrl;
 
   const handleLogin = async (event) => {
     event.preventDefault();
@@ -87,7 +123,16 @@ export function LoginScreen() {
   };
 
   return (
-    <div className="login-screen">
+    <div
+      className={`login-screen${isBackgroundLoaded ? ' login-screen--loaded' : ' login-screen--loading'}`}
+      data-testid="login-screen"
+      style={{
+        backgroundImage,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}
+    >
+      <div className="login-screen-overlay" data-testid="login-screen-overlay" style={{ background: OVERLAY_COLOR }} />
       <div className="login-card">
         {toast && <Toast message={toast.message} type={toast.type} />}
         <h1>Tesoureiro Assistente</h1>

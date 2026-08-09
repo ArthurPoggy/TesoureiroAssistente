@@ -1,12 +1,27 @@
 .login-screen {
+  position: relative;
   min-height: 100vh;
   display: grid;
   place-items: center;
   padding: var(--spacing-2xl);
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  background-color: var(--color-bg-dark);
+  transition: background-color var(--transition-normal, 0.3s ease);
+  isolation: isolate;
+}
+
+.login-screen--loading {
+  background-color: var(--color-bg-dark);
+}
+
+.login-screen-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
 }
 
 .login-card {
+  position: relative;
+  z-index: 1;
   background: var(--color-bg-secondary);
   padding: var(--spacing-2xl);
   border-radius: var(--radius-xl);
@@ -19,6 +34,9 @@
 .login-card h1 {
   margin: 0;
   color: var(--color-text-primary);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
 }
 
 .login-form {
@@ -28,9 +46,11 @@
 }
 
 .login-disclaimer {
+  position: relative;
+  z-index: 1;
   text-align: center;
   color: rgba(255, 255, 255, 0.5);
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   margin-top: var(--spacing-lg);
   max-width: 420px;
   font-style: italic;
@@ -41,7 +61,7 @@
   color: var(--color-primary);
   padding: 0;
   border: none;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
   text-align: left;
   transition: color var(--transition-fast);
@@ -62,7 +82,7 @@
 .auth-note {
   margin: 0 0 var(--spacing-md);
   color: var(--color-text-muted);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .auth-status {
@@ -83,7 +103,7 @@
   padding: var(--spacing-md);
   border-radius: var(--radius-lg);
   margin-bottom: var(--spacing-lg);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .invite-link {
