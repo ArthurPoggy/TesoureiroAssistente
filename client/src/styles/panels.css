@@ -12,6 +12,32 @@
   box-shadow: var(--shadow-md);
 }
 
+/* Imagem de fundo sutil do dashboard, com overlay leve para não competir com
+   cards e tabelas. Isolado em position: relative para conter as camadas absolutas. */
+.dashboard-section {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.dashboard-section-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  transition: opacity var(--transition-normal, 0.3s ease);
+}
+
+.dashboard-section-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.dashboard-section-content {
+  position: relative;
+  z-index: 2;
+}
+
 .panel-header {
   margin-bottom: var(--spacing-lg);
 }

@@ -9,7 +9,8 @@ const DEFAULT_PUBLIC = {
   pixKey: '',
   pixReceiver: '',
   dashboardNote: '',
-  disclaimerText: ''
+  disclaimerText: '',
+  dashboardBackgroundUrl: ''
 };
 
 export function useSettings(showToast, handleError) {
@@ -47,7 +48,8 @@ export function useSettings(showToast, handleError) {
       pixKey: data.pixKey || '',
       pixReceiver: data.pixReceiver || '',
       dashboardNote: data.dashboardNote || '',
-      disclaimerText: data.disclaimerText ?? ''
+      disclaimerText: data.disclaimerText ?? '',
+      dashboardBackgroundUrl: data.dashboardBackgroundUrl || ''
     };
   }, []);
 
