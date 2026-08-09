@@ -14,7 +14,7 @@ export function StatsGrid({ dashboard }) {
         <strong>{formatCurrency(dashboard.totalRaised)}</strong>
       </article>
       <article className="stat-card">
-        <span>Despesas</span>
+        <span>Total de despesas</span>
         <strong>{formatCurrency(dashboard.totalExpenses)}</strong>
       </article>
       <article className="stat-card">

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState, useCallback } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -9,15 +9,11 @@ import {
 } from 'chart.js';
 import { useAuth } from '../contexts/AuthContext';
 import { parseMonthFilter, parseYearFilter, currentMonth, currentYear } from '../utils/formatters';
-import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard, useSettings, useExtrato, useClanHistory, useTags, useProjects } from '../hooks';
+import { useMembers, useGoals, useEvents, useDashboard, useSettings, useExtrato, useClanHistory, useTags, useProjects } from '../hooks';
 import {
   Header,
-  DashboardSection,
   SettingsPanel,
   GoalsPanel,
-  MembersPanel,
-  PaymentsPanel,
-  ExpensesPanel,
   EventsPanel,
   DelinquencyRanking,
   ReportsSection,
@@ -29,9 +25,15 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
-// Rota provisória que concentra todos os painéis existentes. Esta subtask
-// cuida apenas da árvore de rotas e dos guards de auth/role — a divisão do
-// conteúdo abaixo em rotas próprias por módulo fica para uma subtask futura.
+// Painel de dashboard carregado sob demanda (rota dedicada /dashboard).
+const DashboardSection = lazy(() =>
+  import('../components/dashboard/DashboardSection').then((mod) => ({ default: mod.DashboardSection }))
+);
+
+// Rota /dashboard: mantém, por ora, os módulos ainda não migrados para rotas
+// próprias (metas, eventos, configurações, extrato, histórico, projetos e
+// relatórios). Membros, Pagamentos e Despesas passaram a ter suas próprias
+// rotas (ver MembersPage, PaymentsPage, ExpensesPage).
 export function DashboardPage() {
   const { authToken, authChecked, authUser, isAdmin } = useAuth();
 
@@ -53,23 +55,7 @@ export function DashboardPage() {
   }, [showToast]);
 
   // Hooks de dados
-  const {
-    members,
-    memberForm,
-    setMemberForm,
-    editingMemberId,
-    selectedMemberDetail,
-    setSelectedMemberDetail,
-    inviteLink,
-    setInviteLink,
-    loadMembers,
-    resetMemberForm,
-    handleMemberSubmit,
-    handleMemberInvite,
-    handleMemberDelete,
-    handleRoleChange,
-    startEditMember
-  } = useMembers(showToast, handleError);
+  const { members, loadMembers } = useMembers(showToast, handleError);
 
   const { goals, goalForm, setGoalForm, editingGoalId, loadGoals, resetGoalForm, handleGoalSubmit, handleGoalDelete, startEditGoal } = useGoals(showToast, handleError);
 
@@ -128,50 +114,6 @@ export function DashboardPage() {
   );
 
   const selectedMemberId = useMemo(() => selectedUser?.memberId || null, [selectedUser]);
-
-  const visibleMembers = useMemo(
-    () => (selectedMemberId ? members.filter((member) => member.id === selectedMemberId) : members),
-    [members, selectedMemberId]
-  );
-
-  // Hooks que dependem dos filtros
-  const {
-    payments,
-    paymentForm,
-    setPaymentForm,
-    loading,
-    submitting: paymentSubmitting,
-    fileInputKey: paymentFileInputKey,
-    loadPayments,
-    handlePaymentSubmit,
-    handlePaymentDelete,
-    handleReceipt,
-    handlePixCode,
-    page: paymentPage,
-    pageSize: paymentPageSize,
-    total: paymentTotal,
-    filterMonth: paymentFilterMonth,
-    filterYear: paymentFilterYear,
-    filterMemberId: paymentFilterMemberId,
-    setPage: setPaymentPage,
-    onFilterMonthChange: handlePaymentFilterMonth,
-    onFilterYearChange: handlePaymentFilterYear,
-    onFilterMemberChange: handlePaymentFilterMember,
-    onPageSizeChange: handlePaymentPageSize
-  } = usePayments(showToast, handleError, selectedMemberId, members, publicSettings.defaultPaymentAmount);
-
-  const {
-    expenses,
-    expenseForm,
-    setExpenseForm,
-    editingExpenseId,
-    fileInputKey: expenseFileInputKey,
-    loadExpenses,
-    resetExpenseForm,
-    handleExpenseSubmit,
-    handleExpenseDelete,
-    startEditExpense
-  } = useExpenses(showToast, handleError, events);
 
   const {
     dashboard,
@@ -242,12 +184,11 @@ export function DashboardPage() {
     if (!authToken || !authChecked) return;
     loadMembers();
     loadGoals();
-    loadExpenses();
     loadEvents();
     loadHistory();
     loadTags();
     loadProjects();
-  }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents, loadHistory, loadTags, loadProjects]);
+  }, [authToken, authChecked, loadMembers, loadGoals, loadEvents, loadHistory, loadTags, loadProjects]);
 
   useEffect(() => {
     if (!authToken || !authChecked) return;
@@ -262,22 +203,17 @@ export function DashboardPage() {
   // Recarregar dados filtrados
   useEffect(() => {
     if (!authToken || !authChecked) return;
-    loadPayments();
     loadDashboard();
     if (isAdmin) {
       loadDelinquent();
       loadRanking();
     }
-  }, [selectedMonth, selectedYear, selectedMemberId, authToken, authChecked, isAdmin, loadPayments, loadDelinquent, loadRanking, loadDashboard]);
+  }, [selectedMonth, selectedYear, selectedMemberId, authToken, authChecked, isAdmin, loadDelinquent, loadRanking, loadDashboard]);
 
   const resetFilters = useCallback(() => {
     setSelectedMonth('all');
     setSelectedYear('');
   }, []);
-
-  // Callbacks para refresh
-  const refreshAfterPayment = [loadDashboard, loadDelinquent, loadGoals, loadRanking];
-  const refreshAfterExpense = [loadDashboard];
 
   return (
     <div className="app-shell">
@@ -298,13 +234,15 @@ export function DashboardPage() {
 
       {toast && <Toast message={toast.message} type={toast.type} />}
 
-      <DashboardSection
-        dashboard={dashboard}
-        goals={goals}
-        onEditGoal={startEditGoal}
-        onDeleteGoal={handleGoalDelete}
-        dashboardNote={publicSettings.dashboardNote}
-      />
+      <Suspense fallback={<p className="loading-panel">Carregando painel...</p>}>
+        <DashboardSection
+          dashboard={dashboard}
+          goals={goals}
+          onEditGoal={startEditGoal}
+          onDeleteGoal={handleGoalDelete}
+          dashboardNote={publicSettings.dashboardNote}
+        />
+      </Suspense>
 
       {showSettings && isAdmin && (
         <SettingsPanel
@@ -332,76 +270,16 @@ export function DashboardPage() {
         onReset={resetGoalForm}
       />
 
-      <MembersPanel
-        members={visibleMembers}
-        memberForm={memberForm}
-        setMemberForm={setMemberForm}
-        editingMemberId={editingMemberId}
-        selectedMemberDetail={selectedMemberDetail}
-        setSelectedMemberDetail={setSelectedMemberDetail}
-        inviteLink={inviteLink}
-        setInviteLink={setInviteLink}
-        onSubmit={handleMemberSubmit}
-        onInvite={handleMemberInvite}
-        onDelete={handleMemberDelete}
-        onEdit={startEditMember}
-        onReset={resetMemberForm}
-        onRoleChange={handleRoleChange}
-        showToast={showToast}
+      <EventsPanel
+        events={events}
+        eventForm={eventForm}
+        setEventForm={setEventForm}
+        editingEventId={editingEventId}
+        onSubmit={handleEventSubmit}
+        onDelete={handleEventDelete}
+        onEdit={startEditEvent}
+        onReset={resetEventForm}
       />
-
-      <PaymentsPanel
-        payments={payments}
-        paymentForm={paymentForm}
-        setPaymentForm={setPaymentForm}
-        loading={loading}
-        submitting={paymentSubmitting}
-        members={members}
-        goals={goals}
-        paymentSettings={publicSettings}
-        onSubmit={(e) => handlePaymentSubmit(e, refreshAfterPayment)}
-        onDelete={(id) => handlePaymentDelete(id, refreshAfterPayment)}
-        onReceipt={handleReceipt}
-        onPix={handlePixCode}
-        fileInputKey={paymentFileInputKey}
-        page={paymentPage}
-        pageSize={paymentPageSize}
-        total={paymentTotal}
-        filterMonth={paymentFilterMonth}
-        filterYear={paymentFilterYear}
-        filterMemberId={paymentFilterMemberId}
-        onPageChange={setPaymentPage}
-        onPageSizeChange={handlePaymentPageSize}
-        onFilterMonthChange={handlePaymentFilterMonth}
-        onFilterYearChange={handlePaymentFilterYear}
-        onFilterMemberChange={handlePaymentFilterMember}
-      />
-
-      <div className="two-column">
-        <ExpensesPanel
-          expenses={expenses}
-          expenseForm={expenseForm}
-          setExpenseForm={setExpenseForm}
-          editingExpenseId={editingExpenseId}
-          fileInputKey={expenseFileInputKey}
-          events={events}
-          tags={tags}
-          onSubmit={(e) => handleExpenseSubmit(e, refreshAfterExpense)}
-          onDelete={(id) => handleExpenseDelete(id, refreshAfterExpense)}
-          onEdit={startEditExpense}
-          onReset={resetExpenseForm}
-        />
-        <EventsPanel
-          events={events}
-          eventForm={eventForm}
-          setEventForm={setEventForm}
-          editingEventId={editingEventId}
-          onSubmit={handleEventSubmit}
-          onDelete={handleEventDelete}
-          onEdit={startEditEvent}
-          onReset={resetEventForm}
-        />
-      </div>
 
       {isAdmin && <DelinquencyRanking delinquent={delinquent} ranking={ranking} />}
 
