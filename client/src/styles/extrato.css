@@ -47,18 +47,18 @@
 }
 
 .extrato-income {
-  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-  color: #065f46;
+  background: linear-gradient(135deg, var(--color-success-bg), var(--color-success-border));
+  color: var(--color-success-text);
 }
 
 .extrato-expense {
-  background: linear-gradient(135deg, #fef2f2, #fee2e2);
-  color: #991b1b;
+  background: linear-gradient(135deg, var(--color-error-bg), var(--color-error-border));
+  color: var(--color-error-text);
 }
 
 .extrato-net {
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
-  color: #1e40af;
+  background: linear-gradient(135deg, var(--color-primary-bg), var(--color-primary-border));
+  color: var(--color-primary-dark);
 }
 
 .extrato-badge {
