@@ -2,11 +2,25 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchJSON } from '../../services/api';
 import { Toast } from '../common/Toast';
+import '../../styles/variables.css';
 
 // Imagem padrão da identidade visual, usada quando nenhum fundo é configurado em settings.
 const DEFAULT_LOGIN_BACKGROUND = 'var(--gradient-login-default)';
-// Overlay para legibilidade do formulário sobre a imagem de fundo (mesma cor de var(--color-overlay-dark)).
-const OVERLAY_BACKGROUND = 'rgba(15, 23, 42, 0.55)';
+// Fallback usado apenas se o token --color-overlay-dark não puder ser lido (ex.: CSS ainda não aplicado).
+const OVERLAY_FALLBACK = 'rgba(15, 23, 42, 0.55)';
+
+// Lê o valor do token --color-overlay-dark de client/src/styles/variables.css em vez de
+// duplicar a cor como literal, evitando que os dois valores divirjam silenciosamente.
+function readOverlayToken() {
+  if (typeof window === 'undefined' || typeof window.getComputedStyle !== 'function') {
+    return OVERLAY_FALLBACK;
+  }
+  const value = window
+    .getComputedStyle(document.documentElement)
+    .getPropertyValue('--color-overlay-dark')
+    .trim();
+  return value || OVERLAY_FALLBACK;
+}
 
 export function LoginScreen() {
   const { login, register, setupPassword, authLoading } = useAuth();
@@ -130,7 +144,7 @@ export function LoginScreen() {
         backgroundPosition: 'center'
       }}
     >
-      <div className="login-screen-overlay" data-testid="login-screen-overlay" style={{ background: OVERLAY_BACKGROUND }} />
+      <div className="login-screen-overlay" data-testid="login-screen-overlay" style={{ background: readOverlayToken() }} />
       <div className="login-card">
         {toast && <Toast message={toast.message} type={toast.type} />}
         <h1>Tesoureiro Assistente</h1>
