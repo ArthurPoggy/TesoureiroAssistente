@@ -51,3 +51,19 @@ describe('PaymentsPanel — botão PIX', () => {
     expect(queryByText('PIX')).not.toBeInTheDocument();
   });
 });
+
+describe('PaymentsPanel — botão PIX para o próprio membro (não-tesoureiro)', () => {
+  const ownPayments = [
+    { id: 7, member_id: 42, member_name: 'João', month: 3, year: 2025, amount: 120, paid: 1, goal_id: null }
+  ];
+
+  it('exibe o botão PIX para um membro comum (canEdit=false) visualizando o próprio pagamento', () => {
+    // A rota GET /api/payments/:id/pix permite que o próprio membro (member_id === req.user.memberId)
+    // busque o PIX do seu pagamento, mesmo sem ser admin/diretor_financeiro. A UI precisa refletir isso.
+    mockUseAuth.mockReturnValue({ canEdit: false, memberId: 42 });
+    const { getByText } = render(
+      <PaymentsPanel {...baseProps} payments={ownPayments} onPix={vi.fn()} />
+    );
+    expect(getByText('PIX')).toBeInTheDocument();
+  });
+});
