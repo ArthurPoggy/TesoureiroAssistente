@@ -161,6 +161,17 @@ const migrations = [
       PRIMARY KEY (project_id, tag_id),
       FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
       FOREIGN KEY(tag_id) REFERENCES tags(id) ON DELETE CASCADE
+    )`,
+  `ALTER TABLE projects ADD COLUMN data_inicio TEXT`,
+  `ALTER TABLE projects ADD COLUMN data_fim_planejada TEXT`,
+  `CREATE TABLE IF NOT EXISTS project_milestones (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      titulo TEXT NOT NULL,
+      data_prevista TEXT,
+      concluido INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
     )`
 ];
 

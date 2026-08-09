@@ -129,6 +129,17 @@ CREATE TABLE IF NOT EXISTS member_projects (
 -- Sincronização com as migrations do SQLite (tags, datas de projeto e tags de projeto).
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS start_date TEXT;
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS end_date TEXT;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS data_inicio TEXT;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS data_fim_planejada TEXT;
+
+CREATE TABLE IF NOT EXISTS project_milestones (
+  id SERIAL PRIMARY KEY,
+  project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  titulo TEXT NOT NULL,
+  data_prevista TEXT,
+  concluido INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+);
 
 CREATE TABLE IF NOT EXISTS tags (
   id SERIAL PRIMARY KEY,
