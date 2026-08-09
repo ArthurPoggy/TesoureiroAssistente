@@ -112,7 +112,7 @@ describe('Rótulo "Registro Escoteiro"', () => {
       });
     });
 
-    it('exibe "Registro Escoteiro:" no painel de detalhes do membro', () => {
+    it('exibe "Registro Escoteiro" no painel de detalhes do membro', () => {
       render(
         <MemberDetailView
           member={mockMember}
@@ -122,7 +122,7 @@ describe('Rótulo "Registro Escoteiro"', () => {
         />
       );
 
-      expect(screen.getByText('Registro Escoteiro:')).toBeInTheDocument();
+      expect(screen.getByText('Registro Escoteiro')).toBeInTheDocument();
     });
 
     it('não exibe "CPF" como rótulo no painel de detalhes', () => {

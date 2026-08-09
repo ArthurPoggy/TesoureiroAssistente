@@ -74,7 +74,7 @@ export function MemberDetailView({ member, onInvite, onDelete, onRoleChange }) {
             <dd>{effectiveMember.email || '-'}</dd>
             <dt>Apelido</dt>
             <dd>{effectiveMember.nickname || '-'}</dd>
-            <dt>CPF / Registro</dt>
+            <dt>Registro Escoteiro</dt>
             <dd>{maskCpf(effectiveMember.cpf)}</dd>
             <dt>Membro desde</dt>
             <dd>{effectiveMember.joined_at ? new Date(effectiveMember.joined_at).toLocaleDateString('pt-BR') : '-'}</dd>
