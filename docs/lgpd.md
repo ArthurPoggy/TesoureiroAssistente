@@ -55,8 +55,8 @@ responsável (encarregado/DPO), atendida em prazo razoável.
 | Registro de consentimento | **Pendente** |
 | Política de retenção/eliminação | **Pendente** |
 
-Ver também [`auditoria-seguranca.md`](auditoria-seguranca.md) para riscos correlatos
-(JWT_SECRET, CORS, refresh token em texto puro).
+Riscos técnicos correlatos ainda pendentes de correção: `JWT_SECRET` fixo no código,
+CORS aberto, ausência de rate limit/helmet e refresh token armazenado em texto puro.
 
 ## 6. Plano de adequação (próximos cards)
 
