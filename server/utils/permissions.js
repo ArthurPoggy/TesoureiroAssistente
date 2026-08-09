@@ -1,4 +1,4 @@
-const { query, queryOne } = require('../db/query');
+const { query, queryOne, execute } = require('../db/query');
 
 // ---------------------------------------------------------------------------
 // Catálogo de permissões
@@ -152,10 +152,83 @@ const getEffectivePermissions = async (memberId) => {
   return Array.from(effective);
 };
 
+const makeError = (message, status) => {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+};
+
+// ---------------------------------------------------------------------------
+// Altera (concede ou revoga) o override de uma permissão de um membro.
+//
+// Regras de negócio:
+//  - Somente um usuário com role admin pode alterar permissões de outros
+//    membros (actorId precisa corresponder a um membro admin ativo).
+//  - Nunca é possível revogar as permissões administrativas do último admin
+//    ativo do sistema: se o membro alvo for admin e for o único admin ativo,
+//    qualquer revogação (allowed = 0) é bloqueada com um erro claro (não 500).
+//  - Toda alteração bem-sucedida gera uma linha em permission_audit_log com
+//    quem alterou, o membro afetado, a permissão, o valor anterior e o novo.
+// ---------------------------------------------------------------------------
+const setMemberPermissionOverride = async ({ actorId, memberId, code, allowed, origem = 'manual' }) => {
+  const actor = await queryOne('SELECT id, role, active FROM members WHERE id = ?', [actorId]);
+  if (!actor || actor.role !== 'admin' || Number(actor.active) === 0) {
+    throw makeError('Apenas administradores podem alterar permissões de outros membros.', 403);
+  }
+
+  const target = await queryOne('SELECT id, role, active FROM members WHERE id = ?', [memberId]);
+  if (!target) {
+    throw makeError('Membro não encontrado.', 404);
+  }
+
+  const newValue = Number(allowed) ? 1 : 0;
+
+  if (newValue === 0 && target.role === 'admin') {
+    const activeAdmins = await query(
+      "SELECT id FROM members WHERE role = 'admin' AND active = 1"
+    );
+    if (activeAdmins.length <= 1 && activeAdmins.some((admin) => Number(admin.id) === Number(memberId))) {
+      throw makeError(
+        'Não é possível revogar permissões administrativas do último admin ativo do sistema.',
+        400
+      );
+    }
+  }
+
+  const existingOverride = await queryOne(
+    'SELECT allowed FROM member_permissions WHERE member_id = ? AND permission_code = ?',
+    [memberId, code]
+  );
+  const previousValue = existingOverride
+    ? Number(existingOverride.allowed)
+    : (getPresetForRole(target.role).includes(code) ? 1 : 0);
+
+  if (existingOverride) {
+    await execute(
+      'UPDATE member_permissions SET allowed = ?, origem = ? WHERE member_id = ? AND permission_code = ?',
+      [newValue, origem, memberId, code]
+    );
+  } else {
+    await execute(
+      'INSERT INTO member_permissions (member_id, permission_code, allowed, origem) VALUES (?, ?, ?, ?)',
+      [memberId, code, newValue, origem]
+    );
+  }
+
+  await execute(
+    `INSERT INTO permission_audit_log (member_id, permission_code, previous_value, new_value, changed_by)
+     VALUES (?, ?, ?, ?, ?)`,
+    [memberId, code, previousValue, newValue, actorId]
+  );
+
+  return { memberId, code, allowed: newValue, previousValue };
+};
+
 module.exports = {
   PERMISSIONS_CATALOG,
   ALL_PERMISSION_CODES,
   ROLE_PRESETS,
   getPresetForRole,
-  getEffectivePermissions
+  getEffectivePermissions,
+  setMemberPermissionOverride
 };

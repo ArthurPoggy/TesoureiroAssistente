@@ -196,3 +196,13 @@ INSERT INTO permissions (code, name, category) VALUES
   ('arquivos.ver', 'Visualizar arquivos anexados', 'Arquivos'),
   ('arquivos.gerenciar', 'Enviar e gerenciar arquivos (Google Drive)', 'Arquivos')
 ON CONFLICT (code) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS permission_audit_log (
+  id SERIAL PRIMARY KEY,
+  member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  permission_code TEXT NOT NULL REFERENCES permissions(code) ON DELETE CASCADE,
+  previous_value BOOLEAN,
+  new_value BOOLEAN NOT NULL,
+  changed_by INTEGER REFERENCES members(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+);

@@ -182,7 +182,19 @@ const migrations = [
   ...PERMISSIONS_CATALOG.map(
     ({ code, name, category }) =>
       `INSERT OR IGNORE INTO permissions (code, name, category) VALUES ('${code}', '${name.replace(/'/g, "''")}', '${category}')`
-  )
+  ),
+  `CREATE TABLE IF NOT EXISTS permission_audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      member_id INTEGER NOT NULL,
+      permission_code TEXT NOT NULL,
+      previous_value INTEGER,
+      new_value INTEGER NOT NULL,
+      changed_by INTEGER,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(member_id) REFERENCES members(id) ON DELETE CASCADE,
+      FOREIGN KEY(permission_code) REFERENCES permissions(code) ON DELETE CASCADE,
+      FOREIGN KEY(changed_by) REFERENCES members(id) ON DELETE SET NULL
+    )`
 ];
 
 function runMigrations() {
