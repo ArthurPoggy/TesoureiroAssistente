@@ -172,6 +172,18 @@ const migrations = [
       concluido INTEGER NOT NULL DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
+    )`,
+  `CREATE TABLE IF NOT EXISTS project_files (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      mime_type TEXT,
+      size INTEGER,
+      storage TEXT NOT NULL DEFAULT 'local',
+      storage_ref TEXT NOT NULL,
+      download_url TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
     )`
 ];
 

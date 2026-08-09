@@ -4,7 +4,7 @@ const { fail } = require('../utils/response');
 const errorHandler = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return fail(res, 'Arquivo acima de 4 MB', 400);
+      return fail(res, 'Arquivo acima do limite de tamanho permitido', 400);
     }
     return fail(res, err.message || 'Erro ao processar arquivo', 400);
   }

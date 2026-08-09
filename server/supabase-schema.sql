@@ -160,6 +160,18 @@ CREATE TABLE IF NOT EXISTS project_tags (
   PRIMARY KEY (project_id, tag_id)
 );
 
+CREATE TABLE IF NOT EXISTS project_files (
+  id SERIAL PRIMARY KEY,
+  project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  mime_type TEXT,
+  size INTEGER,
+  storage TEXT NOT NULL DEFAULT 'local',
+  storage_ref TEXT NOT NULL,
+  download_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+);
+
 INSERT INTO tags (name) VALUES
   ('Equipamentos'), ('Comida'), ('Acampamento'), ('Transporte'), ('Material')
 ON CONFLICT (name) DO NOTHING;
