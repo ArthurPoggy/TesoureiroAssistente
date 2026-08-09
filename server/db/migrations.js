@@ -184,7 +184,15 @@ const migrations = [
       download_url TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
-    )`
+    )`,
+  `INSERT OR IGNORE INTO settings (key, value, updated_at)
+   VALUES ('login_background_url', '', CURRENT_TIMESTAMP)`,
+  `INSERT OR IGNORE INTO settings (key, value, updated_at)
+   VALUES ('login_background_version', '', CURRENT_TIMESTAMP)`,
+  `INSERT OR IGNORE INTO settings (key, value, updated_at)
+   VALUES ('dashboard_background_url', '', CURRENT_TIMESTAMP)`,
+  `INSERT OR IGNORE INTO settings (key, value, updated_at)
+   VALUES ('dashboard_background_version', '', CURRENT_TIMESTAMP)`
 ];
 
 function runMigrations() {

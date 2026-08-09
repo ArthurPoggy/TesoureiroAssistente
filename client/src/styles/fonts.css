@@ -1,0 +1,7 @@
+/* Fonte oficial do sistema — Inter, carregada localmente via @fontsource
+   (offline-first, sem depender de CDN). Os arquivos @font-face gerados pelo
+   pacote já usam font-display: swap, evitando FOUT durante o carregamento. */
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';

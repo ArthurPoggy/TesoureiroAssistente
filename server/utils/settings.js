@@ -11,7 +11,11 @@ const DEFAULT_SETTINGS = {
   pix_receiver: '',
   pix_city: '',
   dashboard_note: '',
-  disclaimer_text: 'Sistema para uso interno. Os dados são confidenciais e de responsabilidade da organização.'
+  disclaimer_text: 'Sistema para uso interno. Os dados são confidenciais e de responsabilidade da organização.',
+  login_background_url: '',
+  login_background_version: '',
+  dashboard_background_url: '',
+  dashboard_background_version: ''
 };
 
 const normalizeDueDay = (value) => {
@@ -64,7 +68,14 @@ const getSetting = async (key) => {
   return row?.value ?? null;
 };
 
-const getPublicSettings = async () => {
+const buildVersionedBackgroundUrl = (url, version) => {
+  if (!url) return null;
+  return version ? `${url}?v=${version}` : url;
+};
+
+// Retorna os dados de settings acessíveis a membros autenticados (qualquer papel),
+// incluindo chave PIX e aviso interno do tesoureiro exibidos no painel.
+const getMemberSettings = async () => {
   const settings = await getSettings();
   const defaultAmount = Number(settings.default_payment_amount);
   const paymentDueDay = normalizeDueDay(settings.payment_due_day);
@@ -77,8 +88,24 @@ const getPublicSettings = async () => {
     pixReceiver: settings.pix_receiver || '',
     pixCity: settings.pix_city || '',
     dashboardNote: settings.dashboard_note || '',
-    disclaimerText: settings.disclaimer_text ?? DEFAULT_SETTINGS.disclaimer_text
+    disclaimerText: settings.disclaimer_text ?? DEFAULT_SETTINGS.disclaimer_text,
+    loginBackgroundUrl: buildVersionedBackgroundUrl(settings.login_background_url, settings.login_background_version),
+    dashboardBackgroundUrl: buildVersionedBackgroundUrl(settings.dashboard_background_url, settings.dashboard_background_version)
   };
+};
+
+// Subconjunto seguro para expor sem autenticação (alimenta a LoginScreen, que
+// ainda não tem sessão). Nunca deve incluir chave PIX, recebedor, cidade do PIX
+// ou o aviso interno do tesoureiro — esses dados só vão para membros autenticados.
+const getPublicSettings = async () => {
+  const {
+    pixKey: _pixKey,
+    pixReceiver: _pixReceiver,
+    pixCity: _pixCity,
+    dashboardNote: _dashboardNote,
+    ...publicSafeSettings
+  } = await getMemberSettings();
+  return publicSafeSettings;
 };
 
 const setSetting = async (key, value) => {
@@ -163,6 +190,7 @@ module.exports = {
   getSetting,
   getSettings,
   getPublicSettings,
+  getMemberSettings,
   setSetting,
   setSettings,
   getCurrentBalance,

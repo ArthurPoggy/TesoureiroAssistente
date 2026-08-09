@@ -319,6 +319,7 @@ function App() {
         onEditGoal={startEditGoal}
         onDeleteGoal={handleGoalDelete}
         dashboardNote={publicSettings.dashboardNote}
+        dashboardBackgroundUrl={publicSettings.dashboardBackgroundUrl}
       />
 
       {showSettings && isAdmin && (

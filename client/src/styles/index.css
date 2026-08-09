@@ -1,4 +1,5 @@
 /* Arquivo principal de estilos - importa todos os módulos */
+@import './fonts.css';
 @import './variables.css';
 @import './base.css';
 @import './auth.css';
