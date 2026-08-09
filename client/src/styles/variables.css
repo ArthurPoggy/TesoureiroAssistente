@@ -98,6 +98,16 @@
      ========================================================= */
   --gradient-stat-card: linear-gradient(135deg, var(--color-gray-900) 0%, var(--color-gray-800) 100%);
   --gradient-progress: linear-gradient(90deg, var(--color-primary), var(--color-info));
+  --gradient-login-default: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  --gradient-dashboard-default: linear-gradient(135deg, #eef2ff 0%, #f8fafc 50%, #eef2ff 100%);
+
+  /* =========================================================
+     Overlays (uso sobre imagens de fundo, para legibilidade)
+     ========================================================= */
+  --color-overlay-dark: rgba(15, 23, 42, 0.55);
+  /* Overlay mais leve que --color-overlay-dark, usado no dashboard para não competir
+     visualmente com cards e tabelas exibidos sobre a imagem de fundo. */
+  --color-overlay-light: rgba(248, 250, 252, 0.78);
 
   /* =========================================================
      Tipografia

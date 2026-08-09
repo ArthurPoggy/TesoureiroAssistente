@@ -1,12 +1,27 @@
 .login-screen {
+  position: relative;
   min-height: 100vh;
   display: grid;
   place-items: center;
   padding: var(--spacing-2xl);
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  background-color: var(--color-bg-dark);
+  transition: background-color var(--transition-normal, 0.3s ease);
+  isolation: isolate;
+}
+
+.login-screen--loading {
+  background-color: var(--color-bg-dark);
+}
+
+.login-screen-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
 }
 
 .login-card {
+  position: relative;
+  z-index: 1;
   background: var(--color-bg-secondary);
   padding: var(--spacing-2xl);
   border-radius: var(--radius-xl);
@@ -28,6 +43,8 @@
 }
 
 .login-disclaimer {
+  position: relative;
+  z-index: 1;
   text-align: center;
   color: rgba(255, 255, 255, 0.5);
   font-size: 0.8rem;
