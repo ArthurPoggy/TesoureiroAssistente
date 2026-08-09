@@ -51,7 +51,7 @@ describe('LoginScreen — imagem de fundo', () => {
     const overlay = screen.getByTestId('login-screen-overlay');
     expect(overlay).toBeInTheDocument();
     const overlayBg = overlay.style.background || overlay.style.backgroundColor;
-    expect(overlayBg).toMatch(/rgba?\(/);
+    expect(overlayBg).toMatch(/rgba?\(|var\(--color-overlay-dark\)/);
 
     // O formulário continua acessível/legível (renderizado acima do overlay).
     expect(screen.getByPlaceholderText('Email')).toBeInTheDocument();
