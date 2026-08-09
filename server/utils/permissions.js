@@ -224,11 +224,72 @@ const setMemberPermissionOverride = async ({ actorId, memberId, code, allowed, o
   return { memberId, code, allowed: newValue, previousValue };
 };
 
+// ---------------------------------------------------------------------------
+// Remove o override de uma permissão de um membro, revertendo-o para o
+// comportamento puro do preset do seu role (rollback/"restaurar padrão").
+//
+// Segue as mesmas regras de negócio de setMemberPermissionOverride: só admin
+// pode alterar, a revogação do último admin ativo é bloqueada, e toda
+// alteração efetiva gera uma linha em permission_audit_log.
+// ---------------------------------------------------------------------------
+const removeMemberPermissionOverride = async ({ actorId, memberId, code }) => {
+  const actor = await queryOne('SELECT id, role, active FROM members WHERE id = ?', [actorId]);
+  if (!actor || actor.role !== 'admin' || Number(actor.active) === 0) {
+    throw makeError('Apenas administradores podem alterar permissões de outros membros.', 403);
+  }
+
+  const target = await queryOne('SELECT id, role, active FROM members WHERE id = ?', [memberId]);
+  if (!target) {
+    throw makeError('Membro não encontrado.', 404);
+  }
+
+  const existingOverride = await queryOne(
+    'SELECT allowed FROM member_permissions WHERE member_id = ? AND permission_code = ?',
+    [memberId, code]
+  );
+  if (!existingOverride) {
+    // Nada para reverter: o membro já segue o preset do seu role.
+    return { memberId, code, reverted: false };
+  }
+
+  const previousValue = Number(existingOverride.allowed);
+  const presetValue = getPresetForRole(target.role).includes(code) ? 1 : 0;
+
+  // Se remover o override fizer o membro perder efetivamente a permissão
+  // (override concedia algo que o preset não cobre), aplica-se a mesma
+  // proteção do último admin ativo usada em setMemberPermissionOverride.
+  if (previousValue === 1 && presetValue === 0 && target.role === 'admin') {
+    const activeAdmins = await query(
+      "SELECT id FROM members WHERE role = 'admin' AND active = 1"
+    );
+    if (activeAdmins.length <= 1 && activeAdmins.some((admin) => Number(admin.id) === Number(memberId))) {
+      throw makeError(
+        'Não é possível revogar permissões administrativas do último admin ativo do sistema.',
+        400
+      );
+    }
+  }
+
+  await execute(
+    'DELETE FROM member_permissions WHERE member_id = ? AND permission_code = ?',
+    [memberId, code]
+  );
+
+  await execute(
+    `INSERT INTO permission_audit_log (member_id, permission_code, previous_value, new_value, changed_by)
+     VALUES (?, ?, ?, ?, ?)`,
+    [memberId, code, previousValue, presetValue, actorId]
+  );
+
+  return { memberId, code, allowed: presetValue, previousValue, reverted: true };
+};
+
 module.exports = {
   PERMISSIONS_CATALOG,
   ALL_PERMISSION_CODES,
   ROLE_PRESETS,
   getPresetForRole,
   getEffectivePermissions,
-  setMemberPermissionOverride
+  setMemberPermissionOverride,
+  removeMemberPermissionOverride
 };
