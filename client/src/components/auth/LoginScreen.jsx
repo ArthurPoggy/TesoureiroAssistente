@@ -24,7 +24,7 @@ export function LoginScreen() {
   const [toast, setToast] = useState(null);
   const [disclaimerText, setDisclaimerText] = useState('');
   const [loginBackgroundUrl, setLoginBackgroundUrl] = useState('');
-  const [backgroundLoaded, setBackgroundLoaded] = useState(false);
+  const [loadedBackgroundUrl, setLoadedBackgroundUrl] = useState(null);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -59,13 +59,11 @@ export function LoginScreen() {
   // enquanto a imagem baixa; o fallback padrão (gradiente) não precisa de pré-carregamento.
   useEffect(() => {
     if (!loginBackgroundUrl) {
-      setBackgroundLoaded(true);
       return undefined;
     }
-    setBackgroundLoaded(false);
     const img = new Image();
-    img.onload = () => setBackgroundLoaded(true);
-    img.onerror = () => setBackgroundLoaded(true);
+    img.onload = () => setLoadedBackgroundUrl(loginBackgroundUrl);
+    img.onerror = () => setLoadedBackgroundUrl(loginBackgroundUrl);
     img.src = loginBackgroundUrl;
     return () => {
       img.onload = null;
@@ -74,6 +72,9 @@ export function LoginScreen() {
   }, [loginBackgroundUrl]);
 
   const backgroundImage = loginBackgroundUrl ? `url(${loginBackgroundUrl})` : DEFAULT_LOGIN_BACKGROUND;
+  // Sem imagem custom (gradiente padrão) não há carregamento a aguardar: considerar pronto direto na renderização.
+  // Com imagem custom, só é considerado pronto quando a URL atual terminou de pré-carregar (onload/onerror).
+  const isBackgroundLoaded = !loginBackgroundUrl || loadedBackgroundUrl === loginBackgroundUrl;
 
   const handleLogin = async (event) => {
     event.preventDefault();
@@ -123,7 +124,7 @@ export function LoginScreen() {
 
   return (
     <div
-      className={`login-screen${backgroundLoaded ? ' login-screen--loaded' : ' login-screen--loading'}`}
+      className={`login-screen${isBackgroundLoaded ? ' login-screen--loaded' : ' login-screen--loading'}`}
       data-testid="login-screen"
       style={{
         backgroundImage,

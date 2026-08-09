@@ -10,19 +10,17 @@ const DEFAULT_DASHBOARD_BACKGROUND = 'var(--gradient-dashboard-default)';
 const OVERLAY_COLOR = 'var(--color-overlay-light)';
 
 export function DashboardSection({ dashboard, goals, onEditGoal, onDeleteGoal, dashboardNote, dashboardBackgroundUrl }) {
-  const [backgroundLoaded, setBackgroundLoaded] = useState(false);
+  const [loadedBackgroundUrl, setLoadedBackgroundUrl] = useState(null);
 
   // Pré-carrega a imagem custom (quando houver) de forma assíncrona, sem bloquear a
   // renderização dos dados do dashboard — o fallback (gradiente) não precisa de pré-carregamento.
   useEffect(() => {
     if (!dashboardBackgroundUrl) {
-      setBackgroundLoaded(true);
       return undefined;
     }
-    setBackgroundLoaded(false);
     const img = new Image();
-    img.onload = () => setBackgroundLoaded(true);
-    img.onerror = () => setBackgroundLoaded(true);
+    img.onload = () => setLoadedBackgroundUrl(dashboardBackgroundUrl);
+    img.onerror = () => setLoadedBackgroundUrl(dashboardBackgroundUrl);
     img.src = dashboardBackgroundUrl;
     return () => {
       img.onload = null;
@@ -31,6 +29,9 @@ export function DashboardSection({ dashboard, goals, onEditGoal, onDeleteGoal, d
   }, [dashboardBackgroundUrl]);
 
   const backgroundImage = dashboardBackgroundUrl ? `url(${dashboardBackgroundUrl})` : DEFAULT_DASHBOARD_BACKGROUND;
+  // Sem imagem custom (gradiente padrão) não há carregamento a aguardar: considerar pronto direto na renderização.
+  // Com imagem custom, só é considerado pronto quando a URL atual terminou de pré-carregar (onload/onerror).
+  const isBackgroundLoaded = !dashboardBackgroundUrl || loadedBackgroundUrl === dashboardBackgroundUrl;
 
   const chartData = useMemo(() => {
     const dataset = months.map((monthItem) => {
@@ -52,7 +53,7 @@ export function DashboardSection({ dashboard, goals, onEditGoal, onDeleteGoal, d
   }, [dashboard]);
 
   return (
-    <section className={`panel dashboard-section${backgroundLoaded ? ' dashboard-section--loaded' : ' dashboard-section--loading'}`}>
+    <section className={`panel dashboard-section${isBackgroundLoaded ? ' dashboard-section--loaded' : ' dashboard-section--loading'}`}>
       <div
         className="dashboard-section-background"
         data-testid="dashboard-section-background"
