@@ -267,7 +267,15 @@ export function PaymentsPanel({
                 <span className="spinner table-spinner" aria-hidden="true" />
               </div>
             )}
-            <table>
+            <table className="payments-table">
+              <colgroup>
+                <col className="col-member" />
+                <col className="col-period" />
+                <col className="col-amount" />
+                <col className="col-status" />
+                <col className="col-goal" />
+                {showActionsColumn && <col className="col-actions" />}
+              </colgroup>
               <thead>
                 <tr>
                   <th>Membro</th>
