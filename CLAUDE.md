@@ -89,7 +89,8 @@ máximo **50 linhas**. Ao ultrapassar esse limite:
 
 Identificadores sensíveis (CPF/Registro Escoteiro) nunca são exibidos em
 texto puro na UI, mesmo quando o rótulo visível foi trocado para "Registro
-Escoteiro" (ver `docs/lgpd.md`, item 5). Use `maskCpf` de
+Escoteiro" (ver `docs/lgpd.md`, seção 2, tabela de dados pessoais tratados,
+que classifica o CPF como identificador). Use `maskCpf` de
 `client/src/utils/formatters.js` em todo componente que renderiza o valor
 (`MembersPanel`, `MemberDetailView`, ...) — não remova a máscara para
 "alinhar" um componente a outro que porventura esteja exibindo o valor sem
