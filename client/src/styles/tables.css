@@ -1,6 +1,10 @@
 .table-wrapper {
   overflow-x: auto;
   position: relative;
+  /* Reservado dinamicamente (via inline style) com a maior altura já
+     observada para a página/filtro atuais, evitando colapso de altura
+     (reflow perceptível) ao trocar para uma página com menos linhas. */
+  min-height: var(--table-min-height, auto);
 }
 
 .table-wrapper--loading table {
@@ -62,6 +66,41 @@ table tbody tr:nth-child(even) {
 
 table tbody tr:hover {
   background: var(--color-bg-highlight);
+}
+
+/* Pagamentos: colunas com largura fixa (não dependem do conteúdo da página),
+   para que a tabela não "pule"/redimensione ao trocar de página ou de
+   tamanho de página. */
+.payments-table {
+  table-layout: fixed;
+}
+
+.payments-table .col-member {
+  width: 22%;
+}
+
+.payments-table .col-period {
+  width: 13%;
+}
+
+.payments-table .col-amount {
+  width: 15%;
+}
+
+.payments-table .col-status {
+  width: 12%;
+}
+
+.payments-table .col-goal {
+  width: 23%;
+}
+
+.payments-table .col-actions {
+  width: 15%;
+}
+
+.payments-table td {
+  overflow-wrap: break-word;
 }
 
 .paid {
