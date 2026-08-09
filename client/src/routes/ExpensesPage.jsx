@@ -1,6 +1,6 @@
-import { lazy, Suspense, useEffect, useState, useCallback } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useEvents, useExpenses, useTags } from '../hooks';
+import { useEvents, useExpenses, useTags, useToast } from '../hooks';
 import { Toast } from '../components';
 
 // Painel de despesas carregado sob demanda (rota dedicada /despesas).
@@ -13,17 +13,7 @@ const ExpensesPanel = lazy(() =>
 // carregados aqui apenas para alimentar os seletores do formulário.
 export function ExpensesPage() {
   const { authToken, authChecked } = useAuth();
-  const [toast, setToast] = useState(null);
-
-  const showToast = useCallback((message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  }, []);
-
-  const handleError = useCallback((error) => {
-    console.error(error);
-    showToast(error.message || 'Algo deu errado', 'error');
-  }, [showToast]);
+  const { toast, showToast, handleError } = useToast();
 
   const { events, loadEvents } = useEvents(showToast, handleError);
   const { tags, loadTags } = useTags(showToast, handleError);

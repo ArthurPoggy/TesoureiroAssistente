@@ -1,6 +1,6 @@
-import { lazy, Suspense, useEffect, useState, useCallback } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useMembers } from '../hooks';
+import { useMembers, useToast } from '../hooks';
 import { Toast } from '../components';
 
 // Painel de membros carregado sob demanda (rota dedicada /membros).
@@ -12,17 +12,7 @@ const MembersPanel = lazy(() =>
 // própria rota. O hook useMembers segue funcionando como antes.
 export function MembersPage() {
   const { authToken, authChecked } = useAuth();
-  const [toast, setToast] = useState(null);
-
-  const showToast = useCallback((message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  }, []);
-
-  const handleError = useCallback((error) => {
-    console.error(error);
-    showToast(error.message || 'Algo deu errado', 'error');
-  }, [showToast]);
+  const { toast, showToast, handleError } = useToast();
 
   const {
     members,

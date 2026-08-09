@@ -1,6 +1,6 @@
-import { lazy, Suspense, useEffect, useState, useCallback } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useMembers, useGoals, usePayments, useSettings } from '../hooks';
+import { useMembers, useGoals, usePayments, useSettings, useToast } from '../hooks';
 import { Toast } from '../components';
 
 // Painel de pagamentos carregado sob demanda (rota dedicada /pagamentos).
@@ -14,17 +14,7 @@ const PaymentsPanel = lazy(() =>
 // seletores do formulário e as informações de pagamento do painel.
 export function PaymentsPage() {
   const { authToken, authChecked } = useAuth();
-  const [toast, setToast] = useState(null);
-
-  const showToast = useCallback((message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  }, []);
-
-  const handleError = useCallback((error) => {
-    console.error(error);
-    showToast(error.message || 'Algo deu errado', 'error');
-  }, [showToast]);
+  const { toast, showToast, handleError } = useToast();
 
   const { members, loadMembers } = useMembers(showToast, handleError);
   const { goals, loadGoals } = useGoals(showToast, handleError);

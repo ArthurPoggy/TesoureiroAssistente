@@ -1,7 +1,7 @@
-import { lazy, Suspense, useEffect, useState, useCallback } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useSettings } from '../hooks';
+import { useSettings, useToast } from '../hooks';
 import { Toast } from '../components';
 
 // Painel de configurações carregado sob demanda (rota dedicada
@@ -15,17 +15,7 @@ const SettingsPanel = lazy(() =>
 export function SettingsPage() {
   const { authToken, authChecked, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const [toast, setToast] = useState(null);
-
-  const showToast = useCallback((message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  }, []);
-
-  const handleError = useCallback((error) => {
-    console.error(error);
-    showToast(error.message || 'Algo deu errado', 'error');
-  }, [showToast]);
+  const { toast, showToast, handleError } = useToast();
 
   const {
     settingsForm,

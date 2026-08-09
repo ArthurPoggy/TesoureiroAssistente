@@ -1,6 +1,6 @@
-import { lazy, Suspense, useEffect, useState, useCallback } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useEvents } from '../hooks';
+import { useEvents, useToast } from '../hooks';
 import { Toast } from '../components';
 
 // Painel de eventos carregado sob demanda (rota dedicada /eventos).
@@ -12,17 +12,7 @@ const EventsPanel = lazy(() =>
 // rota. O hook useEvents segue funcionando como antes.
 export function EventsPage() {
   const { authToken, authChecked } = useAuth();
-  const [toast, setToast] = useState(null);
-
-  const showToast = useCallback((message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  }, []);
-
-  const handleError = useCallback((error) => {
-    console.error(error);
-    showToast(error.message || 'Algo deu errado', 'error');
-  }, [showToast]);
+  const { toast, showToast, handleError } = useToast();
 
   const {
     events,

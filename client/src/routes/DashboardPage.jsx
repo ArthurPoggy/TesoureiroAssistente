@@ -10,7 +10,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { parseMonthFilter, parseYearFilter, currentMonth, currentYear } from '../utils/formatters';
-import { useMembers, useGoals, useDashboard, useSettings, useClanHistory } from '../hooks';
+import { useMembers, useGoals, useDashboard, useSettings, useClanHistory, useToast } from '../hooks';
 import {
   Header,
   GoalsPanel,
@@ -37,20 +37,10 @@ export function DashboardPage() {
   const navigate = useNavigate();
 
   // Estado de UI
-  const [toast, setToast] = useState(null);
+  const { toast, showToast, handleError } = useToast();
   const [selectedMonth, setSelectedMonth] = useState(String(currentMonth));
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
   const [selectedUserFilter, setSelectedUserFilter] = useState('all');
-
-  const showToast = useCallback((message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  }, []);
-
-  const handleError = useCallback((error) => {
-    console.error(error);
-    showToast(error.message || 'Algo deu errado', 'error');
-  }, [showToast]);
 
   // Hooks de dados
   const { members, loadMembers } = useMembers(showToast, handleError);

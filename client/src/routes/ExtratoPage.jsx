@@ -1,6 +1,6 @@
-import { lazy, Suspense, useEffect, useState, useCallback } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useMembers, useExtrato } from '../hooks';
+import { useMembers, useExtrato, useToast } from '../hooks';
 import { Toast } from '../components';
 
 // Painel de extrato carregado sob demanda (rota dedicada /extrato).
@@ -13,17 +13,7 @@ const ExtratoPanel = lazy(() =>
 // carregados aqui apenas para alimentar o filtro por membro (admin).
 export function ExtratoPage() {
   const { authToken, authChecked, isAdmin } = useAuth();
-  const [toast, setToast] = useState(null);
-
-  const showToast = useCallback((message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  }, []);
-
-  const handleError = useCallback((error) => {
-    console.error(error);
-    showToast(error.message || 'Algo deu errado', 'error');
-  }, [showToast]);
+  const { toast, showToast, handleError } = useToast();
 
   const { members, loadMembers } = useMembers(showToast, handleError);
 

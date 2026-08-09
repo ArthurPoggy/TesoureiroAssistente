@@ -1,6 +1,6 @@
-import { lazy, Suspense, useEffect, useState, useCallback } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useMembers, useProjects, useTags } from '../hooks';
+import { useMembers, useProjects, useTags, useToast } from '../hooks';
 import { Toast } from '../components';
 
 // Painel de projetos carregado sob demanda (rota dedicada /projetos).
@@ -14,17 +14,7 @@ const ProjectsPanel = lazy(() =>
 // seletores do formulário.
 export function ProjectsPage() {
   const { authToken, authChecked } = useAuth();
-  const [toast, setToast] = useState(null);
-
-  const showToast = useCallback((message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  }, []);
-
-  const handleError = useCallback((error) => {
-    console.error(error);
-    showToast(error.message || 'Algo deu errado', 'error');
-  }, [showToast]);
+  const { toast, showToast, handleError } = useToast();
 
   const { members, loadMembers } = useMembers(showToast, handleError);
   const { tags, loadTags } = useTags(showToast, handleError);

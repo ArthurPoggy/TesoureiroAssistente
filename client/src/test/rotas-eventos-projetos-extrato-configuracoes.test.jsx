@@ -159,6 +159,11 @@ vi.mock('../hooks', () => ({
     onFilterEndDateChange: vi.fn(),
     onFilterMemberIdChange: vi.fn(),
     onClearFilters: vi.fn()
+  }),
+  useToast: () => ({
+    toast: null,
+    showToast: vi.fn(),
+    handleError: vi.fn()
   })
 }));
 
