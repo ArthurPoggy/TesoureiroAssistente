@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { runRequest } from '../utils/hookRequests';
 
 export function useMembers(showToast, handleError) {
   const { apiFetch, authUser } = useAuth();
@@ -16,7 +17,7 @@ export function useMembers(showToast, handleError) {
   }, []);
 
   const loadMembers = useCallback(async () => {
-    try {
+    await runRequest(handleError, async () => {
       const data = await apiFetch('/api/members');
       const list = data.members || [];
       setMembers(list);
@@ -25,9 +26,7 @@ export function useMembers(showToast, handleError) {
         selectedRef.current = updated || null;
         _setSelectedMemberDetail(updated || null);
       }
-    } catch (error) {
-      handleError(error);
-    }
+    });
   }, [apiFetch, handleError]);
 
   const resetMemberForm = useCallback(() => {
@@ -37,7 +36,7 @@ export function useMembers(showToast, handleError) {
 
   const handleMemberSubmit = useCallback(async (event) => {
     event.preventDefault();
-    try {
+    await runRequest(handleError, async () => {
       const payload = {
         name: memberForm.name,
         email: memberForm.email,
@@ -59,13 +58,11 @@ export function useMembers(showToast, handleError) {
         setSelectedMemberDetail(data.member || null);
       }
       showToast('Membro salvo com sucesso');
-    } catch (error) {
-      handleError(error);
-    }
+    });
   }, [apiFetch, editingMemberId, handleError, loadMembers, memberForm, resetMemberForm, setSelectedMemberDetail, showToast]);
 
   const handleMemberInvite = useCallback(async (id) => {
-    try {
+    await runRequest(handleError, async () => {
       const data = await apiFetch(`/api/members/${id}/invite`, { method: 'POST' });
       if (data?.setupToken) {
         const link = `${window.location.origin}/?setup=${data.setupToken}`;
@@ -75,23 +72,19 @@ export function useMembers(showToast, handleError) {
         setSelectedMemberDetail(data.member);
       }
       showToast('Link de acesso gerado');
-    } catch (error) {
-      handleError(error);
-    }
+    });
   }, [apiFetch, handleError, setSelectedMemberDetail, showToast]);
 
   const handleMemberDelete = useCallback(async (id) => {
     if (!window.confirm('Remover este membro?')) return;
-    try {
+    await runRequest(handleError, async () => {
       await apiFetch(`/api/members/${id}`, { method: 'DELETE' });
       if (selectedRef.current?.id === id) {
         setSelectedMemberDetail(null);
       }
       await loadMembers();
       showToast('Membro removido');
-    } catch (error) {
-      handleError(error);
-    }
+    });
   }, [apiFetch, handleError, loadMembers, setSelectedMemberDetail, showToast]);
 
   const handleRoleChange = useCallback(async (id, role) => {
@@ -99,16 +92,14 @@ export function useMembers(showToast, handleError) {
       showToast('Você não pode alterar o próprio cargo', 'error');
       return;
     }
-    try {
+    await runRequest(handleError, async () => {
       const data = await apiFetch(`/api/members/${id}/role`, { method: 'PUT', body: { role } });
       if (data?.member) {
         setSelectedMemberDetail(data.member);
       }
       await loadMembers();
       showToast('Permissão atualizada');
-    } catch (error) {
-      handleError(error);
-    }
+    });
   }, [apiFetch, handleError, loadMembers, setSelectedMemberDetail, showToast]);
 
   const startEditMember = useCallback((member) => {
