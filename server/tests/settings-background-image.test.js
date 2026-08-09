@@ -102,4 +102,31 @@ describe('GET /api/settings/public — imagens de fundo', () => {
     expect(res.body.loginBackgroundUrl == null || res.body.loginBackgroundUrl === '').toBe(true);
     expect(res.body.dashboardBackgroundUrl == null || res.body.dashboardBackgroundUrl === '').toBe(true);
   });
+
+  it('NÃO expõe chave PIX e aviso interno do tesoureiro a requisições sem autenticação', async () => {
+    const upsertSetting = (key, value) => {
+      global.__testDb
+        .prepare(
+          `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+           ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+        )
+        .run(key, value);
+    };
+    upsertSetting('pix_key', 'chave-pix-secreta@clan.com');
+    upsertSetting('pix_receiver', 'Tesoureiro Fulano de Tal');
+    upsertSetting('pix_city', 'Cidade Sigilosa');
+    upsertSetting('dashboard_note', 'Aviso interno: reserva de caixa não divulgada aos membros');
+
+    const res = await request(app).get('/api/settings/public');
+
+    expect(res.status).toBe(200);
+    // A rota é pública (sem requireAuth) para atender à LoginScreen, que só
+    // precisa de loginBackgroundUrl. Ela não pode vazar dados sensíveis da
+    // organização (chave PIX, recebedor, cidade e aviso interno) para
+    // qualquer requisição não autenticada.
+    expect(res.body.pixKey).toBeUndefined();
+    expect(res.body.pixReceiver).toBeUndefined();
+    expect(res.body.pixCity).toBeUndefined();
+    expect(res.body.dashboardNote).toBeUndefined();
+  });
 });
