@@ -66,18 +66,18 @@ table tbody tr:hover {
 
 .paid {
   color: var(--color-success-dark);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .pending {
   color: var(--color-error-dark);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .file-link {
   color: var(--color-primary);
   text-decoration: none;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .file-link:hover {

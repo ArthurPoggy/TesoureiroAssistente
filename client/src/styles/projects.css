@@ -8,9 +8,10 @@
 
 .member-project-check h3 {
   margin: 0 0 var(--spacing-md);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-lg);
   color: var(--color-text-muted);
   font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }

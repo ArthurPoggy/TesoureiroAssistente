@@ -28,8 +28,9 @@
 
 .panel-note h3 {
   margin: 0 0 var(--spacing-xs);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
   color: var(--color-text-info);
 }
 
@@ -76,8 +77,9 @@
 
 .goal-header h3 {
   margin: 0;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
 }
 
 .progress {

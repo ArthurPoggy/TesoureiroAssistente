@@ -83,8 +83,9 @@
 
 .history-content h3 {
   margin: 0 0 0.4rem;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
 }
 
 .history-content p {

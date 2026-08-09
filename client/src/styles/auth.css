@@ -44,7 +44,7 @@
   color: var(--color-primary);
   padding: 0;
   border: none;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
   text-align: left;
   transition: color var(--transition-fast);

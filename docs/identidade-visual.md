@@ -113,6 +113,18 @@ Família: **Inter** (com fallback para system-ui). Monoespaçada para código: *
 | `--line-height-base` | `1.5` | Corpo |
 | `--line-height-relaxed` | `1.65` | Parágrafos longos, leitura confortável |
 
+### Hierarquia de títulos aplicada
+
+Mapeamento efetivo entre elemento e tokens, para manter a hierarquia consistente em toda a aplicação:
+
+| Elemento | `font-size` | `font-weight` | `line-height` |
+|----------|-------------|----------------|----------------|
+| `h1` (`header h1`, `.login-card h1`) | `--font-size-2xl` | `--font-weight-bold` | `--line-height-tight` |
+| `h2` (`.panel-header h2`, `.modal-header h2`) | `--font-size-xl` | `--font-weight-bold` | `--line-height-tight` |
+| `h3` (`.panel-note h3`, `.goal-header h3`, `.history-content h3`, `.member-project-check h3`, `.member-detail-header h3`) | `--font-size-lg` | `--font-weight-bold` | `--line-height-tight` |
+| `body` / corpo de texto | `--font-size-base` | `--font-weight-normal` | `--line-height-base` (mínimo 1.5) |
+| Labels e captions (`.member-status-badge`, `.extrato-card-label`) | `--font-size-xs`/`--font-size-sm` | `--font-weight-medium` ou `--font-weight-semibold` | — |
+
 ---
 
 ## Espaçamento
