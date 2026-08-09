@@ -1,7 +1,7 @@
 const express = require('express');
 const { query, queryOne, execute } = require('../db/query');
 const { success, fail, asyncHandler } = require('../utils/response');
-const { requireFields } = require('../utils/validation');
+const { requireFields, validateNonNegativeAmount } = require('../utils/validation');
 const { requireAuth, requirePrivileged } = require('../middleware/auth');
 const { computeRateio } = require('../utils/rateio');
 
@@ -38,6 +38,7 @@ const syncTags = async (expenseId, tagIds = []) => {
 };
 
 const EXPENSE_REQUIRED_FIELDS_MESSAGE = 'Título, valor e data são obrigatórios';
+const EXPENSE_INVALID_AMOUNT_MESSAGE = 'Valor deve ser um número não-negativo';
 
 router.get('/', requireAuth, asyncHandler(async (req, res) => {
   const expenses = await query('SELECT * FROM expenses ORDER BY expense_date DESC');
@@ -61,6 +62,10 @@ router.post('/', requirePrivileged, asyncHandler(async (req, res) => {
   const missing = requireFields({ title, amount, expenseDate }, EXPENSE_REQUIRED_FIELDS_MESSAGE);
   if (missing) {
     return fail(res, missing);
+  }
+  const invalidAmount = validateNonNegativeAmount(amount, EXPENSE_INVALID_AMOUNT_MESSAGE);
+  if (invalidAmount) {
+    return fail(res, invalidAmount);
   }
   const [expense] = await query(
     `INSERT INTO expenses (title, amount, expense_date, category, notes, event_id, attachment_id, attachment_name, attachment_url)
@@ -99,6 +104,10 @@ router.put('/:id', requirePrivileged, asyncHandler(async (req, res) => {
   const missing = requireFields({ title, amount, expenseDate }, EXPENSE_REQUIRED_FIELDS_MESSAGE);
   if (missing) {
     return fail(res, missing);
+  }
+  const invalidAmount = validateNonNegativeAmount(amount, EXPENSE_INVALID_AMOUNT_MESSAGE);
+  if (invalidAmount) {
+    return fail(res, invalidAmount);
   }
   const [expense] = await query(
     `UPDATE expenses
