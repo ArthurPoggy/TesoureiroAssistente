@@ -12,6 +12,7 @@
 
 .table-loading-overlay {
   position: absolute;
+  z-index: var(--z-sticky);
   inset: 0;
   display: flex;
   align-items: center;
