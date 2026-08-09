@@ -18,7 +18,7 @@ export function PaymentsPage() {
   const { authToken, authChecked } = useAuth();
   const { toast, showToast, handleError } = useToast();
 
-  const { members, goals, publicSettings } = useSharedData();
+  const { members, goals, publicSettings, loadGoals } = useSharedData();
 
   const {
     payments,
@@ -64,8 +64,8 @@ export function PaymentsPage() {
           members={members}
           goals={goals}
           paymentSettings={publicSettings}
-          onSubmit={(e) => handlePaymentSubmit(e, [])}
-          onDelete={(id) => handlePaymentDelete(id, [])}
+          onSubmit={(e) => handlePaymentSubmit(e, [loadGoals])}
+          onDelete={(id) => handlePaymentDelete(id, [loadGoals])}
           onReceipt={handleReceipt}
           onPix={handlePixCode}
           fileInputKey={fileInputKey}
