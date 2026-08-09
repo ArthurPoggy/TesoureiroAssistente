@@ -189,6 +189,29 @@ export function useProjects(showToast, handleError) {
     }
   }, [apiFetch, handleError, loadProjects, showToast]);
 
+  const addMilestoneToProject = useCallback(async (projectId, { titulo, data_prevista }) => {
+    try {
+      await apiFetch(`/api/projects/${projectId}/milestones`, {
+        method: 'POST',
+        body: JSON.stringify({ titulo, data_prevista })
+      });
+      await loadProjects();
+      showToast('Marco adicionado ao cronograma');
+    } catch (error) {
+      handleError(error);
+    }
+  }, [apiFetch, handleError, loadProjects, showToast]);
+
+  const removeMilestoneFromProject = useCallback(async (projectId, milestoneId) => {
+    try {
+      await apiFetch(`/api/projects/${projectId}/milestones/${milestoneId}`, { method: 'DELETE' });
+      await loadProjects();
+      showToast('Marco removido do cronograma');
+    } catch (error) {
+      handleError(error);
+    }
+  }, [apiFetch, handleError, loadProjects, showToast]);
+
   return {
     projects,
     loading,
@@ -203,6 +226,8 @@ export function useProjects(showToast, handleError) {
     startEditProject,
     addMemberToProject,
     removeMemberFromProject,
+    addMilestoneToProject,
+    removeMilestoneFromProject,
     filterName,
     filterStatus,
     filterStartDate,

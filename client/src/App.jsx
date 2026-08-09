@@ -198,6 +198,8 @@ function App() {
     startEditProject,
     addMemberToProject,
     removeMemberFromProject,
+    addMilestoneToProject,
+    removeMilestoneFromProject,
     filterName: projectFilterName,
     filterStatus: projectFilterStatus,
     filterStartDate: projectFilterStartDate,
@@ -429,6 +431,8 @@ function App() {
         onReset={resetProjectForm}
         onAddMember={addMemberToProject}
         onRemoveMember={removeMemberFromProject}
+        onAddMilestone={addMilestoneToProject}
+        onRemoveMilestone={removeMilestoneFromProject}
         filterName={projectFilterName}
         filterStatus={projectFilterStatus}
         filterStartDate={projectFilterStartDate}

@@ -234,6 +234,114 @@
   margin: var(--spacing-md) 0;
 }
 
+/* ============================================================
+   Timeline de cronograma e marcos do projeto
+   ============================================================ */
+.project-timeline {
+  margin-top: var(--spacing-sm);
+}
+
+.project-late-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: var(--spacing-sm);
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-full);
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+  border: 1px solid var(--color-error-border);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.project-timeline-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.project-milestone {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+}
+
+.project-milestone-dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--color-gray-400, #9ca3af);
+}
+
+.project-milestone--concluido .project-milestone-dot {
+  background: var(--color-success);
+}
+
+.project-milestone--atual .project-milestone-dot {
+  background: var(--color-info);
+}
+
+.project-milestone--futuro .project-milestone-dot {
+  background: var(--color-gray-400, #9ca3af);
+}
+
+.project-milestone-title {
+  font-weight: 600;
+}
+
+.project-milestone-date,
+.project-milestone-status {
+  color: var(--color-text-muted);
+}
+
+.project-milestone-remove {
+  all: unset;
+  cursor: pointer;
+  color: var(--color-error);
+  font-size: 0.72rem;
+  opacity: 0.75;
+}
+
+.project-milestone-remove:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.project-milestone-add-btn {
+  margin-top: var(--spacing-sm);
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.project-milestone-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--color-bg-info, #f8fafc);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+}
+
+.project-milestone-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
 /* ── Modal de edição de projeto ─────────────────────────────────────────────── */
 
 .modal--project {
