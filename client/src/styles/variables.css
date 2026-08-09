@@ -16,7 +16,7 @@
   --color-gray-100: #f1f5f9;
   --color-gray-200: #e2e8f0;
   --color-gray-300: #cbd5e1;
-  --color-gray-400: #94a3b8;
+  --color-gray-400: #5b6b80;
   --color-gray-500: #64748b;
   --color-gray-600: #475569;
   --color-gray-700: #334155;
@@ -55,7 +55,7 @@
   --color-success-border: #bbf7d0;
   --color-success-text: #166534;
 
-  --color-error: #ef4444;
+  --color-error: #e02424;
   --color-error-dark: #dc2626;
   --color-error-bg: #fee2e2;
   --color-error-border: #fecaca;
@@ -86,7 +86,7 @@
   /* =========================================================
      Ranking — medalhas
      ========================================================= */
-  --color-rank-gold: #f59e0b;
+  --color-rank-gold: #b45309;
   --color-rank-gold-bg: #fffbeb;
   --color-rank-silver: var(--color-gray-400);
   --color-rank-silver-bg: var(--color-gray-50);

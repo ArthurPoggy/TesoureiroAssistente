@@ -8,9 +8,10 @@
 
 .member-project-check h3 {
   margin: 0 0 var(--spacing-md);
-  font-size: 0.95rem;
+  font-size: var(--font-size-lg);
   color: var(--color-text-muted);
-  font-weight: 600;
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -19,25 +20,25 @@
   margin-top: var(--spacing-md);
   padding: 0.75rem 1rem;
   border-radius: var(--radius-md);
-  font-size: 0.95rem;
+  font-size: var(--font-size-base);
 }
 
 .project-status-badge.status-active {
-  background: #dcfce7;
-  color: #166534;
-  border: 1px solid #bbf7d0;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  border: 1px solid var(--color-success-border);
 }
 
 .project-status-badge.status-inactive {
-  background: var(--color-bg-warning, #fff7ed);
-  color: var(--color-text-warning, #9a3412);
-  border: 1px solid #fed7aa;
+  background: var(--color-bg-warning);
+  color: var(--color-text-warning);
+  border: 1px solid var(--color-warning-border);
 }
 
 .project-status-inline {
   display: inline-block;
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   padding: 0.2rem 0.6rem;
   border-radius: var(--radius-full);
   text-transform: uppercase;
@@ -45,13 +46,13 @@
 }
 
 .project-status-inline.status-active {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .project-status-inline.status-inactive {
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--color-gray-100);
+  color: var(--color-gray-500);
 }
 
 .project-dates {
@@ -60,7 +61,7 @@
   align-items: center;
   gap: var(--spacing-md);
   margin-top: var(--spacing-sm);
-  font-size: 0.88rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }
 
@@ -74,7 +75,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--spacing-xs, 0.25rem);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .member-tag {
@@ -85,15 +86,15 @@
   color: var(--color-text-info, #1e40af);
   border-radius: var(--radius-full);
   padding: 0.25rem 0.65rem;
-  font-size: 0.82rem;
-  font-weight: 500;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
 }
 
 .member-tag-remove {
   all: unset;
   cursor: pointer;
-  font-size: 1rem;
-  line-height: 1;
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-tight);
   color: var(--color-error);
   opacity: 0.7;
   padding: 0.1rem 0.2rem;
@@ -121,12 +122,12 @@
   flex: 1;
   min-width: 200px;
   padding: 0.5rem 0.75rem;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .filters-toggle-btn {
   padding: 0.4rem 0.75rem;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
@@ -143,8 +144,8 @@
   border-radius: var(--radius-full);
   background: var(--color-primary);
   color: var(--color-text-white);
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
 }
 
 .advanced-filters {
@@ -168,8 +169,8 @@
 }
 
 .filter-field > span {
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -178,7 +179,7 @@
 .filter-field input,
 .filter-field select {
   padding: 0.5rem 0.65rem;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .filter-chips {
@@ -197,8 +198,8 @@
   background: var(--color-bg-pill, #eff6ff);
   color: var(--color-text-info, #1e40af);
   border-radius: var(--radius-full);
-  font-size: 0.8rem;
-  font-weight: 500;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   border: 1px solid var(--color-border-accent, #cbd5f5);
 }
 
@@ -208,9 +209,9 @@
   color: inherit;
   cursor: pointer;
   padding: 0 0.15rem;
-  font-size: 1.1rem;
-  line-height: 1;
-  font-weight: 600;
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-semibold);
   opacity: 0.7;
   transition: opacity var(--transition-fast), transform var(--transition-fast);
 }
@@ -222,7 +223,7 @@
 
 .clear-filters-btn {
   padding: 0.35rem 0.75rem;
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
 }
 
 .projects-empty,
@@ -261,7 +262,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .project-modal-section input,
@@ -272,8 +273,8 @@
 }
 
 .project-modal-section-label {
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--color-text-muted);

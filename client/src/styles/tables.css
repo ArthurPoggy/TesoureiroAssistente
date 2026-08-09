@@ -35,7 +35,7 @@
   text-align: center;
   padding: var(--spacing-lg);
   color: var(--color-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 table {
@@ -51,11 +51,11 @@ table td {
 }
 
 table th {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-text-muted);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 table tbody tr {
@@ -107,18 +107,18 @@ table tbody tr:hover {
 
 .paid {
   color: var(--color-success-dark);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .pending {
   color: var(--color-error-dark);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .file-link {
   color: var(--color-primary);
   text-decoration: none;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .file-link:hover {
@@ -144,14 +144,14 @@ table tbody tr:hover {
 .table-toolbar-filters select,
 .table-toolbar-pagesize select {
   padding: 0.4rem 0.65rem;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .expenses-search {
   flex: 1;
   min-width: 200px;
   padding: 0.4rem 0.65rem;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .table-empty {
@@ -165,7 +165,7 @@ table tbody tr:hover {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -180,7 +180,7 @@ table tbody tr:hover {
 }
 
 .pagination-info {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -191,7 +191,7 @@ table tbody tr:hover {
 }
 
 .pagination-page {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   padding: 0 var(--spacing-sm);
   white-space: nowrap;
@@ -199,7 +199,7 @@ table tbody tr:hover {
 
 .pagination-btn {
   padding: 0.35rem 0.65rem;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   min-width: 2rem;
 }
 
