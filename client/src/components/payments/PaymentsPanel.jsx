@@ -1,6 +1,6 @@
 import { useAuth } from '../../contexts/AuthContext';
 import { formatCurrency, months, currentYear } from '../../utils/formatters';
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => currentYear - 2 + i);
@@ -35,6 +35,26 @@ export function PaymentsPanel({
   const { canEdit, memberId } = useAuth();
   const [errors, setErrors] = useState({});
   const paymentInfoItems = [];
+  const tableWrapperRef = useRef(null);
+  const [tableMinHeight, setTableMinHeight] = useState(0);
+
+  // A altura mínima reservada acompanha a maior altura já vista para a
+  // combinação atual de filtros/pageSize (tipicamente a página cheia),
+  // evitando que uma página "curta" (ex.: última página) colapse a altura
+  // do wrapper e cause um salto vertical perceptível durante/após o loading.
+  // Ao trocar filtros ou o tamanho de página, o total de linhas esperado
+  // muda de "forma", então a reserva é reiniciada.
+  useLayoutEffect(() => {
+    setTableMinHeight(0);
+  }, [pageSize, filterMonth, filterYear, filterMemberId]);
+
+  useLayoutEffect(() => {
+    if (loading) return;
+    const node = tableWrapperRef.current;
+    if (!node) return;
+    const height = node.scrollHeight;
+    setTableMinHeight((prev) => Math.max(prev, height));
+  }, [loading, payments]);
   const canViewOwnPix = (payment) => Boolean(onPix) && payment.member_id === memberId;
   const showActionsColumn = canEdit || payments.some(canViewOwnPix);
   const validate = () => {
@@ -257,7 +277,11 @@ export function PaymentsPanel({
         </div>
       </div>
 
-      <div className={`table-wrapper${loading ? ' table-wrapper--loading' : ''}`}>
+      <div
+        ref={tableWrapperRef}
+        className={`table-wrapper${loading ? ' table-wrapper--loading' : ''}`}
+        style={tableMinHeight ? { '--table-min-height': `${tableMinHeight}px` } : undefined}
+      >
         {loading && payments.length === 0 ? (
           <p className="table-loading-msg">Carregando pagamentos...</p>
         ) : (

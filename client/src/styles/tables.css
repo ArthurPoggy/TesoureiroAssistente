@@ -1,6 +1,10 @@
 .table-wrapper {
   overflow-x: auto;
   position: relative;
+  /* Reservado dinamicamente (via inline style) com a maior altura já
+     observada para a página/filtro atuais, evitando colapso de altura
+     (reflow perceptível) ao trocar para uma página com menos linhas. */
+  min-height: var(--table-min-height, auto);
 }
 
 .table-wrapper--loading table {
