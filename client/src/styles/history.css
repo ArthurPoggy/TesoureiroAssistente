@@ -65,8 +65,8 @@
 }
 
 .history-date {
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-muted, #888);
   white-space: nowrap;
   min-width: 6rem;
@@ -83,13 +83,14 @@
 
 .history-content h3 {
   margin: 0 0 0.4rem;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
 }
 
 .history-content p {
   margin: 0 0 0.75rem;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary, #555);
   white-space: pre-wrap;
 }
@@ -111,7 +112,7 @@
 }
 
 .history-attachment a {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-primary, #4f6ef7);
   text-decoration: underline;
 }
@@ -125,7 +126,7 @@
 .history-empty {
   padding: 2rem 1.5rem;
   color: var(--color-muted, #888);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 /* Lightbox */

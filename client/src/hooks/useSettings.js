@@ -9,7 +9,8 @@ const DEFAULT_PUBLIC = {
   pixKey: '',
   pixReceiver: '',
   dashboardNote: '',
-  disclaimerText: ''
+  disclaimerText: '',
+  dashboardBackgroundUrl: ''
 };
 
 export function useSettings(showToast, handleError) {
@@ -47,13 +48,16 @@ export function useSettings(showToast, handleError) {
       pixKey: data.pixKey || '',
       pixReceiver: data.pixReceiver || '',
       dashboardNote: data.dashboardNote || '',
-      disclaimerText: data.disclaimerText ?? ''
+      disclaimerText: data.disclaimerText ?? '',
+      dashboardBackgroundUrl: data.dashboardBackgroundUrl || ''
     };
   }, []);
 
   const loadPublicSettings = useCallback(async () => {
     try {
-      const data = await apiFetch('/api/settings/public');
+      // Endpoint autenticado (qualquer papel): traz chave PIX e aviso interno
+      // do tesoureiro, que não podem ser expostos pela rota pública /public.
+      const data = await apiFetch('/api/settings/member');
       setPublicSettings(normalizePublic(data));
     } catch (error) {
       handleError(error);

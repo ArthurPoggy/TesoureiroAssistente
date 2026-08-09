@@ -47,6 +47,8 @@ export { ClanHistoryPanel } from './history/ClanHistoryPanel';
 // Projects
 export { ProjectsPanel } from './projects/ProjectsPanel';
 export { EditProjectModal } from './projects/EditProjectModal';
+export { ProjectTimeline } from './projects/ProjectTimeline';
+export { ProjectAttachments } from './projects/ProjectAttachments';
 
 // Common
 export { Toast } from './common/Toast';

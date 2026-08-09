@@ -198,6 +198,11 @@ function App() {
     startEditProject,
     addMemberToProject,
     removeMemberFromProject,
+    addMilestoneToProject,
+    removeMilestoneFromProject,
+    toggleMilestoneCompletion,
+    uploadProjectFiles,
+    removeProjectFile,
     filterName: projectFilterName,
     filterStatus: projectFilterStatus,
     filterStartDate: projectFilterStartDate,
@@ -314,6 +319,7 @@ function App() {
         onEditGoal={startEditGoal}
         onDeleteGoal={handleGoalDelete}
         dashboardNote={publicSettings.dashboardNote}
+        dashboardBackgroundUrl={publicSettings.dashboardBackgroundUrl}
       />
 
       {showSettings && isAdmin && (
@@ -429,6 +435,11 @@ function App() {
         onReset={resetProjectForm}
         onAddMember={addMemberToProject}
         onRemoveMember={removeMemberFromProject}
+        onAddMilestone={addMilestoneToProject}
+        onRemoveMilestone={removeMilestoneFromProject}
+        onToggleMilestone={toggleMilestoneCompletion}
+        onUploadProjectFiles={uploadProjectFiles}
+        onRemoveProjectFile={removeProjectFile}
         filterName={projectFilterName}
         filterStatus={projectFilterStatus}
         filterStartDate={projectFilterStartDate}

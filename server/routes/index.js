@@ -29,6 +29,7 @@ router.use('/goals', goalsRoutes);
 router.use('/expenses', expensesRoutes);
 router.use('/events', eventsRoutes);
 router.use('/files', filesRoutes);
+router.use('/projects/:id/files', filesRoutes.projectFilesRouter);
 router.use('/reports', reportsRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/ranking', requirePrivileged, dashboardRoutes);

@@ -36,7 +36,7 @@ function persistFilters(filters) {
 }
 
 export function useProjects(showToast, handleError) {
-  const { apiFetch } = useAuth();
+  const { apiFetch, authToken } = useAuth();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -46,6 +46,8 @@ export function useProjects(showToast, handleError) {
     status: 'active',
     start_date: '',
     end_date: '',
+    data_inicio: '',
+    data_fim_planejada: '',
     tagIds: []
   });
   const [editingProjectId, setEditingProjectId] = useState(null);
@@ -122,17 +124,40 @@ export function useProjects(showToast, handleError) {
   }, []);
 
   const resetProjectForm = useCallback(() => {
-    setProjectForm({ name: '', description: '', status: 'active', start_date: '', end_date: '', tagIds: [] });
+    setProjectForm({
+      name: '',
+      description: '',
+      status: 'active',
+      start_date: '',
+      end_date: '',
+      data_inicio: '',
+      data_fim_planejada: '',
+      tagIds: []
+    });
     setEditingProjectId(null);
   }, []);
+
+  const updateProjectDates = useCallback(async (projectId, { data_inicio, data_fim_planejada }) => {
+    await apiFetch(`/api/projects/${projectId}/dates`, {
+      method: 'PUT',
+      body: JSON.stringify({ data_inicio: data_inicio || null, data_fim_planejada: data_fim_planejada || null })
+    });
+  }, [apiFetch]);
 
   const handleProjectSubmit = useCallback(async (e) => {
     e.preventDefault();
     try {
       setSaving(true);
+      const { data_inicio, data_fim_planejada, ...projectFields } = projectForm;
       const endpoint = editingProjectId ? `/api/projects/${editingProjectId}` : '/api/projects';
       const method = editingProjectId ? 'PUT' : 'POST';
-      await apiFetch(endpoint, { method, body: JSON.stringify(projectForm) });
+      const data = await apiFetch(endpoint, { method, body: JSON.stringify(projectFields) });
+      const projectId = editingProjectId || data?.project?.id;
+      // Ao editar, sempre sincroniza o cronograma previsto (permite limpar as datas);
+      // ao criar, só chama o endpoint se o usuário informou alguma data prevista.
+      if (projectId && (editingProjectId || data_inicio || data_fim_planejada)) {
+        await updateProjectDates(projectId, { data_inicio, data_fim_planejada });
+      }
       await loadProjects();
       resetProjectForm();
       showToast(editingProjectId ? 'Projeto atualizado' : 'Projeto criado');
@@ -141,7 +166,7 @@ export function useProjects(showToast, handleError) {
     } finally {
       setSaving(false);
     }
-  }, [apiFetch, editingProjectId, projectForm, handleError, loadProjects, resetProjectForm, showToast]);
+  }, [apiFetch, editingProjectId, projectForm, handleError, loadProjects, resetProjectForm, showToast, updateProjectDates]);
 
   const handleProjectDelete = useCallback(async (id) => {
     if (!window.confirm('Excluir este projeto?')) return;
@@ -161,6 +186,8 @@ export function useProjects(showToast, handleError) {
       status: project.status,
       start_date: project.start_date || '',
       end_date: project.end_date || '',
+      data_inicio: project.data_inicio || '',
+      data_fim_planejada: project.data_fim_planejada || '',
       tagIds: (project.tags || []).map((t) => t.id)
     });
     setEditingProjectId(project.id);
@@ -189,6 +216,80 @@ export function useProjects(showToast, handleError) {
     }
   }, [apiFetch, handleError, loadProjects, showToast]);
 
+  const addMilestoneToProject = useCallback(async (projectId, { titulo, data_prevista }) => {
+    try {
+      await apiFetch(`/api/projects/${projectId}/milestones`, {
+        method: 'POST',
+        body: JSON.stringify({ titulo, data_prevista })
+      });
+      await loadProjects();
+      showToast('Marco adicionado ao cronograma');
+    } catch (error) {
+      handleError(error);
+    }
+  }, [apiFetch, handleError, loadProjects, showToast]);
+
+  const removeMilestoneFromProject = useCallback(async (projectId, milestoneId) => {
+    try {
+      await apiFetch(`/api/projects/${projectId}/milestones/${milestoneId}`, { method: 'DELETE' });
+      await loadProjects();
+      showToast('Marco removido do cronograma');
+    } catch (error) {
+      handleError(error);
+    }
+  }, [apiFetch, handleError, loadProjects, showToast]);
+
+  const toggleMilestoneCompletion = useCallback(async (projectId, milestoneId, concluido) => {
+    try {
+      await apiFetch(`/api/projects/${projectId}/milestones/${milestoneId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ concluido })
+      });
+      await loadProjects();
+      showToast(concluido ? 'Marco concluído' : 'Marco reaberto');
+    } catch (error) {
+      handleError(error);
+    }
+  }, [apiFetch, handleError, loadProjects, showToast]);
+
+  const uploadProjectFiles = useCallback(async (projectId, files) => {
+    try {
+      const formData = new FormData();
+      Array.from(files).forEach((file) => formData.append('files', file));
+      const headers = authToken ? { Authorization: `Bearer ${authToken}` } : undefined;
+      const response = await fetch(`/api/projects/${projectId}/files`, {
+        method: 'POST',
+        headers,
+        body: formData
+      });
+      if (!response.ok) {
+        const message = await response.text();
+        let errorMessage = message;
+        try {
+          const parsed = JSON.parse(message);
+          errorMessage = parsed.message || message;
+        } catch {
+          // mantém mensagem crua
+        }
+        throw new Error(errorMessage || 'Falha ao enviar arquivo');
+      }
+      await loadProjects();
+      showToast('Arquivo(s) enviado(s)');
+    } catch (error) {
+      handleError(error);
+    }
+  }, [authToken, handleError, loadProjects, showToast]);
+
+  const removeProjectFile = useCallback(async (projectId, fileId) => {
+    try {
+      await apiFetch(`/api/projects/${projectId}/files/${fileId}`, { method: 'DELETE' });
+      await loadProjects();
+      showToast('Anexo removido');
+    } catch (error) {
+      handleError(error);
+    }
+  }, [apiFetch, handleError, loadProjects, showToast]);
+
   return {
     projects,
     loading,
@@ -201,8 +302,14 @@ export function useProjects(showToast, handleError) {
     handleProjectSubmit,
     handleProjectDelete,
     startEditProject,
+    updateProjectDates,
     addMemberToProject,
     removeMemberFromProject,
+    addMilestoneToProject,
+    removeMilestoneFromProject,
+    toggleMilestoneCompletion,
+    uploadProjectFiles,
+    removeProjectFile,
     filterName,
     filterStatus,
     filterStartDate,
