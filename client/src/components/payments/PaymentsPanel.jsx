@@ -37,16 +37,26 @@ export function PaymentsPanel({
   const paymentInfoItems = [];
   const tableWrapperRef = useRef(null);
   const [tableMinHeight, setTableMinHeight] = useState(0);
+  const shapeKey = `${pageSize}|${filterMonth}|${filterYear}|${filterMemberId}`;
+  const committedShapeKeyRef = useRef(shapeKey);
 
   // A altura mínima reservada acompanha a maior altura já vista para a
   // combinação atual de filtros/pageSize (tipicamente a página cheia),
   // evitando que uma página "curta" (ex.: última página) colapse a altura
   // do wrapper e cause um salto vertical perceptível durante/após o loading.
   // Ao trocar filtros ou o tamanho de página, o total de linhas esperado
-  // muda de "forma", então a reserva é reiniciada.
+  // muda de "forma", então a reserva é reiniciada — mas só depois que o
+  // carregamento da nova "forma" terminar: enquanto `loading` estiver ativo,
+  // a página antiga (de shape anterior) ainda está visível sob o overlay, e
+  // descartar a reserva agora colapsaria o wrapper e voltaria a crescer
+  // quando os dados novos chegassem, produzindo o próprio salto de altura
+  // que essa reserva existe para evitar.
   useLayoutEffect(() => {
+    if (loading) return;
+    if (committedShapeKeyRef.current === shapeKey) return;
+    committedShapeKeyRef.current = shapeKey;
     setTableMinHeight(0);
-  }, [pageSize, filterMonth, filterYear, filterMemberId]);
+  }, [shapeKey, loading]);
 
   useLayoutEffect(() => {
     if (loading) return;
