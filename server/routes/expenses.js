@@ -1,6 +1,7 @@
 const express = require('express');
 const { query, queryOne, execute } = require('../db/query');
-const { success, fail } = require('../utils/response');
+const { success, fail, asyncHandler } = require('../utils/response');
+const { requireFields, validateNonNegativeAmount } = require('../utils/validation');
 const { requireAuth, requirePermission } = require('../middleware/auth');
 const { computeRateio } = require('../utils/rateio');
 
@@ -36,148 +37,147 @@ const syncTags = async (expenseId, tagIds = []) => {
   }
 };
 
-router.get('/', requireAuth, async (req, res) => {
-  try {
-    const expenses = await query('SELECT * FROM expenses ORDER BY expense_date DESC');
-    const enriched = await attachTags(expenses);
-    success(res, { expenses: enriched });
-  } catch (error) {
-    fail(res, error.message);
-  }
-});
+const EXPENSE_REQUIRED_FIELDS_MESSAGE = 'Título, valor e data são obrigatórios';
+const EXPENSE_INVALID_AMOUNT_MESSAGE = 'Valor deve ser um número não-negativo';
 
-router.post('/', requireAuth, requirePermission('despesas.criar'), async (req, res) => {
-  try {
-    const {
+router.get('/', requireAuth, asyncHandler(async (req, res) => {
+  const expenses = await query('SELECT * FROM expenses ORDER BY expense_date DESC');
+  const enriched = await attachTags(expenses);
+  success(res, { expenses: enriched });
+}));
+
+router.post('/', requireAuth, requirePermission('despesas.criar'), asyncHandler(async (req, res) => {
+  const {
+    title,
+    amount,
+    expenseDate,
+    category,
+    notes,
+    eventId,
+    attachmentId,
+    attachmentName,
+    attachmentUrl,
+    tagIds
+  } = req.body;
+  const missing = requireFields({ title, amount, expenseDate }, EXPENSE_REQUIRED_FIELDS_MESSAGE);
+  if (missing) {
+    return fail(res, missing);
+  }
+  const invalidAmount = validateNonNegativeAmount(amount, EXPENSE_INVALID_AMOUNT_MESSAGE);
+  if (invalidAmount) {
+    return fail(res, invalidAmount);
+  }
+  const [expense] = await query(
+    `INSERT INTO expenses (title, amount, expense_date, category, notes, event_id, attachment_id, attachment_name, attachment_url)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
+    [
       title,
       amount,
       expenseDate,
       category,
       notes,
-      eventId,
-      attachmentId,
-      attachmentName,
-      attachmentUrl,
-      tagIds
-    } = req.body;
-    if (!title || !amount || !expenseDate) {
-      return fail(res, 'Título, valor e data são obrigatórios');
-    }
-    const [expense] = await query(
-      `INSERT INTO expenses (title, amount, expense_date, category, notes, event_id, attachment_id, attachment_name, attachment_url)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
-      [
-        title,
-        amount,
-        expenseDate,
-        category,
-        notes,
-        eventId || null,
-        attachmentId || null,
-        attachmentName || null,
-        attachmentUrl || null
-      ]
-    );
-    await syncTags(expense.id, Array.isArray(tagIds) ? tagIds : []);
-    const [enriched] = await attachTags([expense]);
-    success(res, { expense: enriched });
-  } catch (error) {
-    fail(res, error.message);
-  }
-});
+      eventId || null,
+      attachmentId || null,
+      attachmentName || null,
+      attachmentUrl || null
+    ]
+  );
+  await syncTags(expense.id, Array.isArray(tagIds) ? tagIds : []);
+  const [enriched] = await attachTags([expense]);
+  success(res, { expense: enriched });
+}));
 
-router.put('/:id', requireAuth, requirePermission('despesas.editar'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const {
+router.put('/:id', requireAuth, requirePermission('despesas.editar'), asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const {
+    title,
+    amount,
+    expenseDate,
+    category,
+    notes,
+    eventId,
+    attachmentId,
+    attachmentName,
+    attachmentUrl,
+    tagIds
+  } = req.body;
+  const missing = requireFields({ title, amount, expenseDate }, EXPENSE_REQUIRED_FIELDS_MESSAGE);
+  if (missing) {
+    return fail(res, missing);
+  }
+  const invalidAmount = validateNonNegativeAmount(amount, EXPENSE_INVALID_AMOUNT_MESSAGE);
+  if (invalidAmount) {
+    return fail(res, invalidAmount);
+  }
+  const [expense] = await query(
+    `UPDATE expenses
+     SET title = ?, amount = ?, expense_date = ?, category = ?, notes = ?, event_id = ?,
+         attachment_id = COALESCE(?, attachment_id),
+         attachment_name = COALESCE(?, attachment_name),
+         attachment_url = COALESCE(?, attachment_url)
+     WHERE id = ? RETURNING *`,
+    [
       title,
       amount,
       expenseDate,
       category,
       notes,
-      eventId,
-      attachmentId,
-      attachmentName,
-      attachmentUrl,
-      tagIds
-    } = req.body;
-    const [expense] = await query(
-      `UPDATE expenses
-       SET title = ?, amount = ?, expense_date = ?, category = ?, notes = ?, event_id = ?,
-           attachment_id = COALESCE(?, attachment_id),
-           attachment_name = COALESCE(?, attachment_name),
-           attachment_url = COALESCE(?, attachment_url)
-       WHERE id = ? RETURNING *`,
-      [
-        title,
-        amount,
-        expenseDate,
-        category,
-        notes,
-        eventId || null,
-        attachmentId || null,
-        attachmentName || null,
-        attachmentUrl || null,
-        id
-      ]
-    );
-    if (tagIds !== undefined) {
-      await syncTags(id, Array.isArray(tagIds) ? tagIds : []);
-    }
-    const [enriched] = await attachTags([expense]);
-    success(res, { expense: enriched });
-  } catch (error) {
-    fail(res, error.message);
+      eventId || null,
+      attachmentId || null,
+      attachmentName || null,
+      attachmentUrl || null,
+      id
+    ]
+  );
+  if (!expense) {
+    return fail(res, 'Despesa não encontrada', 404);
   }
-});
+  if (tagIds !== undefined) {
+    await syncTags(id, Array.isArray(tagIds) ? tagIds : []);
+  }
+  const [enriched] = await attachTags([expense]);
+  success(res, { expense: enriched });
+}));
 
-router.delete('/:id', requireAuth, requirePermission('despesas.excluir'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    await execute('DELETE FROM expenses WHERE id = ?', [id]);
-    success(res);
-  } catch (error) {
-    fail(res, error.message);
-  }
-});
+router.delete('/:id', requireAuth, requirePermission('despesas.excluir'), asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  await execute('DELETE FROM expenses WHERE id = ?', [id]);
+  success(res);
+}));
 
 // Calcula (preview) o rateio do valor de uma despesa entre os participantes
 // informados. Não persiste cobranças — retorna a divisão proporcional.
-router.post('/:id/rateio', requireAuth, requirePermission('despesas.criar'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { participantIds } = req.body || {};
-    if (!Array.isArray(participantIds) || participantIds.length === 0) {
-      return fail(res, 'Informe ao menos um participante', 400);
-    }
-    const expense = await queryOne('SELECT * FROM expenses WHERE id = ?', [id]);
-    if (!expense) {
-      return fail(res, 'Despesa não encontrada', 404);
-    }
-    const ids = [...new Set(participantIds.map((v) => Number(v)).filter(Boolean))];
-    if (ids.length === 0) {
-      return fail(res, 'Participantes inválidos', 400);
-    }
-    const placeholders = ids.map(() => '?').join(', ');
-    const members = await query(
-      `SELECT id, name FROM members WHERE id IN (${placeholders})`,
-      ids
-    );
-    const nameById = members.reduce((acc, m) => { acc[m.id] = m.name; return acc; }, {});
-    const idsInexistentes = ids.filter((memberId) => !nameById[memberId]);
-    if (idsInexistentes.length > 0) {
-      return fail(res, `Participante(s) inexistente(s): ${idsInexistentes.join(', ')}`, 400);
-    }
-    const shares = computeRateio(expense.amount, ids);
-    const participants = shares.map((s) => ({ ...s, name: nameById[s.memberId] || null }));
-    success(res, {
-      expenseId: Number(id),
-      total: Number(expense.amount),
-      perMember: participants
-    });
-  } catch (error) {
-    fail(res, error.message);
+router.post('/:id/rateio', requireAuth, requirePermission('despesas.criar'), asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { participantIds } = req.body || {};
+  if (!Array.isArray(participantIds) || participantIds.length === 0) {
+    return fail(res, 'Informe ao menos um participante', 400);
   }
-});
+  const expense = await queryOne('SELECT * FROM expenses WHERE id = ?', [id]);
+  if (!expense) {
+    return fail(res, 'Despesa não encontrada', 404);
+  }
+  const ids = [...new Set(participantIds.map((v) => Number(v)).filter(Boolean))];
+  if (ids.length === 0) {
+    return fail(res, 'Participantes inválidos', 400);
+  }
+  const placeholders = ids.map(() => '?').join(', ');
+  const members = await query(
+    `SELECT id, name FROM members WHERE id IN (${placeholders})`,
+    ids
+  );
+  const nameById = members.reduce((acc, m) => { acc[m.id] = m.name; return acc; }, {});
+  const idsInexistentes = ids.filter((memberId) => !nameById[memberId]);
+  if (idsInexistentes.length > 0) {
+    return fail(res, `Participante(s) inexistente(s): ${idsInexistentes.join(', ')}`, 400);
+  }
+  const shares = computeRateio(expense.amount, ids);
+  const participants = shares.map((s) => ({ ...s, name: nameById[s.memberId] || null }));
+  success(res, {
+    expenseId: Number(id),
+    total: Number(expense.amount),
+    perMember: participants
+  });
+}));
 
 module.exports = router;

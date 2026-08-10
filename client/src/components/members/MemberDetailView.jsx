@@ -1,18 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { maskCpf } from '../../utils/formatters';
 import { PermissionsMatrix } from '../admin/PermissionsMatrix';
 
 const roleLabels = {
   admin: 'Tesoureiro',
   diretor_financeiro: 'Diretor Financeiro',
   viewer: 'Visualização'
-};
-
-const maskCpf = (cpf) => {
-  if (!cpf) return '-';
-  const digits = cpf.replace(/\D/g, '');
-  if (digits.length !== 11) return cpf;
-  return `${digits.slice(0, 3)}.***.***-${digits.slice(9)}`;
 };
 
 const formatAmount = (value) =>
@@ -30,7 +24,7 @@ export function MemberDetailView({ member, onInvite, onDelete, onRoleChange }) {
   const isSelf = authUser?.memberId && String(authUser.memberId) === String(member?.id);
 
   useEffect(() => {
-    if (!member?.id) return;
+    if (!member?.id || typeof apiFetch !== 'function') return;
     let canceled = false;
     setLoadingSummary(true);
     setSummary(null);

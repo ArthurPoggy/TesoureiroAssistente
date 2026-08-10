@@ -1,6 +1,6 @@
 import { useAuth } from '../../contexts/AuthContext';
 import { formatCurrency, months, currentYear } from '../../utils/formatters';
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => currentYear - 2 + i);
@@ -34,30 +34,71 @@ export function PaymentsPanel({
 }) {
   const { canEdit, memberId } = useAuth();
   const [errors, setErrors] = useState({});
-  const paymentInfoItems = [];
+  const tableWrapperRef = useRef(null);
+  const [tableMinHeight, setTableMinHeight] = useState(0);
+  const shapeKey = `${pageSize}|${filterMonth}|${filterYear}|${filterMemberId}`;
+  const committedShapeKeyRef = useRef(shapeKey);
+
+  // A altura mínima reservada acompanha a maior altura já vista para a
+  // combinação atual de filtros/pageSize (tipicamente a página cheia),
+  // evitando que uma página "curta" (ex.: última página) colapse a altura
+  // do wrapper e cause um salto vertical perceptível durante/após o loading.
+  // Ao trocar filtros ou o tamanho de página, o total de linhas esperado
+  // muda de "forma", então a reserva é reiniciada — mas só depois que o
+  // carregamento da nova "forma" terminar: enquanto `loading` estiver ativo,
+  // a página antiga (de shape anterior) ainda está visível sob o overlay, e
+  // descartar a reserva agora colapsaria o wrapper e voltaria a crescer
+  // quando os dados novos chegassem, produzindo o próprio salto de altura
+  // que essa reserva existe para evitar.
+  useLayoutEffect(() => {
+    if (loading) return;
+    if (committedShapeKeyRef.current === shapeKey) return;
+    committedShapeKeyRef.current = shapeKey;
+    setTableMinHeight(0);
+  }, [shapeKey, loading]);
+
+  useLayoutEffect(() => {
+    if (loading) return;
+    const node = tableWrapperRef.current;
+    if (!node) return;
+    const height = node.scrollHeight;
+    setTableMinHeight((prev) => Math.max(prev, height));
+  }, [loading, payments]);
   const canViewOwnPix = (payment) => Boolean(onPix) && payment.member_id === memberId;
   const showActionsColumn = canEdit || payments.some(canViewOwnPix);
-  const validate = () => {
-  const newErrors = {};
 
-  if (!paymentForm.memberId) {
-    newErrors.memberId = "Selecione um membro";
-  }
+  const validatePaymentForm = () => {
+    const newErrors = {};
 
-  if (!paymentForm.amount || paymentForm.amount <= 0) {
-    newErrors.amount = "Valor deve ser maior que zero";
-  }
+    if (!paymentForm.memberId) {
+      newErrors.memberId = 'Selecione um membro';
+    }
+    if (!paymentForm.amount || paymentForm.amount <= 0) {
+      newErrors.amount = 'Valor deve ser maior que zero';
+    }
+    if (!paymentForm.year) {
+      newErrors.year = 'Ano obrigatório';
+    }
+    if (paymentForm.paid && !paymentForm.paidAt) {
+      newErrors.paidAt = 'Informe a data do pagamento';
+    }
 
-  if (!paymentForm.year) {
-    newErrors.year = "Ano obrigatório";
-  }
+    return newErrors;
+  };
 
-  if (paymentForm.paid && !paymentForm.paidAt) {
-    newErrors.paidAt = "Informe a data do pagamento";
-  }
+  const handleSubmit = (event) => {
+    event.preventDefault();
 
-  return newErrors;
-};
+    const validationErrors = validatePaymentForm();
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) {
+      return;
+    }
+
+    onSubmit(event);
+  };
+
+  const paymentInfoItems = [];
   if (paymentSettings?.paymentDueDay) {
     paymentInfoItems.push({
       label: 'Vencimento padrão',
@@ -98,28 +139,13 @@ export function PaymentsPanel({
       )}
 
       {canEdit ? (
-        <form
-  className="form-grid"
-  onSubmit={(e) => {
-    e.preventDefault();
-
-    const validationErrors = validate();
-
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    onSubmit(e);
-  }}
-  aria-busy={submitting}
->
+        <form className="form-grid" onSubmit={handleSubmit} aria-busy={submitting}>
+          {errors.memberId && <span className="error">{errors.memberId}</span>}
           <select
             value={paymentForm.memberId}
             onChange={(e) => setPaymentForm({ ...paymentForm, memberId: e.target.value })}
             required
           >
-            {errors.memberId && <span className="error">{errors.memberId}</span>}
             <option value="">Selecione um membro</option>
             {members.map((member) => (
               <option key={member.id} value={member.id}>
@@ -257,7 +283,11 @@ export function PaymentsPanel({
         </div>
       </div>
 
-      <div className={`table-wrapper${loading ? ' table-wrapper--loading' : ''}`}>
+      <div
+        ref={tableWrapperRef}
+        className={`table-wrapper${loading ? ' table-wrapper--loading' : ''}`}
+        style={tableMinHeight ? { '--table-min-height': `${tableMinHeight}px` } : undefined}
+      >
         {loading && payments.length === 0 ? (
           <p className="table-loading-msg">Carregando pagamentos...</p>
         ) : (
@@ -267,7 +297,15 @@ export function PaymentsPanel({
                 <span className="spinner table-spinner" aria-hidden="true" />
               </div>
             )}
-            <table>
+            <table className="payments-table">
+              <colgroup>
+                <col className="col-member" />
+                <col className="col-period" />
+                <col className="col-amount" />
+                <col className="col-status" />
+                <col className="col-goal" />
+                {showActionsColumn && <col className="col-actions" />}
+              </colgroup>
               <thead>
                 <tr>
                   <th>Membro</th>
@@ -288,16 +326,20 @@ export function PaymentsPanel({
                       {payment.paid ? 'Pago' : 'Pendente'}
                     </td>
                     <td>{payment.goal_id ? goals.find((g) => g.id === payment.goal_id)?.title : '-'}</td>
-                    {(canEdit || canViewOwnPix(payment)) && (
+                    {showActionsColumn && (
                       <td>
-                        {canEdit && (
-                          <button onClick={() => onReceipt(payment.id)}>Gerar recibo</button>
-                        )}
-                        {(canEdit || canViewOwnPix(payment)) && onPix && (
-                          <button className="ghost" onClick={() => onPix(payment.id)}>PIX</button>
-                        )}
-                        {canEdit && (
-                          <button className="ghost" onClick={() => onDelete(payment.id)}>Remover</button>
+                        {(canEdit || canViewOwnPix(payment)) && (
+                          <>
+                            {canEdit && (
+                              <button onClick={() => onReceipt(payment.id)}>Gerar recibo</button>
+                            )}
+                            {(canEdit || canViewOwnPix(payment)) && onPix && (
+                              <button className="ghost" onClick={() => onPix(payment.id)}>PIX</button>
+                            )}
+                            {canEdit && (
+                              <button className="ghost" onClick={() => onDelete(payment.id)}>Remover</button>
+                            )}
+                          </>
                         )}
                       </td>
                     )}

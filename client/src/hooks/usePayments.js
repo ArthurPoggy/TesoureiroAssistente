@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { downloadBinary, uploadDriveFile } from '../services/api';
 import { currentMonth, currentYear } from '../utils/formatters';
+import { runRequest } from '../utils/hookRequests';
 
 export function usePayments(showToast, handleError, selectedMemberId, members = [], defaultAmount = 100) {
   const { apiFetch, authToken } = useAuth();
@@ -46,19 +47,19 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
   const loadPayments = useCallback(async () => {
     try {
       setLoading(true);
-      const effectiveMemberId = selectedMemberId || filterMemberId;
-      const params = new URLSearchParams({
-        ...(effectiveMemberId ? { memberId: effectiveMemberId } : {}),
-        ...(filterMonth ? { month: filterMonth } : {}),
-        ...(filterYear ? { year: filterYear } : {}),
-        page,
-        pageSize
+      await runRequest(handleError, async () => {
+        const effectiveMemberId = selectedMemberId || filterMemberId;
+        const params = new URLSearchParams({
+          ...(effectiveMemberId ? { memberId: effectiveMemberId } : {}),
+          ...(filterMonth ? { month: filterMonth } : {}),
+          ...(filterYear ? { year: filterYear } : {}),
+          page,
+          pageSize
+        });
+        const data = await apiFetch(`/api/payments?${params.toString()}`);
+        setPayments(data.payments || []);
+        setTotal(data.total || 0);
       });
-      const data = await apiFetch(`/api/payments?${params.toString()}`);
-      setPayments(data.payments || []);
-      setTotal(data.total || 0);
-    } catch (error) {
-      handleError(error);
     } finally {
       setLoading(false);
     }
@@ -103,54 +104,54 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
     }
     try {
       setSubmitting(true);
-      const memberIdValue = Number(paymentForm.memberId);
-      const member = members.find((item) => item.id === memberIdValue);
-      const memberLabel = member?.name || member?.email || `membro-${memberIdValue}`;
-      const monthValue = Number(paymentForm.month);
-      const yearValue = Number(paymentForm.year);
-      const monthFolder = String(monthValue).padStart(2, '0');
-      const uploadResponse = await uploadDriveFile(
-        paymentForm.attachmentFile,
-        paymentForm.attachmentName,
-        authToken,
-        {
-          module: 'Pagamentos',
+      await runRequest(handleError, async () => {
+        const memberIdValue = Number(paymentForm.memberId);
+        const member = members.find((item) => item.id === memberIdValue);
+        const memberLabel = member?.name || member?.email || `membro-${memberIdValue}`;
+        const monthValue = Number(paymentForm.month);
+        const yearValue = Number(paymentForm.year);
+        const monthFolder = String(monthValue).padStart(2, '0');
+        const uploadResponse = await uploadDriveFile(
+          paymentForm.attachmentFile,
+          paymentForm.attachmentName,
+          authToken,
+          {
+            module: 'Pagamentos',
+            year: yearValue,
+            month: monthFolder,
+            label: memberLabel
+          }
+        );
+        const uploadedFile = uploadResponse?.file;
+        const attachmentName = uploadedFile?.name || paymentForm.attachmentName || null;
+        const attachmentUrl = uploadedFile?.webViewLink || uploadedFile?.webContentLink || null;
+        const attachmentId = uploadedFile?.id || null;
+        const payload = {
+          memberId: memberIdValue,
+          month: monthValue,
           year: yearValue,
-          month: monthFolder,
-          label: memberLabel
-        }
-      );
-      const uploadedFile = uploadResponse?.file;
-      const attachmentName = uploadedFile?.name || paymentForm.attachmentName || null;
-      const attachmentUrl = uploadedFile?.webViewLink || uploadedFile?.webContentLink || null;
-      const attachmentId = uploadedFile?.id || null;
-      const payload = {
-        memberId: memberIdValue,
-        month: monthValue,
-        year: yearValue,
-        amount: Number(paymentForm.amount),
-        paid: paymentForm.paid,
-        paidAt: paymentForm.paidAt,
-        notes: paymentForm.notes,
-        goalId: paymentForm.goalId ? Number(paymentForm.goalId) : null,
-        attachmentId,
-        attachmentName,
-        attachmentUrl
-      };
-      await apiFetch('/api/payments', {
-        method: 'POST',
-        body: JSON.stringify(payload)
+          amount: Number(paymentForm.amount),
+          paid: paymentForm.paid,
+          paidAt: paymentForm.paidAt,
+          notes: paymentForm.notes,
+          goalId: paymentForm.goalId ? Number(paymentForm.goalId) : null,
+          attachmentId,
+          attachmentName,
+          attachmentUrl
+        };
+        await apiFetch('/api/payments', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        await Promise.all([loadPayments(), ...refreshCallbacks.map(cb => cb())]);
+        setPaymentForm((prev) => ({
+          ...prev,
+          attachmentName: '',
+          attachmentFile: null
+        }));
+        setFileInputKey((value) => value + 1);
+        showToast('Pagamento registrado');
       });
-      await Promise.all([loadPayments(), ...refreshCallbacks.map(cb => cb())]);
-      setPaymentForm((prev) => ({
-        ...prev,
-        attachmentName: '',
-        attachmentFile: null
-      }));
-      setFileInputKey((value) => value + 1);
-      showToast('Pagamento registrado');
-    } catch (error) {
-      handleError(error);
     } finally {
       setSubmitting(false);
     }
@@ -158,26 +159,22 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
 
   const handlePaymentDelete = useCallback(async (id, refreshCallbacks = []) => {
     if (!window.confirm('Remover este pagamento?')) return;
-    try {
+    await runRequest(handleError, async () => {
       await apiFetch(`/api/payments/${id}`, { method: 'DELETE' });
       await Promise.all([loadPayments(), ...refreshCallbacks.map(cb => cb())]);
       showToast('Pagamento removido');
-    } catch (error) {
-      handleError(error);
-    }
+    });
   }, [apiFetch, handleError, loadPayments, showToast]);
 
   const handleReceipt = useCallback(async (id) => {
-    try {
+    await runRequest(handleError, async () => {
       await downloadBinary(`/api/payments/${id}/receipt`, `recibo-${id}.pdf`, authToken);
       showToast('Recibo gerado');
-    } catch (error) {
-      handleError(error);
-    }
+    });
   }, [authToken, handleError, showToast]);
 
   const handlePixCode = useCallback(async (id) => {
-    try {
+    const brcode = await runRequest(handleError, async () => {
       const data = await apiFetch(`/api/payments/${id}/pix`);
       if (navigator?.clipboard?.writeText) {
         await navigator.clipboard.writeText(data.brcode);
@@ -186,10 +183,8 @@ export function usePayments(showToast, handleError, selectedMemberId, members = 
         showToast('Código PIX gerado');
       }
       return data.brcode;
-    } catch (error) {
-      handleError(error);
-      return null;
-    }
+    });
+    return brcode ?? null;
   }, [apiFetch, handleError, showToast]);
 
   return {

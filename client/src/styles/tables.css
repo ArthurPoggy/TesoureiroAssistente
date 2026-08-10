@@ -1,6 +1,11 @@
 .table-wrapper {
   overflow-x: auto;
   position: relative;
+  /* Reservado dinamicamente (via inline style) com a maior altura já
+     observada para a página/filtro atuais, evitando colapso de altura
+     (reflow perceptível) ao trocar para uma página com menos linhas. */
+  min-height: var(--table-min-height, auto);
+  z-index: var(--z-base);
 }
 
 .table-wrapper--loading table {
@@ -12,6 +17,7 @@
 
 .table-loading-overlay {
   position: absolute;
+  z-index: var(--z-sticky);
   inset: 0;
   display: flex;
   align-items: center;
@@ -29,7 +35,7 @@
   text-align: center;
   padding: var(--spacing-lg);
   color: var(--color-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 table {
@@ -45,11 +51,11 @@ table td {
 }
 
 table th {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-text-muted);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 table tbody tr {
@@ -64,20 +70,55 @@ table tbody tr:hover {
   background: var(--color-bg-highlight);
 }
 
+/* Pagamentos: colunas com largura fixa (não dependem do conteúdo da página),
+   para que a tabela não "pule"/redimensione ao trocar de página ou de
+   tamanho de página. */
+.payments-table {
+  table-layout: fixed;
+}
+
+.payments-table .col-member {
+  width: 22%;
+}
+
+.payments-table .col-period {
+  width: 13%;
+}
+
+.payments-table .col-amount {
+  width: 15%;
+}
+
+.payments-table .col-status {
+  width: 12%;
+}
+
+.payments-table .col-goal {
+  width: 23%;
+}
+
+.payments-table .col-actions {
+  width: 15%;
+}
+
+.payments-table td {
+  overflow-wrap: break-word;
+}
+
 .paid {
   color: var(--color-success-dark);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .pending {
   color: var(--color-error-dark);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .file-link {
   color: var(--color-primary);
   text-decoration: none;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .file-link:hover {
@@ -103,14 +144,14 @@ table tbody tr:hover {
 .table-toolbar-filters select,
 .table-toolbar-pagesize select {
   padding: 0.4rem 0.65rem;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .expenses-search {
   flex: 1;
   min-width: 200px;
   padding: 0.4rem 0.65rem;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .table-empty {
@@ -124,7 +165,7 @@ table tbody tr:hover {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -139,7 +180,7 @@ table tbody tr:hover {
 }
 
 .pagination-info {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -150,7 +191,7 @@ table tbody tr:hover {
 }
 
 .pagination-page {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   padding: 0 var(--spacing-sm);
   white-space: nowrap;
@@ -158,7 +199,7 @@ table tbody tr:hover {
 
 .pagination-btn {
   padding: 0.35rem 0.65rem;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   min-width: 2rem;
 }
 

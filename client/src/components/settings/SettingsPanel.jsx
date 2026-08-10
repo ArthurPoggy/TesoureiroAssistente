@@ -1,5 +1,26 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+
+const BACKGROUND_IMAGE_TARGETS = [
+  { key: 'login', label: 'Imagem de fundo do login' },
+  { key: 'dashboard', label: 'Imagem de fundo do painel' }
+];
+
+const MAX_BACKGROUND_IMAGE_SIZE = 5 * 1024 * 1024;
+const ALLOWED_BACKGROUND_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+const validateBackgroundImageFile = (file) => {
+  if (!file) {
+    return 'Selecione uma imagem';
+  }
+  if (!ALLOWED_BACKGROUND_IMAGE_TYPES.includes(file.type)) {
+    return 'Formato inválido. Envie uma imagem JPG, PNG ou WebP';
+  }
+  if (file.size > MAX_BACKGROUND_IMAGE_SIZE) {
+    return 'Imagem acima de 5 MB';
+  }
+  return '';
+};
 
 export function SettingsPanel({
   settingsForm,
@@ -14,6 +35,78 @@ export function SettingsPanel({
   const { isAdmin, apiFetch } = useAuth();
   const [driveStatus, setDriveStatus] = useState({ loading: true, connected: false, source: 'none' });
   const [driveConnecting, setDriveConnecting] = useState(false);
+  const [backgroundImages, setBackgroundImages] = useState({
+    login: { url: '', file: null, error: '', uploading: false },
+    dashboard: { url: '', file: null, error: '', uploading: false }
+  });
+  const backgroundInputRefs = useRef({});
+
+  const loadBackgroundImages = useCallback(async () => {
+    if (!isAdmin) {
+      return;
+    }
+    try {
+      const data = await apiFetch('/api/settings/public');
+      setBackgroundImages((prev) => ({
+        login: { ...prev.login, url: data.loginBackgroundUrl || '' },
+        dashboard: { ...prev.dashboard, url: data.dashboardBackgroundUrl || '' }
+      }));
+    } catch (error) {
+      if (handleError) {
+        handleError(error);
+      }
+    }
+  }, [apiFetch, isAdmin, handleError]);
+
+  useEffect(() => {
+    loadBackgroundImages();
+  }, [loadBackgroundImages]);
+
+  const handleBackgroundImageSelect = useCallback((target, event) => {
+    const file = event.target.files?.[0] || null;
+    const error = file ? validateBackgroundImageFile(file) : '';
+    setBackgroundImages((prev) => ({
+      ...prev,
+      [target]: { ...prev[target], file: error ? null : file, error }
+    }));
+  }, []);
+
+  const handleBackgroundImageUpload = useCallback(
+    async (target) => {
+      const current = backgroundImages[target];
+      const error = validateBackgroundImageFile(current?.file);
+      if (error) {
+        setBackgroundImages((prev) => ({ ...prev, [target]: { ...prev[target], error } }));
+        return;
+      }
+      setBackgroundImages((prev) => ({ ...prev, [target]: { ...prev[target], uploading: true, error: '' } }));
+      try {
+        const formData = new FormData();
+        formData.append('target', target);
+        formData.append('image', current.file);
+        const data = await apiFetch('/api/settings/background-image', { method: 'POST', body: formData });
+        setBackgroundImages((prev) => ({
+          ...prev,
+          [target]: { url: data.url || '', file: null, error: '', uploading: false }
+        }));
+        if (backgroundInputRefs.current[target]) {
+          backgroundInputRefs.current[target].value = '';
+        }
+        if (showToast) {
+          showToast('Imagem de fundo atualizada');
+        }
+      } catch (uploadError) {
+        setBackgroundImages((prev) => ({
+          ...prev,
+          [target]: { ...prev[target], uploading: false, error: uploadError.message || 'Erro ao enviar a imagem' }
+        }));
+        if (handleError) {
+          handleError(uploadError);
+        }
+      }
+    },
+    [apiFetch, backgroundImages, showToast, handleError]
+  );
 
   const loadDriveStatus = useCallback(async () => {
     if (!isAdmin) {
@@ -228,6 +321,58 @@ export function SettingsPanel({
               placeholder="Mensagem rápida para todos os usuários"
             />
             <small>Mostrado no topo da visão geral financeira.</small>
+          </div>
+
+          <div className="settings-field settings-field-full">
+            <label>Imagens de fundo</label>
+            <small>Personalize o fundo das telas de login e do painel (JPG, PNG ou WebP, até 5 MB).</small>
+            <div className="background-image-fields">
+              {BACKGROUND_IMAGE_TARGETS.map(({ key, label }) => {
+                const state = backgroundImages[key];
+                return (
+                  <div className="background-image-field" key={key}>
+                    <span>{label}</span>
+                    <div className="background-image-preview-wrap">
+                      {state.url ? (
+                        <img
+                          src={state.url}
+                          alt={label}
+                          data-testid={`background-image-preview-${key}`}
+                        />
+                      ) : (
+                        <span className="background-image-preview-empty">Sem imagem definida</span>
+                      )}
+                    </div>
+                    <div className="background-image-controls">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        data-testid={`background-image-input-${key}`}
+                        ref={(node) => {
+                          backgroundInputRefs.current[key] = node;
+                        }}
+                        onChange={(event) => handleBackgroundImageSelect(key, event)}
+                        disabled={loading || saving || state.uploading}
+                      />
+                      <button
+                        type="button"
+                        className="ghost"
+                        data-testid={`background-image-upload-${key}`}
+                        onClick={() => handleBackgroundImageUpload(key)}
+                        disabled={loading || saving || state.uploading || !state.file}
+                      >
+                        {state.uploading ? 'Enviando...' : 'Enviar imagem'}
+                      </button>
+                    </div>
+                    {state.error && (
+                      <span className="background-image-error" data-testid={`background-image-error-${key}`}>
+                        {state.error}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           <div className="settings-field settings-field-full">

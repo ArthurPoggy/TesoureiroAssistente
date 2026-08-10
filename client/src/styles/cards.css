@@ -28,7 +28,9 @@
 
 .panel-note h3 {
   margin: 0 0 var(--spacing-xs);
-  font-size: 0.95rem;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
   color: var(--color-text-info);
 }
 
@@ -75,7 +77,9 @@
 
 .goal-header h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
 }
 
 .progress {
@@ -153,7 +157,7 @@
 .ranking-subtitle {
   margin: 0 0 var(--spacing-md);
   color: var(--color-text-muted);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .ranking-board {

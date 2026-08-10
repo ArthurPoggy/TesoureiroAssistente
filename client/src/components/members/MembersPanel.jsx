@@ -1,5 +1,6 @@
 import { useAuth } from '../../contexts/AuthContext';
 import { MemberDetailView } from './MemberDetailView';
+import { maskCpf } from '../../utils/formatters';
 
 export function MembersPanel({
   members,
@@ -115,7 +116,7 @@ export function MembersPanel({
               >
                 <td>{member.name}</td>
                 <td>{member.email}</td>
-                <td>{member.cpf || '-'}</td>
+                <td>{maskCpf(member.cpf)}</td>
                 <td>{member.nickname}</td>
                 {canEdit && (
                   <td>

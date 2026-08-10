@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { EditProjectModal } from './EditProjectModal';
 import { ProjectTagSelector } from './ProjectTagSelector';
+import { ProjectTimeline } from './ProjectTimeline';
+import { ProjectAttachments } from './ProjectAttachments';
 
 const STATUS_LABEL = { active: 'Ativo', inactive: 'Inativo' };
 
@@ -87,6 +89,11 @@ export function ProjectsPanel({
   onReset,
   onAddMember,
   onRemoveMember,
+  onAddMilestone,
+  onRemoveMilestone,
+  onToggleMilestone,
+  onUploadProjectFiles,
+  onRemoveProjectFile,
   filterName = '',
   filterStatus = '',
   filterStartDate = '',
@@ -390,6 +397,21 @@ export function ProjectsPanel({
                   )}
                 </div>
               )}
+
+              <ProjectTimeline
+                project={project}
+                canEdit={canEdit}
+                onAddMilestone={onAddMilestone}
+                onRemoveMilestone={onRemoveMilestone}
+                onToggleMilestone={onToggleMilestone}
+              />
+
+              <ProjectAttachments
+                project={project}
+                canEdit={canEdit}
+                onUploadProjectFiles={onUploadProjectFiles}
+                onRemoveProjectFile={onRemoveProjectFile}
+              />
 
               <div className="project-members">
                 <strong>Membros:</strong>{' '}
