@@ -111,10 +111,13 @@ export function useExpenses(showToast, handleError, events = []) {
     if (!window.confirm('Remover esta despesa?')) return;
     await runRequest(handleError, async () => {
       await apiFetch(`/api/expenses/${id}`, { method: 'DELETE' });
+      if (selectedExpenseDetail?.id === id) {
+        setSelectedExpenseDetail(null);
+      }
       await Promise.all([loadExpenses(), ...refreshCallbacks.map(cb => cb())]);
       showToast('Despesa removida');
     });
-  }, [apiFetch, handleError, loadExpenses, showToast]);
+  }, [apiFetch, handleError, loadExpenses, selectedExpenseDetail, showToast]);
 
   const startEditExpense = useCallback((expense) => {
     setExpenseForm({
