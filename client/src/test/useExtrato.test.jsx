@@ -109,4 +109,43 @@ describe('useExtrato — paginação', () => {
     expect(result.current.total).toBe(42);
     expect(result.current.entries).toHaveLength(1);
   });
+
+  // Subtask "Hook useExtrato: estado e chamada paginada": o hook precisa
+  // expor `setPage` diretamente (mesmo contrato de usePayments, que expõe
+  // `setPage` além dos handlers), não só o handler `onPageChange`.
+  it('expõe setPage e atualiza a página imediatamente ao chamá-lo', async () => {
+    const { result } = renderHook(() => useExtrato(noop, true));
+
+    expect(typeof result.current.setPage).toBe('function');
+
+    act(() => {
+      result.current.setPage(5);
+    });
+
+    await waitFor(() => {
+      expect(result.current.page).toBe(5);
+    });
+  });
+
+  // Trocar qualquer filtro deve resetar a página para 1 no mesmo momento em
+  // que o filtro muda — igual aos handlers onFilterMonthChange/
+  // onFilterYearChange/onFilterMemberChange de usePayments, que chamam
+  // setPage(1) junto com a mudança do filtro, sem depender de um recarga
+  // subsequente para "corrigir" a página.
+  it('resetar a página para 1 ao mudar um filtro via setFilters, antes mesmo de recarregar', async () => {
+    const { result } = renderHook(() => useExtrato(noop, true));
+
+    await act(async () => {
+      result.current.onPageChange(3);
+    });
+    await waitFor(() => expect(result.current.page).toBe(3));
+
+    act(() => {
+      result.current.setFilters({ startDate: '', endDate: '', type: 'despesa', memberId: '' });
+    });
+
+    await waitFor(() => {
+      expect(result.current.page).toBe(1);
+    });
+  });
 });
