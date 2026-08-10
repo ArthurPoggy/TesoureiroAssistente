@@ -38,14 +38,15 @@ const insertTag = (name) => {
 const insertExpense = (fields = {}) => {
   const d = db();
   return d.prepare(
-    `INSERT INTO expenses (title, amount, expense_date, category, notes)
-     VALUES (?, ?, ?, ?, ?) RETURNING *`
+    `INSERT INTO expenses (title, amount, expense_date, category, notes, payment_method)
+     VALUES (?, ?, ?, ?, ?, ?) RETURNING *`
   ).get(
     fields.title || 'Despesa teste',
     fields.amount ?? 100,
     fields.expense_date || '2024-01-15',
     fields.category || null,
-    fields.notes || null
+    fields.notes || null,
+    fields.paymentMethod || null
   );
 };
 

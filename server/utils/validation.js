@@ -18,7 +18,18 @@ const validateNonNegativeAmount = (amount, message) => {
   return isInvalid ? message : null;
 };
 
+// Valida que `value`, quando informado, está entre os `allowedValues`
+// aceitos para um campo de opções fixas (ex.: payment_method em expenses).
+// Campo ausente/falsy é considerado válido (opcional) — quem exige o campo
+// deve combinar com `requireFields`. Retorna `message` quando inválido, ou
+// `null` quando ok.
+const validateAllowedValue = (value, allowedValues, message) => {
+  if (!value) return null;
+  return allowedValues.includes(value) ? null : message;
+};
+
 module.exports = {
   requireFields,
-  validateNonNegativeAmount
+  validateNonNegativeAmount,
+  validateAllowedValue
 };
