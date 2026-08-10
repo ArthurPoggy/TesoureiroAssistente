@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, formatDate } from '../../utils/formatters';
 
 function TagSelector({ tags = [], selectedIds = [], onChange, canEdit }) {
   const toggle = (id) => {
@@ -212,7 +212,7 @@ export function ExpensesPanel({
             ) : (
               filteredExpenses.map((expense) => (
                 <tr key={expense.id}>
-                  <td>{expense.expense_date}</td>
+                  <td>{formatDate(expense.expense_date)}</td>
                   <td>{expense.title}</td>
                   <td>{formatCurrency(expense.amount)}</td>
                   <td>{expense.category}</td>
