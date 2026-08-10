@@ -82,6 +82,8 @@ describe('DashboardSection — imagem de fundo', () => {
     renderDashboard({ dashboardBackgroundUrl: CUSTOM_DASHBOARD_BG });
 
     expect(screen.getByText('Total arrecadado')).toBeInTheDocument();
-    expect(screen.getByText('Despesas')).toBeInTheDocument();
+    // Rótulo "Total de despesas" (não "Despesas") para não colidir com o
+    // cabeçalho do painel de despesas (ver StatsGrid.jsx).
+    expect(screen.getByText('Total de despesas')).toBeInTheDocument();
   });
 });
