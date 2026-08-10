@@ -120,4 +120,73 @@ describe('useExpenses — selectedExpenseDetail', () => {
     // mostrando dados de uma despesa que não existe mais.
     expect(result.current.selectedExpenseDetail).toBeNull();
   });
+
+  it('resincroniza selectedExpenseDetail quando loadExpenses recarrega a lista com dados atualizados', async () => {
+    const expenseAntiga = {
+      id: 42,
+      title: 'Material de acampamento',
+      amount: 150.5,
+      expense_date: '2026-08-01',
+      category: 'Material',
+      notes: '',
+      event_id: null,
+      tags: []
+    };
+    const expenseAtualizada = { ...expenseAntiga, title: 'Material de acampamento (revisado)', amount: 200 };
+
+    apiFetch.mockResolvedValue({ expenses: [expenseAtualizada] });
+
+    const { result } = renderHook(() => useExpenses(noop, noop, []));
+
+    act(() => {
+      result.current.setSelectedExpenseDetail(expenseAntiga);
+    });
+    expect(result.current.selectedExpenseDetail).toEqual(expenseAntiga);
+
+    await act(async () => {
+      await result.current.loadExpenses();
+    });
+
+    // Assim como selectedMemberDetail é resincronizado em loadMembers,
+    // selectedExpenseDetail deve refletir os dados atualizados vindos da
+    // lista recarregada — do contrário o painel de detalhe continua
+    // mostrando valores antigos após editar a despesa selecionada.
+    expect(result.current.selectedExpenseDetail).toEqual(expenseAtualizada);
+  });
+
+  it('resincroniza selectedExpenseDetail após handleExpenseSubmit editar a despesa selecionada', async () => {
+    const expenseAntiga = {
+      id: 42,
+      title: 'Material de acampamento',
+      amount: 150.5,
+      expense_date: '2026-08-01',
+      category: 'Material',
+      notes: '',
+      event_id: null,
+      tags: []
+    };
+    const expenseAtualizada = { ...expenseAntiga, title: 'Material de acampamento (revisado)', amount: 200 };
+
+    apiFetch.mockImplementation((url, options = {}) => {
+      if (options.method === 'PUT') return Promise.resolve({ expense: expenseAtualizada });
+      return Promise.resolve({ expenses: [expenseAtualizada] });
+    });
+
+    const { result } = renderHook(() => useExpenses(noop, noop, []));
+
+    act(() => {
+      result.current.startEditExpense(expenseAntiga);
+      result.current.setSelectedExpenseDetail(expenseAntiga);
+    });
+
+    const fakeEvent = { preventDefault: noop };
+    await act(async () => {
+      await result.current.handleExpenseSubmit(fakeEvent, []);
+    });
+
+    // Editar a despesa que está com o detalhe aberto deve atualizar
+    // selectedExpenseDetail com os dados novos — sem isso, ExpenseDetailView
+    // continua mostrando título e valor antigos até o usuário reclicar na linha.
+    expect(result.current.selectedExpenseDetail).toEqual(expenseAtualizada);
+  });
 });
