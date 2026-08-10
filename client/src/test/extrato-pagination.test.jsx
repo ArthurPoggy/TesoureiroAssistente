@@ -83,4 +83,23 @@ describe('ExtratoPanel — paginação', () => {
     const { container } = render(<ExtratoPanel {...baseProps} entries={[]} total={0} />);
     expect(container.querySelector('.pagination')).toBeNull();
   });
+
+  // O seletor "Por página" precisa oferecer exatamente as mesmas opções
+  // (10/25/50/100) e na mesma ordem que PaymentsPanel usa, já que a subtask
+  // pede reaproveitar o mesmo padrão em vez de criar um novo.
+  it('oferece as mesmas opções de "Por página" (10, 25, 50, 100) que o PaymentsPanel', () => {
+    const { getByLabelText } = render(<ExtratoPanel {...baseProps} />);
+    const select = getByLabelText(/Por página/i);
+    const optionValues = Array.from(select.querySelectorAll('option')).map((o) => o.value);
+    expect(optionValues).toEqual(['10', '25', '50', '100']);
+  });
+
+  // Com a paginação feita no servidor (ver GET /api/extrato), `entries` já
+  // chega contendo só os itens da página atual — o painel não deve
+  // reduzir/paginar essa lista de novo no cliente, só exibi-la como veio.
+  it('renderiza exatamente as entries recebidas via props, sem paginar/fatiar de novo no cliente', () => {
+    const { container } = render(<ExtratoPanel {...baseProps} />);
+    const rows = container.querySelectorAll('tbody tr');
+    expect(rows).toHaveLength(baseEntries.length);
+  });
 });
