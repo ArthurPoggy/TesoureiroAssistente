@@ -156,28 +156,33 @@ export function ExpensesPanel({
             onChange={(ids) => setExpenseForm({ ...expenseForm, tagIds: ids })}
             canEdit={canEdit}
           />
-          <label>
-            Nome do anexo
-            <input
-              placeholder="Nome do anexo (opcional)"
-              value={expenseForm.attachmentName}
-              onChange={(e) => setExpenseForm({ ...expenseForm, attachmentName: e.target.value })}
-            />
-          </label>
-          <label>
-            Anexo (arquivo)
-            <input
-              key={fileInputKey}
-              type="file"
-              onChange={(e) =>
-                setExpenseForm({
-                  ...expenseForm,
-                  attachmentFile: e.target.files ? e.target.files[0] : null
-                })
-              }
-              required={!editingExpenseId}
-            />
-          </label>
+          <div className="attachments-block">
+            <span className="attachments-block-label">Anexo</span>
+            <div className="attachments-block-fields">
+              <label>
+                Nome do anexo
+                <input
+                  placeholder="Nome do anexo (opcional)"
+                  value={expenseForm.attachmentName}
+                  onChange={(e) => setExpenseForm({ ...expenseForm, attachmentName: e.target.value })}
+                />
+              </label>
+              <label>
+                Anexo (arquivo)
+                <input
+                  key={fileInputKey}
+                  type="file"
+                  onChange={(e) =>
+                    setExpenseForm({
+                      ...expenseForm,
+                      attachmentFile: e.target.files ? e.target.files[0] : null
+                    })
+                  }
+                  required={!editingExpenseId}
+                />
+              </label>
+            </div>
+          </div>
           <div className="form-actions">
             <button type="submit">{editingExpenseId ? 'Atualizar' : 'Salvar despesa'}</button>
             {editingExpenseId && (
