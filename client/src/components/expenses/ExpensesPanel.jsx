@@ -163,9 +163,7 @@ export function ExpensesPanel({
             )}
           </div>
         </form>
-      ) : (
-        <p className="lock-hint">Somente o tesoureiro pode registrar despesas.</p>
-      )}
+      ) : null}
 
       <div className="table-toolbar">
         <div className="table-toolbar-filters">

@@ -60,9 +60,7 @@ export function EventsPanel({
             )}
           </div>
         </form>
-      ) : (
-        <p className="lock-hint">Somente o tesoureiro pode registrar eventos.</p>
-      )}
+      ) : null}
 
       <div className="events-list">
         {events.map((eventItem) => (
