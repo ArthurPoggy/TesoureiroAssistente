@@ -91,69 +91,93 @@ export function ExpensesPanel({
 
       {canEdit ? (
         <form className="form-grid" onSubmit={onSubmit}>
-          <input
-            placeholder="Descrição"
-            value={expenseForm.title}
-            onChange={(e) => setExpenseForm({ ...expenseForm, title: e.target.value })}
-            required
-          />
-          <input
-            type="number"
-            placeholder="Valor"
-            value={expenseForm.amount}
-            onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
-            required
-          />
-          <input
-            type="date"
-            value={expenseForm.expenseDate}
-            onChange={(e) => setExpenseForm({ ...expenseForm, expenseDate: e.target.value })}
-            required
-          />
-          <input
-            placeholder="Categoria"
-            value={expenseForm.category}
-            onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
-          />
-          <select
-            value={expenseForm.eventId}
-            onChange={(e) => setExpenseForm({ ...expenseForm, eventId: e.target.value })}
-          >
-            <option value="">Evento associado</option>
-            {events.map((eventItem) => (
-              <option key={eventItem.id} value={eventItem.id}>
-                {eventItem.name}
-              </option>
-            ))}
-          </select>
-          <input
-            type="text"
-            placeholder="Observações"
-            value={expenseForm.notes}
-            onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })}
-          />
+          <label>
+            Descrição
+            <input
+              placeholder="Descrição"
+              value={expenseForm.title}
+              onChange={(e) => setExpenseForm({ ...expenseForm, title: e.target.value })}
+              required
+            />
+          </label>
+          <label>
+            Valor
+            <input
+              type="number"
+              placeholder="Valor"
+              value={expenseForm.amount}
+              onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
+              required
+            />
+          </label>
+          <label>
+            Data da despesa
+            <input
+              type="date"
+              value={expenseForm.expenseDate}
+              onChange={(e) => setExpenseForm({ ...expenseForm, expenseDate: e.target.value })}
+              required
+            />
+          </label>
+          <label>
+            Categoria
+            <input
+              placeholder="Categoria"
+              value={expenseForm.category}
+              onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
+            />
+          </label>
+          <label>
+            Evento associado
+            <select
+              value={expenseForm.eventId}
+              onChange={(e) => setExpenseForm({ ...expenseForm, eventId: e.target.value })}
+            >
+              <option value="">Nenhum</option>
+              {events.map((eventItem) => (
+                <option key={eventItem.id} value={eventItem.id}>
+                  {eventItem.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Observações
+            <input
+              type="text"
+              placeholder="Observações"
+              value={expenseForm.notes}
+              onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })}
+            />
+          </label>
           <TagSelector
             tags={tags}
             selectedIds={expenseForm.tagIds || []}
             onChange={(ids) => setExpenseForm({ ...expenseForm, tagIds: ids })}
             canEdit={canEdit}
           />
-          <input
-            placeholder="Nome do anexo (opcional)"
-            value={expenseForm.attachmentName}
-            onChange={(e) => setExpenseForm({ ...expenseForm, attachmentName: e.target.value })}
-          />
-          <input
-            key={fileInputKey}
-            type="file"
-            onChange={(e) =>
-              setExpenseForm({
-                ...expenseForm,
-                attachmentFile: e.target.files ? e.target.files[0] : null
-              })
-            }
-            required={!editingExpenseId}
-          />
+          <label>
+            Nome do anexo
+            <input
+              placeholder="Nome do anexo (opcional)"
+              value={expenseForm.attachmentName}
+              onChange={(e) => setExpenseForm({ ...expenseForm, attachmentName: e.target.value })}
+            />
+          </label>
+          <label>
+            Anexo (arquivo)
+            <input
+              key={fileInputKey}
+              type="file"
+              onChange={(e) =>
+                setExpenseForm({
+                  ...expenseForm,
+                  attachmentFile: e.target.files ? e.target.files[0] : null
+                })
+              }
+              required={!editingExpenseId}
+            />
+          </label>
           <div className="form-actions">
             <button type="submit">{editingExpenseId ? 'Atualizar' : 'Salvar despesa'}</button>
             {editingExpenseId && (
@@ -180,7 +204,7 @@ export function ExpensesPanel({
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            aria-label="Filtrar por categoria"
+            aria-label="Filtrar despesas por tipo"
           >
             <option value="">Todas as categorias</option>
             {categories.map((category) => (
