@@ -5,6 +5,7 @@ const { query } = require('../db/query');
 const { success, fail } = require('../utils/response');
 const { requireAuth } = require('../middleware/auth');
 const { getSettings, DEFAULT_SETTINGS } = require('../utils/settings');
+const { parsePagination } = require('../utils/pagination');
 
 const router = express.Router();
 
@@ -146,9 +147,7 @@ router.get('/', requireAuth, async (req, res) => {
     const totalExpense = entries.filter((e) => e.amount < 0).reduce((sum, e) => sum + Math.abs(e.amount), 0);
     const netBalance = totalIncome - totalExpense;
 
-    const pageNum = Math.max(1, parseInt(page) || 1);
-    const pageSizeNum = Math.min(100, Math.max(1, parseInt(pageSize) || 25));
-    const offset = (pageNum - 1) * pageSizeNum;
+    const { pageNum, pageSizeNum, offset } = parsePagination(page, pageSize);
 
     success(res, {
       entries: entries.slice(offset, offset + pageSizeNum),

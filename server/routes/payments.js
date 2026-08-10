@@ -7,6 +7,7 @@ const { requireAuth, requirePermission } = require('../middleware/auth');
 const { isPrivilegedRequest } = require('../utils/roles');
 const { adjustCurrentBalance, getSettings, DEFAULT_SETTINGS } = require('../utils/settings');
 const { buildPixPayload } = require('../utils/pix');
+const { parsePagination } = require('../utils/pagination');
 
 const router = express.Router();
 
@@ -18,9 +19,7 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
     return success(res, { payments: [], total: 0, page: 1, pageSize: 25 });
   }
 
-  const pageNum = Math.max(1, parseInt(page) || 1);
-  const pageSizeNum = Math.min(100, Math.max(1, parseInt(pageSize) || 25));
-  const offset = (pageNum - 1) * pageSizeNum;
+  const { pageNum, pageSizeNum, offset } = parsePagination(page, pageSize);
 
   let whereSql = 'WHERE 1 = 1';
   const params = [];
