@@ -190,7 +190,7 @@ export function ExpensesPanel({
         </div>
       </div>
 
-      <div className="table-wrapper compact">
+      <div className="table-wrapper">
         <table>
           <thead>
             <tr>
