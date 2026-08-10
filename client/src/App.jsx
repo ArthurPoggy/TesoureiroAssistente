@@ -1,496 +1,58 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Tooltip,
-  Legend
-} from 'chart.js';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
-import { parseMonthFilter, parseYearFilter, currentMonth, currentYear } from './utils/formatters';
-import { useMembers, usePayments, useGoals, useExpenses, useEvents, useDashboard, useSettings, useExtrato, useClanHistory, useTags, useProjects } from './hooks';
-import {
-  LoginScreen,
-  AuthCheckingScreen,
-  Header,
-  DashboardSection,
-  SettingsPanel,
-  GoalsPanel,
-  MembersPanel,
-  PaymentsPanel,
-  ExpensesPanel,
-  EventsPanel,
-  DelinquencyRanking,
-  ReportsSection,
-  ExtratoPanel,
-  ClanHistoryPanel,
-  ProjectsPanel,
-  Toast
-} from './components';
+import { LoginScreen } from './components';
+import { ProtectedRoute } from './routes/ProtectedRoute';
+import { RoleRoute } from './routes/RoleRoute';
+import { AppLayout } from './routes/AppLayout';
+import { ScrollToTop } from './routes/ScrollToTop';
+import { AccessDeniedPage } from './routes/AccessDeniedPage';
+import { DashboardPage } from './routes/DashboardPage';
+import { MembersPage } from './routes/MembersPage';
+import { PaymentsPage } from './routes/PaymentsPage';
+import { ExpensesPage } from './routes/ExpensesPage';
+import { EventsPage } from './routes/EventsPage';
+import { ProjectsPage } from './routes/ProjectsPage';
+import { ExtratoPage } from './routes/ExtratoPage';
+import { SettingsPage } from './routes/SettingsPage';
 import './styles/index.css';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
-
+// Árvore de rotas e guards de auth/role. Dashboard, Membros, Pagamentos,
+// Despesas, Eventos, Projetos, Extrato e Configurações já possuem rotas
+// dedicadas, cada uma carregando seu painel sob demanda (ver
+// DashboardPage/MembersPage/PaymentsPage/ExpensesPage/EventsPage/
+// ProjectsPage/ExtratoPage/SettingsPage). Configurações é restrita a
+// diretor_financeiro/admin através de RoleRoute, bloqueando o viewer mesmo
+// ao digitar a URL diretamente (não apenas escondendo o item de menu).
 function App() {
-  const { authToken, authUser, authChecked, isAdmin } = useAuth();
-
-  // Estado de UI
-  const [toast, setToast] = useState(null);
-  const [selectedMonth, setSelectedMonth] = useState(String(currentMonth));
-  const [selectedYear, setSelectedYear] = useState(String(currentYear));
-  const [selectedUserFilter, setSelectedUserFilter] = useState('all');
-  const [showSettings, setShowSettings] = useState(false);
-
-  const showToast = useCallback((message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  }, []);
-
-  const handleError = useCallback((error) => {
-    console.error(error);
-    showToast(error.message || 'Algo deu errado', 'error');
-  }, [showToast]);
-
-  // Hooks de dados
-  const {
-    members,
-    memberForm,
-    setMemberForm,
-    editingMemberId,
-    selectedMemberDetail,
-    setSelectedMemberDetail,
-    inviteLink,
-    setInviteLink,
-    loadMembers,
-    resetMemberForm,
-    handleMemberSubmit,
-    handleMemberInvite,
-    handleMemberDelete,
-    handleRoleChange,
-    startEditMember
-  } = useMembers(showToast, handleError);
-
-  const { goals, goalForm, setGoalForm, editingGoalId, loadGoals, resetGoalForm, handleGoalSubmit, handleGoalDelete, startEditGoal } = useGoals(showToast, handleError);
-
-  const { events, eventForm, setEventForm, editingEventId, loadEvents, resetEventForm, handleEventSubmit, handleEventDelete, startEditEvent } = useEvents(showToast, handleError);
-
-  const {
-    publicSettings,
-    settingsForm,
-    setSettingsForm,
-    loading: settingsLoading,
-    saving: settingsSaving,
-    loadPublicSettings,
-    loadSettings,
-    saveSettings
-  } = useSettings(showToast, handleError);
-
-  // Filtros computados
-  const monthFilter = useMemo(() => parseMonthFilter(selectedMonth), [selectedMonth]);
-  const yearFilter = useMemo(() => parseYearFilter(selectedYear), [selectedYear]);
-
-  const userFilterOptions = useMemo(() => {
-    if (isAdmin) {
-      const options = [{ id: 'all', label: 'Todos', memberId: null }];
-      members.forEach((member) => {
-        options.push({
-          id: `member-${member.id}`,
-          label: member.name || member.email,
-          memberId: member.id
-        });
-      });
-      return options;
-    }
-    if (authUser.memberId) {
-      const member = members.find((item) => item.id === authUser.memberId);
-      return [
-        {
-          id: 'me',
-          label: member?.name || authUser.name || authUser.email,
-          memberId: authUser.memberId
-        }
-      ];
-    }
-    return [];
-  }, [isAdmin, members, authUser]);
-
-  useEffect(() => {
-    if (!userFilterOptions.length) return;
-    if (!userFilterOptions.some((option) => option.id === selectedUserFilter)) {
-      setSelectedUserFilter(userFilterOptions[0].id);
-    }
-  }, [userFilterOptions, selectedUserFilter]);
-
-  const selectedUser = useMemo(
-    () => userFilterOptions.find((option) => option.id === selectedUserFilter) || userFilterOptions[0],
-    [userFilterOptions, selectedUserFilter]
-  );
-
-  const selectedMemberId = useMemo(() => selectedUser?.memberId || null, [selectedUser]);
-
-  const visibleMembers = useMemo(
-    () => (selectedMemberId ? members.filter((member) => member.id === selectedMemberId) : members),
-    [members, selectedMemberId]
-  );
-
-  // Hooks que dependem dos filtros
-  const {
-    payments,
-    paymentForm,
-    setPaymentForm,
-    loading,
-    submitting: paymentSubmitting,
-    fileInputKey: paymentFileInputKey,
-    loadPayments,
-    handlePaymentSubmit,
-    handlePaymentDelete,
-    handleReceipt,
-    handlePixCode,
-    page: paymentPage,
-    pageSize: paymentPageSize,
-    total: paymentTotal,
-    filterMonth: paymentFilterMonth,
-    filterYear: paymentFilterYear,
-    filterMemberId: paymentFilterMemberId,
-    setPage: setPaymentPage,
-    onFilterMonthChange: handlePaymentFilterMonth,
-    onFilterYearChange: handlePaymentFilterYear,
-    onFilterMemberChange: handlePaymentFilterMember,
-    onPageSizeChange: handlePaymentPageSize
-  } = usePayments(showToast, handleError, selectedMemberId, members, publicSettings.defaultPaymentAmount);
-
-  const {
-    expenses,
-    expenseForm,
-    setExpenseForm,
-    editingExpenseId,
-    fileInputKey: expenseFileInputKey,
-    loadExpenses,
-    resetExpenseForm,
-    handleExpenseSubmit,
-    handleExpenseDelete,
-    startEditExpense
-  } = useExpenses(showToast, handleError, events);
-
-  const {
-    dashboard,
-    delinquent,
-    ranking,
-    reportLoading,
-    loadDashboard,
-    loadDelinquent,
-    loadRanking,
-    handleExport
-  } = useDashboard(handleError, monthFilter, yearFilter, selectedMemberId);
-
-  const {
-    projects,
-    loading: projectsLoading,
-    projectForm,
-    setProjectForm,
-    editingProjectId,
-    saving: projectSaving,
-    loadProjects,
-    resetProjectForm,
-    handleProjectSubmit,
-    handleProjectDelete,
-    startEditProject,
-    addMemberToProject,
-    removeMemberFromProject,
-    addMilestoneToProject,
-    removeMilestoneFromProject,
-    toggleMilestoneCompletion,
-    uploadProjectFiles,
-    removeProjectFile,
-    filterName: projectFilterName,
-    filterStatus: projectFilterStatus,
-    filterStartDate: projectFilterStartDate,
-    filterEndDate: projectFilterEndDate,
-    filterMemberId: projectFilterMemberId,
-    activeFiltersCount: projectActiveFiltersCount,
-    onFilterNameChange: handleProjectFilterName,
-    onFilterStatusChange: handleProjectFilterStatus,
-    onFilterStartDateChange: handleProjectFilterStartDate,
-    onFilterEndDateChange: handleProjectFilterEndDate,
-    onFilterMemberIdChange: handleProjectFilterMemberId,
-    onClearFilters: handleProjectClearFilters
-  } = useProjects(showToast, handleError);
-
-  const {
-    records: historyRecords,
-    historyForm,
-    setHistoryForm,
-    editingHistoryId,
-    fileInputKey: historyFileInputKey,
-    loadRecords: loadHistory,
-    resetHistoryForm,
-    handleHistorySubmit,
-    handleHistoryDelete,
-    startEditHistory
-  } = useClanHistory(showToast, handleError);
-
-  const {
-    entries: extratoEntries,
-    summary: extratoSummary,
-    loading: extratoLoading,
-    filters: extratoFilters,
-    setFilters: setExtratoFilters,
-    loadExtrato,
-    exportExtrato
-  } = useExtrato(handleError, isAdmin);
-
-  const { tags, loadTags } = useTags(showToast, handleError);
-
-  // Carregar dados iniciais
-  useEffect(() => {
-    if (!authToken || !authChecked) return;
-    loadMembers();
-    loadGoals();
-    loadExpenses();
-    loadEvents();
-    loadHistory();
-    loadTags();
-    loadProjects();
-  }, [authToken, authChecked, loadMembers, loadGoals, loadExpenses, loadEvents, loadHistory, loadTags, loadProjects]);
-
-  useEffect(() => {
-    if (!authToken || !authChecked) return;
-    loadPublicSettings();
-  }, [authToken, authChecked, loadPublicSettings]);
-
-  useEffect(() => {
-    if (!authToken || !authChecked || !isAdmin || !showSettings) return;
-    loadSettings();
-  }, [authToken, authChecked, isAdmin, loadSettings, showSettings]);
-
-  // Recarregar dados filtrados
-  useEffect(() => {
-    if (!authToken || !authChecked) return;
-    loadPayments();
-    loadDashboard();
-    if (isAdmin) {
-      loadDelinquent();
-      loadRanking();
-    }
-  }, [selectedMonth, selectedYear, selectedMemberId, authToken, authChecked, isAdmin, loadPayments, loadDelinquent, loadRanking, loadDashboard]);
-
-  const resetFilters = useCallback(() => {
-    setSelectedMonth('all');
-    setSelectedYear('');
-  }, []);
-
-  // Tela de login
-  if (!authToken) {
-    return <LoginScreen />;
-  }
-
-  // Verificando sessão
-  if (!authChecked) {
-    return <AuthCheckingScreen />;
-  }
-
-  // Callbacks para refresh
-  const refreshAfterPayment = [loadDashboard, loadDelinquent, loadGoals, loadRanking];
-  const refreshAfterExpense = [loadDashboard];
+  const { authToken } = useAuth();
 
   return (
-    <div className="app-shell">
-      <Header
-        orgName={publicSettings.orgName}
-        orgTagline={publicSettings.orgTagline}
-        selectedMonth={selectedMonth}
-        setSelectedMonth={setSelectedMonth}
-        selectedYear={selectedYear}
-        setSelectedYear={setSelectedYear}
-        userFilterOptions={userFilterOptions}
-        selectedUserFilter={selectedUserFilter}
-        setSelectedUserFilter={setSelectedUserFilter}
-        resetFilters={resetFilters}
-        settingsOpen={showSettings}
-        onToggleSettings={() => setShowSettings((value) => !value)}
-      />
+    <>
+      <ScrollToTop />
+      <Routes>
+        <Route path="/" element={<Navigate to={authToken ? '/dashboard' : '/login'} replace />} />
+        <Route path="/login" element={authToken ? <Navigate to="/dashboard" replace /> : <LoginScreen />} />
+        <Route path="/acesso-negado" element={<AccessDeniedPage />} />
 
-      {toast && <Toast message={toast.message} type={toast.type} />}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/membros" element={<MembersPage />} />
+            <Route path="/pagamentos" element={<PaymentsPage />} />
+            <Route path="/despesas" element={<ExpensesPage />} />
+            <Route path="/eventos" element={<EventsPage />} />
+            <Route path="/projetos" element={<ProjectsPage />} />
+            <Route path="/extrato" element={<ExtratoPage />} />
 
-      <DashboardSection
-        dashboard={dashboard}
-        goals={goals}
-        onEditGoal={startEditGoal}
-        onDeleteGoal={handleGoalDelete}
-        dashboardNote={publicSettings.dashboardNote}
-        dashboardBackgroundUrl={publicSettings.dashboardBackgroundUrl}
-      />
+            <Route element={<RoleRoute allowedRoles={['admin', 'diretor_financeiro']} />}>
+              <Route path="/configuracoes" element={<SettingsPage />} />
+            </Route>
+          </Route>
+        </Route>
 
-      {showSettings && isAdmin && (
-        <SettingsPanel
-          settingsForm={settingsForm}
-          setSettingsForm={setSettingsForm}
-          loading={settingsLoading}
-          saving={settingsSaving}
-          onSave={async () => {
-            const saved = await saveSettings();
-            if (saved) {
-              loadDashboard();
-            }
-          }}
-          onClose={() => setShowSettings(false)}
-          showToast={showToast}
-          handleError={handleError}
-        />
-      )}
-
-      <GoalsPanel
-        goalForm={goalForm}
-        setGoalForm={setGoalForm}
-        editingGoalId={editingGoalId}
-        onSubmit={handleGoalSubmit}
-        onReset={resetGoalForm}
-      />
-
-      <MembersPanel
-        members={visibleMembers}
-        memberForm={memberForm}
-        setMemberForm={setMemberForm}
-        editingMemberId={editingMemberId}
-        selectedMemberDetail={selectedMemberDetail}
-        setSelectedMemberDetail={setSelectedMemberDetail}
-        inviteLink={inviteLink}
-        setInviteLink={setInviteLink}
-        onSubmit={handleMemberSubmit}
-        onInvite={handleMemberInvite}
-        onDelete={handleMemberDelete}
-        onEdit={startEditMember}
-        onReset={resetMemberForm}
-        onRoleChange={handleRoleChange}
-        showToast={showToast}
-      />
-
-      <PaymentsPanel
-        payments={payments}
-        paymentForm={paymentForm}
-        setPaymentForm={setPaymentForm}
-        loading={loading}
-        submitting={paymentSubmitting}
-        members={members}
-        goals={goals}
-        paymentSettings={publicSettings}
-        onSubmit={(e) => handlePaymentSubmit(e, refreshAfterPayment)}
-        onDelete={(id) => handlePaymentDelete(id, refreshAfterPayment)}
-        onReceipt={handleReceipt}
-        onPix={handlePixCode}
-        fileInputKey={paymentFileInputKey}
-        page={paymentPage}
-        pageSize={paymentPageSize}
-        total={paymentTotal}
-        filterMonth={paymentFilterMonth}
-        filterYear={paymentFilterYear}
-        filterMemberId={paymentFilterMemberId}
-        onPageChange={setPaymentPage}
-        onPageSizeChange={handlePaymentPageSize}
-        onFilterMonthChange={handlePaymentFilterMonth}
-        onFilterYearChange={handlePaymentFilterYear}
-        onFilterMemberChange={handlePaymentFilterMember}
-      />
-
-      <div className="two-column">
-        <ExpensesPanel
-          expenses={expenses}
-          expenseForm={expenseForm}
-          setExpenseForm={setExpenseForm}
-          editingExpenseId={editingExpenseId}
-          fileInputKey={expenseFileInputKey}
-          events={events}
-          tags={tags}
-          onSubmit={(e) => handleExpenseSubmit(e, refreshAfterExpense)}
-          onDelete={(id) => handleExpenseDelete(id, refreshAfterExpense)}
-          onEdit={startEditExpense}
-          onReset={resetExpenseForm}
-        />
-        <EventsPanel
-          events={events}
-          eventForm={eventForm}
-          setEventForm={setEventForm}
-          editingEventId={editingEventId}
-          onSubmit={handleEventSubmit}
-          onDelete={handleEventDelete}
-          onEdit={startEditEvent}
-          onReset={resetEventForm}
-        />
-      </div>
-
-      {isAdmin && <DelinquencyRanking delinquent={delinquent} ranking={ranking} />}
-
-      <ProjectsPanel
-        projects={projects}
-        loading={projectsLoading}
-        projectForm={projectForm}
-        setProjectForm={setProjectForm}
-        editingProjectId={editingProjectId}
-        members={members}
-        saving={projectSaving}
-        onSubmit={handleProjectSubmit}
-        onDelete={handleProjectDelete}
-        onEdit={startEditProject}
-        onReset={resetProjectForm}
-        onAddMember={addMemberToProject}
-        onRemoveMember={removeMemberFromProject}
-        onAddMilestone={addMilestoneToProject}
-        onRemoveMilestone={removeMilestoneFromProject}
-        onToggleMilestone={toggleMilestoneCompletion}
-        onUploadProjectFiles={uploadProjectFiles}
-        onRemoveProjectFile={removeProjectFile}
-        filterName={projectFilterName}
-        filterStatus={projectFilterStatus}
-        filterStartDate={projectFilterStartDate}
-        filterEndDate={projectFilterEndDate}
-        filterMemberId={projectFilterMemberId}
-        activeFiltersCount={projectActiveFiltersCount}
-        onFilterNameChange={handleProjectFilterName}
-        onFilterStatusChange={handleProjectFilterStatus}
-        onFilterStartDateChange={handleProjectFilterStartDate}
-        onFilterEndDateChange={handleProjectFilterEndDate}
-        onFilterMemberIdChange={handleProjectFilterMemberId}
-        onClearFilters={handleProjectClearFilters}
-        tags={tags}
-      />
-
-      <ExtratoPanel
-        entries={extratoEntries}
-        summary={extratoSummary}
-        loading={extratoLoading}
-        filters={extratoFilters}
-        setFilters={setExtratoFilters}
-        onLoad={loadExtrato}
-        onExport={exportExtrato}
-        members={isAdmin ? members : []}
-        isAdmin={isAdmin}
-      />
-
-      <ClanHistoryPanel
-        records={historyRecords}
-        historyForm={historyForm}
-        setHistoryForm={setHistoryForm}
-        editingHistoryId={editingHistoryId}
-        fileInputKey={historyFileInputKey}
-        onSubmit={handleHistorySubmit}
-        onDelete={handleHistoryDelete}
-        onEdit={startEditHistory}
-        onReset={resetHistoryForm}
-      />
-
-      {isAdmin && (
-        <ReportsSection
-          reportLoading={reportLoading}
-          onExport={(format, type) => handleExport(format, type, showToast)}
-        />
-      )}
-
-      <footer>
-        {publicSettings.disclaimerText && <p className="disclaimer">{publicSettings.disclaimerText}</p>}
-        <p className="credits">Desenvolvido por Tuzinho e Diego</p>
-      </footer>
-    </div>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
 

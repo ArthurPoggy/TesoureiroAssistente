@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "ignoreCommand": "bash ./scripts/vercel-ignore-build.sh",
   "installCommand": "npm install --prefix server && npm install --prefix client",
   "buildCommand": "npm run build --prefix client",
   "outputDirectory": "client/dist",
@@ -7,6 +8,10 @@
     {
       "source": "/api/(.*)",
       "destination": "/api/index.js"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }

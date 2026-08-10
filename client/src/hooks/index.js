@@ -10,3 +10,4 @@ export { useExtrato } from './useExtrato';
 export { useClanHistory } from './useClanHistory';
 export { useTags } from './useTags';
 export { useProjects } from './useProjects';
+export { useToast } from './useToast';
