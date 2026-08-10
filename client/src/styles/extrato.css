@@ -19,6 +19,21 @@
   min-width: 140px;
 }
 
+.extrato-pagesize {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  margin-left: auto;
+}
+
+.extrato-pagesize select {
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+}
+
 .extrato-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
