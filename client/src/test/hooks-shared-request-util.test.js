@@ -28,9 +28,9 @@ describe('runRequest — util compartilhado de fetch/tratamento de erro', () => 
   });
 });
 
-describe('usePayments, useExpenses e useMembers — adoção do util compartilhado', () => {
+describe('usePayments, useExpenses, useMembers e useTags — adoção do util compartilhado', () => {
   const hooksDir = path.join(process.cwd(), 'src', 'hooks');
-  const hookFiles = ['usePayments.js', 'useExpenses.js', 'useMembers.js'];
+  const hookFiles = ['usePayments.js', 'useExpenses.js', 'useMembers.js', 'useTags.js'];
 
   it.each(hookFiles)('%s importa runRequest de ../utils/hookRequests em vez de duplicar try/catch', (fileName) => {
     const source = readFileSync(path.join(hooksDir, fileName), 'utf8');

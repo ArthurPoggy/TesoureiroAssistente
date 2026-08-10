@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { render, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -102,5 +103,42 @@ describe('ExpensesPanel — criação inline de tag', () => {
     fireEvent.click(getByRole('button', { name: 'Nova tag' }));
 
     await waitFor(() => expect(input.value).toBe(''));
+  });
+
+  it('fluxo ponta a ponta: tag nova aparece na lista de tags selecionáveis já marcada como selecionada', async () => {
+    // Simula o comportamento real de ExpensesPage/useTags: onCreateTag
+    // devolve a tag criada, o componente pai adiciona à lista de `tags` e
+    // TagSelector re-renderiza com a tag nova disponível como chip.
+    function StatefulWrapper() {
+      const [tagList, setTagList] = useState(tags);
+      const [expenseForm, setExpenseForm] = useState(baseProps.expenseForm);
+
+      const onCreateTag = async (name) => {
+        const createdTag = { id: 99, name };
+        setTagList((prev) => [...prev, createdTag]);
+        return createdTag;
+      };
+
+      return (
+        <ExpensesPanel
+          {...baseProps}
+          tags={tagList}
+          expenseForm={expenseForm}
+          setExpenseForm={setExpenseForm}
+          onCreateTag={onCreateTag}
+        />
+      );
+    }
+
+    const { getByPlaceholderText, getByRole, getByText } = render(<StatefulWrapper />);
+
+    fireEvent.change(getByPlaceholderText('Nova tag'), { target: { value: 'Transporte' } });
+    fireEvent.click(getByRole('button', { name: 'Nova tag' }));
+
+    await waitFor(() => {
+      const chip = getByText('Transporte');
+      expect(chip).toBeInTheDocument();
+      expect(chip.className).toContain('tag-chip--selected');
+    });
   });
 });
