@@ -21,6 +21,7 @@ export function useExpenses(showToast, handleError, events = []) {
   });
   const [editingExpenseId, setEditingExpenseId] = useState(null);
   const [fileInputKey, setFileInputKey] = useState(0);
+  const [selectedExpenseDetail, setSelectedExpenseDetail] = useState(null);
 
   const loadExpenses = useCallback(async () => {
     await runRequest(handleError, async () => {
@@ -139,6 +140,8 @@ export function useExpenses(showToast, handleError, events = []) {
     setExpenseForm,
     editingExpenseId,
     fileInputKey,
+    selectedExpenseDetail,
+    setSelectedExpenseDetail,
     loadExpenses,
     resetExpenseForm,
     handleExpenseSubmit,

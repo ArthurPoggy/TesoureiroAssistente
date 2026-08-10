@@ -24,6 +24,8 @@ export function ExpensesPage() {
     setExpenseForm,
     editingExpenseId,
     fileInputKey,
+    selectedExpenseDetail,
+    setSelectedExpenseDetail,
     loadExpenses,
     resetExpenseForm,
     handleExpenseSubmit,
@@ -49,6 +51,8 @@ export function ExpensesPage() {
           setExpenseForm={setExpenseForm}
           editingExpenseId={editingExpenseId}
           fileInputKey={fileInputKey}
+          selectedExpenseDetail={selectedExpenseDetail}
+          setSelectedExpenseDetail={setSelectedExpenseDetail}
           events={events}
           tags={tags}
           onSubmit={(e) => handleExpenseSubmit(e, [])}
