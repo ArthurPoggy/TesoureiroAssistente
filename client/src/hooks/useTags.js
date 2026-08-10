@@ -1,21 +1,20 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { runRequest } from '../utils/hookRequests';
 
 export function useTags(showToast, handleError) {
   const { apiFetch } = useAuth();
   const [tags, setTags] = useState([]);
 
   const loadTags = useCallback(async () => {
-    try {
+    await runRequest(handleError, async () => {
       const data = await apiFetch('/api/tags');
       setTags(data.tags || []);
-    } catch (error) {
-      handleError(error);
-    }
+    });
   }, [apiFetch, handleError]);
 
   const createTag = useCallback(async (name) => {
-    try {
+    return runRequest(handleError, async () => {
       const data = await apiFetch('/api/tags', {
         method: 'POST',
         body: { name }
@@ -26,20 +25,15 @@ export function useTags(showToast, handleError) {
         return [...prev, data.tag].sort((a, b) => a.name.localeCompare(b.name));
       });
       return data.tag;
-    } catch (error) {
-      handleError(error);
-      return null;
-    }
+    });
   }, [apiFetch, handleError]);
 
   const deleteTag = useCallback(async (id) => {
-    try {
+    await runRequest(handleError, async () => {
       await apiFetch(`/api/tags/${id}`, { method: 'DELETE' });
       setTags((prev) => prev.filter((t) => t.id !== id));
       showToast('Tag removida');
-    } catch (error) {
-      handleError(error);
-    }
+    });
   }, [apiFetch, handleError, showToast]);
 
   return { tags, loadTags, createTag, deleteTag };
