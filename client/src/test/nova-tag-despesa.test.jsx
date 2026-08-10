@@ -130,6 +130,25 @@ describe('ExpensesPanel — criação inline de tag', () => {
     await waitFor(() => expect(button).not.toBeDisabled());
   });
 
+  it('pressionar Enter no campo "Nova tag" cria a tag em vez de submeter a despesa', async () => {
+    // O input de "Nova tag" fica dentro do <form> de despesa, cujo único
+    // botão type="submit" é "Salvar despesa"/"Atualizar". Sem um handler de
+    // Enter dedicado, a tecla é capturada pelo submit nativo do formulário
+    // (que descarta o texto digitado) em vez de acionar a criação da tag.
+    const onCreateTag = vi.fn().mockResolvedValue({ id: 3, name: 'Transporte' });
+    const onSubmit = vi.fn((e) => e.preventDefault());
+    const { getByPlaceholderText } = render(
+      <ExpensesPanel {...baseProps} onCreateTag={onCreateTag} onSubmit={onSubmit} />
+    );
+
+    const input = getByPlaceholderText('Nova tag');
+    fireEvent.change(input, { target: { value: 'Transporte' } });
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+
+    await waitFor(() => expect(onCreateTag).toHaveBeenCalledWith('Transporte'));
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it('fluxo ponta a ponta: tag nova aparece na lista de tags selecionáveis já marcada como selecionada', async () => {
     // Simula o comportamento real de ExpensesPage/useTags: onCreateTag
     // devolve a tag criada, o componente pai adiciona à lista de `tags` e
