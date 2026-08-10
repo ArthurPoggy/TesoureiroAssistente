@@ -46,6 +46,207 @@ function TagPills({ tags }) {
   );
 }
 
+function AttachmentFields({ expenseForm, setExpenseForm, fileInputKey, editingExpenseId }) {
+  return (
+    <div className="attachments-block">
+      <span className="attachments-block-label">Anexo</span>
+      <div className="attachments-block-fields">
+        <label>
+          Nome do anexo
+          <input
+            placeholder="Nome do anexo (opcional)"
+            value={expenseForm.attachmentName}
+            onChange={(e) => setExpenseForm({ ...expenseForm, attachmentName: e.target.value })}
+          />
+        </label>
+        <label>
+          Anexo (arquivo)
+          <input
+            key={fileInputKey}
+            type="file"
+            onChange={(e) =>
+              setExpenseForm({
+                ...expenseForm,
+                attachmentFile: e.target.files ? e.target.files[0] : null
+              })
+            }
+            required={!editingExpenseId}
+          />
+        </label>
+      </div>
+    </div>
+  );
+}
+
+function ExpenseForm({
+  expenseForm,
+  setExpenseForm,
+  editingExpenseId,
+  fileInputKey,
+  events,
+  tags,
+  canEdit,
+  onSubmit,
+  onReset
+}) {
+  return (
+    <form className="form-grid" onSubmit={onSubmit}>
+      <label>
+        Descrição
+        <input
+          placeholder="Descrição"
+          value={expenseForm.title}
+          onChange={(e) => setExpenseForm({ ...expenseForm, title: e.target.value })}
+          required
+        />
+      </label>
+      <label>
+        Valor
+        <input
+          type="number"
+          placeholder="Valor"
+          value={expenseForm.amount}
+          onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
+          required
+        />
+      </label>
+      <label>
+        Data da despesa
+        <input
+          type="date"
+          value={expenseForm.expenseDate}
+          onChange={(e) => setExpenseForm({ ...expenseForm, expenseDate: e.target.value })}
+          required
+        />
+      </label>
+      <label>
+        Categoria
+        <input
+          placeholder="Categoria"
+          value={expenseForm.category}
+          onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
+        />
+      </label>
+      <label>
+        Evento associado
+        <select
+          value={expenseForm.eventId}
+          onChange={(e) => setExpenseForm({ ...expenseForm, eventId: e.target.value })}
+        >
+          <option value="">Nenhum</option>
+          {events.map((eventItem) => (
+            <option key={eventItem.id} value={eventItem.id}>
+              {eventItem.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Observações
+        <input
+          type="text"
+          placeholder="Observações"
+          value={expenseForm.notes}
+          onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })}
+        />
+      </label>
+      <TagSelector
+        tags={tags}
+        selectedIds={expenseForm.tagIds || []}
+        onChange={(ids) => setExpenseForm({ ...expenseForm, tagIds: ids })}
+        canEdit={canEdit}
+      />
+      <AttachmentFields
+        expenseForm={expenseForm}
+        setExpenseForm={setExpenseForm}
+        fileInputKey={fileInputKey}
+        editingExpenseId={editingExpenseId}
+      />
+      <div className="form-actions">
+        <button type="submit">{editingExpenseId ? 'Atualizar' : 'Salvar despesa'}</button>
+        {editingExpenseId && (
+          <button type="button" className="ghost" onClick={onReset}>
+            Cancelar
+          </button>
+        )}
+      </div>
+    </form>
+  );
+}
+
+function ExpensesToolbar({ search, setSearch, categoryFilter, setCategoryFilter, categories }) {
+  return (
+    <div className="table-toolbar">
+      <div className="table-toolbar-filters">
+        <input
+          type="search"
+          className="expenses-search"
+          placeholder="Buscar despesas..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          aria-label="Buscar despesas"
+        />
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          aria-label="Filtrar despesas por tipo"
+        >
+          <option value="">Todas as categorias</option>
+          {categories.map((category) => (
+            <option key={category} value={category}>{category}</option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+}
+
+function ExpensesTable({ filteredExpenses, canEdit, onEdit, onDelete }) {
+  return (
+    <div className="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Título</th>
+            <th>Valor</th>
+            <th>Categoria</th>
+            <th>Tags</th>
+            {canEdit && <th>Ações</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {filteredExpenses.length === 0 ? (
+            <tr>
+              <td colSpan={canEdit ? 6 : 5} className="table-empty">
+                Nenhuma despesa encontrada.
+              </td>
+            </tr>
+          ) : (
+            filteredExpenses.map((expense) => (
+              <tr key={expense.id}>
+                <td>{expense.expense_date}</td>
+                <td>{expense.title}</td>
+                <td>{formatCurrency(expense.amount)}</td>
+                <td>{expense.category}</td>
+                <td><TagPills tags={expense.tags} /></td>
+                {canEdit && (
+                  <td>
+                    <button onClick={() => onEdit(expense)}>Editar</button>
+                    <button className="ghost" onClick={() => onDelete(expense.id)}>
+                      Remover
+                    </button>
+                  </td>
+                )}
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function ExpensesPanel({
   expenses,
   expenseForm,
@@ -90,176 +291,35 @@ export function ExpensesPanel({
       </div>
 
       {canEdit ? (
-        <form className="form-grid" onSubmit={onSubmit}>
-          <label>
-            Descrição
-            <input
-              placeholder="Descrição"
-              value={expenseForm.title}
-              onChange={(e) => setExpenseForm({ ...expenseForm, title: e.target.value })}
-              required
-            />
-          </label>
-          <label>
-            Valor
-            <input
-              type="number"
-              placeholder="Valor"
-              value={expenseForm.amount}
-              onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
-              required
-            />
-          </label>
-          <label>
-            Data da despesa
-            <input
-              type="date"
-              value={expenseForm.expenseDate}
-              onChange={(e) => setExpenseForm({ ...expenseForm, expenseDate: e.target.value })}
-              required
-            />
-          </label>
-          <label>
-            Categoria
-            <input
-              placeholder="Categoria"
-              value={expenseForm.category}
-              onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
-            />
-          </label>
-          <label>
-            Evento associado
-            <select
-              value={expenseForm.eventId}
-              onChange={(e) => setExpenseForm({ ...expenseForm, eventId: e.target.value })}
-            >
-              <option value="">Nenhum</option>
-              {events.map((eventItem) => (
-                <option key={eventItem.id} value={eventItem.id}>
-                  {eventItem.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Observações
-            <input
-              type="text"
-              placeholder="Observações"
-              value={expenseForm.notes}
-              onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })}
-            />
-          </label>
-          <TagSelector
-            tags={tags}
-            selectedIds={expenseForm.tagIds || []}
-            onChange={(ids) => setExpenseForm({ ...expenseForm, tagIds: ids })}
-            canEdit={canEdit}
-          />
-          <div className="attachments-block">
-            <span className="attachments-block-label">Anexo</span>
-            <div className="attachments-block-fields">
-              <label>
-                Nome do anexo
-                <input
-                  placeholder="Nome do anexo (opcional)"
-                  value={expenseForm.attachmentName}
-                  onChange={(e) => setExpenseForm({ ...expenseForm, attachmentName: e.target.value })}
-                />
-              </label>
-              <label>
-                Anexo (arquivo)
-                <input
-                  key={fileInputKey}
-                  type="file"
-                  onChange={(e) =>
-                    setExpenseForm({
-                      ...expenseForm,
-                      attachmentFile: e.target.files ? e.target.files[0] : null
-                    })
-                  }
-                  required={!editingExpenseId}
-                />
-              </label>
-            </div>
-          </div>
-          <div className="form-actions">
-            <button type="submit">{editingExpenseId ? 'Atualizar' : 'Salvar despesa'}</button>
-            {editingExpenseId && (
-              <button type="button" className="ghost" onClick={onReset}>
-                Cancelar
-              </button>
-            )}
-          </div>
-        </form>
+        <ExpenseForm
+          expenseForm={expenseForm}
+          setExpenseForm={setExpenseForm}
+          editingExpenseId={editingExpenseId}
+          fileInputKey={fileInputKey}
+          events={events}
+          tags={tags}
+          canEdit={canEdit}
+          onSubmit={onSubmit}
+          onReset={onReset}
+        />
       ) : (
         <p className="lock-hint">Somente o tesoureiro pode registrar despesas.</p>
       )}
 
-      <div className="table-toolbar">
-        <div className="table-toolbar-filters">
-          <input
-            type="search"
-            className="expenses-search"
-            placeholder="Buscar despesas..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            aria-label="Buscar despesas"
-          />
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            aria-label="Filtrar despesas por tipo"
-          >
-            <option value="">Todas as categorias</option>
-            {categories.map((category) => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+      <ExpensesToolbar
+        search={search}
+        setSearch={setSearch}
+        categoryFilter={categoryFilter}
+        setCategoryFilter={setCategoryFilter}
+        categories={categories}
+      />
 
-      <div className="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Título</th>
-              <th>Valor</th>
-              <th>Categoria</th>
-              <th>Tags</th>
-              {canEdit && <th>Ações</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {filteredExpenses.length === 0 ? (
-              <tr>
-                <td colSpan={canEdit ? 6 : 5} className="table-empty">
-                  Nenhuma despesa encontrada.
-                </td>
-              </tr>
-            ) : (
-              filteredExpenses.map((expense) => (
-                <tr key={expense.id}>
-                  <td>{expense.expense_date}</td>
-                  <td>{expense.title}</td>
-                  <td>{formatCurrency(expense.amount)}</td>
-                  <td>{expense.category}</td>
-                  <td><TagPills tags={expense.tags} /></td>
-                  {canEdit && (
-                    <td>
-                      <button onClick={() => onEdit(expense)}>Editar</button>
-                      <button className="ghost" onClick={() => onDelete(expense.id)}>
-                        Remover
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <ExpensesTable
+        filteredExpenses={filteredExpenses}
+        canEdit={canEdit}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
     </section>
   );
 }
