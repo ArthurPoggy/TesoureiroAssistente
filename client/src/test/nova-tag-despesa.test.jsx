@@ -1,4 +1,4 @@
-import { render, fireEvent, waitFor } from '@testing-library/react';
+import { render, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockUseAuth = vi.fn();
@@ -41,6 +41,7 @@ describe('ExpensesPanel — criação inline de tag', () => {
       <ExpensesPanel {...baseProps} onCreateTag={vi.fn()} />
     );
     expect(getByPlaceholderText('Nova tag')).toBeInTheDocument();
+    cleanup();
 
     mockUseAuth.mockReturnValue({ canEdit: false });
     const { queryByPlaceholderText } = render(

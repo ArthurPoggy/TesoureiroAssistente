@@ -2,7 +2,35 @@ import { useState, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatCurrency } from '../../utils/formatters';
 
-function TagSelector({ tags = [], selectedIds = [], onChange, canEdit }) {
+function NewTagField({ onCreate, onCreated }) {
+  const [name, setName] = useState('');
+
+  const handleCreate = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const createdTag = await onCreate(trimmed);
+    setName('');
+    if (createdTag && createdTag.id != null) {
+      onCreated(createdTag.id);
+    }
+  };
+
+  return (
+    <div className="tag-selector-new">
+      <input
+        type="text"
+        placeholder="Nova tag"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <button type="button" className="ghost" onClick={handleCreate}>
+        Nova tag
+      </button>
+    </div>
+  );
+}
+
+function TagSelector({ tags = [], selectedIds = [], onChange, canEdit, onCreate }) {
   const toggle = (id) => {
     if (!canEdit) return;
     onChange(
@@ -12,7 +40,8 @@ function TagSelector({ tags = [], selectedIds = [], onChange, canEdit }) {
     );
   };
 
-  if (!tags.length) return null;
+  const canCreate = canEdit && typeof onCreate === 'function';
+  if (!tags.length && !canCreate) return null;
 
   return (
     <div className="tag-selector">
@@ -29,6 +58,16 @@ function TagSelector({ tags = [], selectedIds = [], onChange, canEdit }) {
           </button>
         ))}
       </div>
+      {canCreate && (
+        <NewTagField
+          onCreate={onCreate}
+          onCreated={(id) => {
+            if (!selectedIds.includes(id)) {
+              onChange([...selectedIds, id]);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -57,7 +96,8 @@ export function ExpensesPanel({
   onSubmit,
   onDelete,
   onEdit,
-  onReset
+  onReset,
+  onCreateTag
 }) {
   const { canEdit } = useAuth();
   const [search, setSearch] = useState('');
@@ -137,6 +177,7 @@ export function ExpensesPanel({
             selectedIds={expenseForm.tagIds || []}
             onChange={(ids) => setExpenseForm({ ...expenseForm, tagIds: ids })}
             canEdit={canEdit}
+            onCreate={onCreateTag}
           />
           <input
             placeholder="Nome do anexo (opcional)"

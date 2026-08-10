@@ -54,6 +54,23 @@
   cursor: default;
 }
 
+.tag-selector-new {
+  display: flex;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
+.tag-selector-new input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
 .tag-pills {
   display: flex;
   flex-wrap: wrap;
