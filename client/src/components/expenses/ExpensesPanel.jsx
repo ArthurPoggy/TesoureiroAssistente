@@ -41,6 +41,11 @@ const PAYMENT_METHOD_OPTIONS = [
   { value: 'outro', label: 'Outro' }
 ];
 
+function getPaymentMethodLabel(paymentMethod) {
+  const option = PAYMENT_METHOD_OPTIONS.find((item) => item.value === paymentMethod);
+  return option ? option.label : '—';
+}
+
 function TagPills({ tags }) {
   if (!tags || !tags.length) return null;
   return (
@@ -218,6 +223,7 @@ export function ExpensesPanel({
               <th>Título</th>
               <th>Valor</th>
               <th>Categoria</th>
+              <th>Forma de pagamento</th>
               <th>Tags</th>
               {canEdit && <th>Ações</th>}
             </tr>
@@ -225,7 +231,7 @@ export function ExpensesPanel({
           <tbody>
             {filteredExpenses.length === 0 ? (
               <tr>
-                <td colSpan={canEdit ? 6 : 5} className="table-empty">
+                <td colSpan={canEdit ? 7 : 6} className="table-empty">
                   Nenhuma despesa encontrada.
                 </td>
               </tr>
@@ -236,6 +242,7 @@ export function ExpensesPanel({
                   <td>{expense.title}</td>
                   <td>{formatCurrency(expense.amount)}</td>
                   <td>{expense.category}</td>
+                  <td>{getPaymentMethodLabel(expense.payment_method)}</td>
                   <td><TagPills tags={expense.tags} /></td>
                   {canEdit && (
                     <td>
