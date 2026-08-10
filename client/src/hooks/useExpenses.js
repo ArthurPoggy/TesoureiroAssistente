@@ -17,7 +17,8 @@ export function useExpenses(showToast, handleError, events = []) {
     attachmentName: '',
     attachmentFile: null,
     attachmentId: null,
-    attachmentUrl: null
+    attachmentUrl: null,
+    paymentMethod: ''
   });
   const [editingExpenseId, setEditingExpenseId] = useState(null);
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -41,7 +42,8 @@ export function useExpenses(showToast, handleError, events = []) {
       attachmentName: '',
       attachmentFile: null,
       attachmentId: null,
-      attachmentUrl: null
+      attachmentUrl: null,
+      paymentMethod: ''
     });
     setFileInputKey((value) => value + 1);
     setEditingExpenseId(null);
@@ -95,7 +97,8 @@ export function useExpenses(showToast, handleError, events = []) {
         tagIds: Array.isArray(expenseForm.tagIds) ? expenseForm.tagIds : [],
         attachmentId,
         attachmentName,
-        attachmentUrl
+        attachmentUrl,
+        paymentMethod: expenseForm.paymentMethod || null
       };
       const endpoint = editingExpenseId ? `/api/expenses/${editingExpenseId}` : '/api/expenses';
       const method = editingExpenseId ? 'PUT' : 'POST';
@@ -127,7 +130,8 @@ export function useExpenses(showToast, handleError, events = []) {
       attachmentName: expense.attachment_name || '',
       attachmentFile: null,
       attachmentId: expense.attachment_id || null,
-      attachmentUrl: expense.attachment_url || null
+      attachmentUrl: expense.attachment_url || null,
+      paymentMethod: expense.payment_method || ''
     });
     setEditingExpenseId(expense.id);
     setFileInputKey((value) => value + 1);

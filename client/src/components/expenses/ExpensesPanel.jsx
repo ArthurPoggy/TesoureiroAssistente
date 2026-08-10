@@ -33,6 +33,14 @@ function TagSelector({ tags = [], selectedIds = [], onChange, canEdit }) {
   );
 }
 
+const PAYMENT_METHOD_OPTIONS = [
+  { value: 'dinheiro', label: 'Dinheiro' },
+  { value: 'pix', label: 'PIX' },
+  { value: 'cartao', label: 'Cartão' },
+  { value: 'transferencia', label: 'Transferência' },
+  { value: 'outro', label: 'Outro' }
+];
+
 function TagPills({ tags }) {
   if (!tags || !tags.length) return null;
   return (
@@ -126,6 +134,20 @@ export function ExpensesPanel({
               </option>
             ))}
           </select>
+          <label className="settings-field">
+            Forma de pagamento
+            <select
+              value={expenseForm.paymentMethod}
+              onChange={(e) => setExpenseForm({ ...expenseForm, paymentMethod: e.target.value })}
+            >
+              <option value="">Não informado</option>
+              {PAYMENT_METHOD_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <input
             type="text"
             placeholder="Observações"
