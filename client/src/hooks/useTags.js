@@ -24,9 +24,10 @@ export function useTags(showToast, handleError) {
         if (exists) return prev;
         return [...prev, data.tag].sort((a, b) => a.name.localeCompare(b.name));
       });
+      showToast('Tag criada');
       return data.tag;
     });
-  }, [apiFetch, handleError]);
+  }, [apiFetch, handleError, showToast]);
 
   const deleteTag = useCallback(async (id) => {
     await runRequest(handleError, async () => {
