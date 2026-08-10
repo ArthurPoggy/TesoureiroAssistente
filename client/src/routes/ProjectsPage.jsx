@@ -35,6 +35,11 @@ export function ProjectsPage() {
     startEditProject,
     addMemberToProject,
     removeMemberFromProject,
+    addMilestoneToProject,
+    removeMilestoneFromProject,
+    toggleMilestoneCompletion,
+    uploadProjectFiles,
+    removeProjectFile,
     filterName,
     filterStatus,
     filterStartDate,
@@ -74,6 +79,11 @@ export function ProjectsPage() {
           onReset={resetProjectForm}
           onAddMember={addMemberToProject}
           onRemoveMember={removeMemberFromProject}
+          onAddMilestone={addMilestoneToProject}
+          onRemoveMilestone={removeMilestoneFromProject}
+          onToggleMilestone={toggleMilestoneCompletion}
+          onUploadProjectFiles={uploadProjectFiles}
+          onRemoveProjectFile={removeProjectFile}
           filterName={filterName}
           filterStatus={filterStatus}
           filterStartDate={filterStartDate}
