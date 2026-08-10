@@ -28,6 +28,11 @@ function NewTagField({ onCreate, onCreated }) {
         placeholder="Nova tag"
         value={name}
         onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          handleCreate();
+        }}
         disabled={isSubmitting}
       />
       <button
