@@ -4,14 +4,20 @@ import { formatCurrency } from '../../utils/formatters';
 
 function NewTagField({ onCreate, onCreated }) {
   const [name, setName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCreate = async () => {
     const trimmed = name.trim();
-    if (!trimmed) return;
-    const createdTag = await onCreate(trimmed);
-    setName('');
-    if (createdTag && createdTag.id != null) {
-      onCreated(createdTag.id);
+    if (!trimmed || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const createdTag = await onCreate(trimmed);
+      setName('');
+      if (createdTag && createdTag.id != null) {
+        onCreated(createdTag.id);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -22,8 +28,14 @@ function NewTagField({ onCreate, onCreated }) {
         placeholder="Nova tag"
         value={name}
         onChange={(e) => setName(e.target.value)}
+        disabled={isSubmitting}
       />
-      <button type="button" className="ghost" onClick={handleCreate}>
+      <button
+        type="button"
+        className="ghost"
+        onClick={handleCreate}
+        disabled={isSubmitting}
+      >
         Nova tag
       </button>
     </div>
