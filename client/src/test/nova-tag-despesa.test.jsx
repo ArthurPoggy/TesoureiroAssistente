@@ -105,6 +105,31 @@ describe('ExpensesPanel — criação inline de tag', () => {
     await waitFor(() => expect(input.value).toBe(''));
   });
 
+  it('desabilita o botão e o input durante a submissão, evitando duplo clique', async () => {
+    let resolveCreate;
+    const onCreateTag = vi.fn(
+      () => new Promise((resolve) => { resolveCreate = resolve; })
+    );
+    const { getByPlaceholderText, getByRole } = render(
+      <ExpensesPanel {...baseProps} onCreateTag={onCreateTag} />
+    );
+
+    const input = getByPlaceholderText('Nova tag');
+    const button = getByRole('button', { name: 'Nova tag' });
+
+    fireEvent.change(input, { target: { value: 'Transporte' } });
+    fireEvent.click(button);
+
+    await waitFor(() => expect(button).toBeDisabled());
+    expect(input).toBeDisabled();
+
+    fireEvent.click(button);
+    expect(onCreateTag).toHaveBeenCalledTimes(1);
+
+    resolveCreate({ id: 3, name: 'Transporte' });
+    await waitFor(() => expect(button).not.toBeDisabled());
+  });
+
   it('fluxo ponta a ponta: tag nova aparece na lista de tags selecionáveis já marcada como selecionada', async () => {
     // Simula o comportamento real de ExpensesPage/useTags: onCreateTag
     // devolve a tag criada, o componente pai adiciona à lista de `tags` e
