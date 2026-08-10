@@ -1,5 +1,5 @@
 const config = require('../config');
-const { getSqliteDb } = require('./connection');
+const connection = require('./connection');
 const { PERMISSIONS_CATALOG } = require('../utils/permissions');
 
 const migrations = [
@@ -84,6 +84,7 @@ const migrations = [
   `ALTER TABLE expenses ADD COLUMN attachment_id TEXT`,
   `ALTER TABLE expenses ADD COLUMN attachment_name TEXT`,
   `ALTER TABLE expenses ADD COLUMN attachment_url TEXT`,
+  `ALTER TABLE expenses ADD COLUMN payment_method TEXT`,
   `UPDATE payments SET created_at = COALESCE(created_at, paid_at, CURRENT_TIMESTAMP) WHERE created_at IS NULL`,
   `INSERT OR IGNORE INTO settings (key, value, updated_at)
    SELECT 'current_balance',
@@ -231,7 +232,7 @@ const migrations = [
 function runMigrations() {
   if (config.useSupabase) return;
 
-  const db = getSqliteDb();
+  const db = connection.getSqliteDb();
   const runMigration = (sql) => {
     try {
       db.prepare(sql).run();
