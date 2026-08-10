@@ -232,9 +232,7 @@ export function PaymentsPanel({
             )}
           </div>
         </form>
-      ) : (
-        <p className="lock-hint">Somente o tesoureiro pode registrar ou editar pagamentos.</p>
-      )}
+      ) : null}
 
       <div className="table-toolbar">
         <div className="table-toolbar-filters">

@@ -40,9 +40,7 @@ export function AttachmentsBlock({
             </button>
           </div>
         </form>
-      ) : (
-        <p className="lock-hint">Somente o tesoureiro pode enviar arquivos.</p>
-      )}
+      ) : null}
 
       <div className="table-wrapper">
         {filesLoading ? (
