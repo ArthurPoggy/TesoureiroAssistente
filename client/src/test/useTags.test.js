@@ -96,5 +96,6 @@ describe('useTags.createTag', () => {
     expect(result.current.tags).toEqual([existingTag]);
     expect(result.current.tags.length).toBe(1);
     expect(handleError).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenLastCalledWith(expect.stringMatching(/já existe/i));
   });
 });
