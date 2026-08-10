@@ -139,15 +139,22 @@ const buildEntries = async (filters = {}) => {
 
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { startDate, endDate, type, memberId } = req.query;
+    const { startDate, endDate, type, memberId, page, pageSize } = req.query;
     const entries = await buildEntries({ startDate, endDate, type, memberId });
 
     const totalIncome = entries.filter((e) => e.amount > 0).reduce((sum, e) => sum + e.amount, 0);
     const totalExpense = entries.filter((e) => e.amount < 0).reduce((sum, e) => sum + Math.abs(e.amount), 0);
     const netBalance = totalIncome - totalExpense;
 
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const pageSizeNum = Math.min(100, Math.max(1, parseInt(pageSize) || 25));
+    const offset = (pageNum - 1) * pageSizeNum;
+
     success(res, {
-      entries,
+      entries: entries.slice(offset, offset + pageSizeNum),
+      total: entries.length,
+      page: pageNum,
+      pageSize: pageSizeNum,
       summary: {
         totalIncome,
         totalExpense,
