@@ -85,4 +85,39 @@ describe('useExpenses — selectedExpenseDetail', () => {
     expect(result.current.expenses).toEqual([]);
     expect(apiFetch).not.toHaveBeenCalled();
   });
+
+  it('limpa selectedExpenseDetail ao excluir a despesa selecionada', async () => {
+    window.confirm = vi.fn().mockReturnValue(true);
+    apiFetch.mockImplementation((url, options = {}) => {
+      if (options.method === 'DELETE') return Promise.resolve({});
+      return Promise.resolve({ expenses: [] });
+    });
+
+    const { result } = renderHook(() => useExpenses(noop, noop, []));
+
+    const expense = {
+      id: 42,
+      title: 'Material de acampamento',
+      amount: 150.5,
+      expense_date: '2026-08-01',
+      category: 'Material',
+      notes: '',
+      event_id: null,
+      tags: []
+    };
+
+    act(() => {
+      result.current.setSelectedExpenseDetail(expense);
+    });
+    expect(result.current.selectedExpenseDetail).toEqual(expense);
+
+    await act(async () => {
+      await result.current.handleExpenseDelete(42, []);
+    });
+
+    // Ao excluir a despesa que está com o detalhe aberto, o detalhe deve
+    // ser limpo — do contrário ExpenseDetailView continua renderizado
+    // mostrando dados de uma despesa que não existe mais.
+    expect(result.current.selectedExpenseDetail).toBeNull();
+  });
 });
