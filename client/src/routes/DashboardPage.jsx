@@ -175,6 +175,7 @@ export function DashboardPage() {
           onEditGoal={startEditGoal}
           onDeleteGoal={handleGoalDelete}
           dashboardNote={publicSettings.dashboardNote}
+          dashboardBackgroundUrl={publicSettings.dashboardBackgroundUrl}
         />
       </Suspense>
 
