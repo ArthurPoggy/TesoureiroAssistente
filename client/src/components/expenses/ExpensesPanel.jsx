@@ -158,7 +158,10 @@ export function ExpensesPanel({
     <section className="panel">
       <div className="panel-header">
         <h2>Despesas</h2>
-        <p>Controle de gastos por categoria.</p>
+        <p>
+          Controle de gastos por categoria.
+          {expenses.length > 0 && ' Clique em uma despesa para ver os detalhes.'}
+        </p>
       </div>
 
       {canEdit ? (
