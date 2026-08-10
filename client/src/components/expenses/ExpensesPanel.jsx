@@ -12,8 +12,8 @@ function NewTagField({ onCreate, onCreated }) {
     setIsSubmitting(true);
     try {
       const createdTag = await onCreate(trimmed);
-      setName('');
       if (createdTag && createdTag.id != null) {
+        setName('');
         onCreated(createdTag.id);
       }
     } finally {
