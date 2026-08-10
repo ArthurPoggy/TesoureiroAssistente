@@ -1,47 +1,14 @@
 const express = require('express');
 const PDFDocument = require('pdfkit');
 const config = require('../config');
-const { query, queryOne } = require('../db/query');
-const { success, fail } = require('../utils/response');
+const { query } = require('../db/query');
+const { success, fail, asyncHandler } = require('../utils/response');
 const { requireAuth } = require('../middleware/auth');
 const { isPrivilegedRequest } = require('../utils/roles');
 const { getSettings, DEFAULT_SETTINGS } = require('../utils/settings');
+const { sumPayments, sumExpenses } = require('../utils/finance');
 
 const router = express.Router();
-
-const sumPayments = async (filters = {}) => {
-  let sql = 'SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE paid';
-  const params = [];
-  if (filters.year) {
-    sql += ' AND year = ?';
-    params.push(filters.year);
-  }
-  if (filters.month) {
-    sql += ' AND month = ?';
-    params.push(filters.month);
-  }
-  if (filters.memberId) {
-    sql += ' AND member_id = ?';
-    params.push(filters.memberId);
-  }
-  const row = await queryOne(sql, params);
-  return Number(row?.total) || 0;
-};
-
-const sumExpenses = async (filters = {}) => {
-  let sql = 'SELECT COALESCE(SUM(amount), 0) as total FROM expenses WHERE 1 = 1';
-  const params = [];
-  if (filters.year) {
-    sql += config.useSupabase ? ' AND EXTRACT(YEAR FROM expense_date) = ?' : " AND strftime('%Y', expense_date) = ?";
-    params.push(filters.year);
-  }
-  if (filters.month) {
-    sql += config.useSupabase ? ' AND EXTRACT(MONTH FROM expense_date) = ?' : " AND strftime('%m', expense_date) = ?";
-    params.push(config.useSupabase ? filters.month : String(filters.month).padStart(2, '0'));
-  }
-  const row = await queryOne(sql, params);
-  return Number(row?.total) || 0;
-};
 
 const monthNames = [
   '',
@@ -450,164 +417,163 @@ const renderExpensesReport = (doc, rows, filters = {}, settings = {}) => {
   drawFooterNote(doc, settings.document_footer ?? DEFAULT_SETTINGS.document_footer);
 };
 
-router.get('/monthly', requireAuth, async (req, res) => {
-  try {
-    const { month, year } = req.query;
-    if (!month || !year) {
-      return fail(res, 'Informe mês e ano');
-    }
-    const isAdminRequest = isPrivilegedRequest(req);
-    if (!isAdminRequest && !req.user?.memberId) {
-      return success(res, { month: Number(month), year: Number(year), total: 0 });
-    }
-    const total = await sumPayments({
-      month: Number(month),
-      year: Number(year),
-      ...(isAdminRequest ? {} : { memberId: req.user?.memberId })
-    });
-    success(res, { month: Number(month), year: Number(year), total });
-  } catch (error) {
-    fail(res, error.message);
+router.get('/monthly', requireAuth, asyncHandler(async (req, res) => {
+  const { month, year } = req.query;
+  if (!month || !year) {
+    return fail(res, 'Informe mês e ano');
   }
-});
-
-router.get('/annual', requireAuth, async (req, res) => {
-  try {
-    const { year } = req.query;
-    if (!year) {
-      return fail(res, 'Informe o ano');
-    }
-    const isAdminRequest = isPrivilegedRequest(req);
-    if (!isAdminRequest && !req.user?.memberId) {
-      return success(res, { year: Number(year), total: 0 });
-    }
-    const total = await sumPayments({
-      year: Number(year),
-      ...(isAdminRequest ? {} : { memberId: req.user?.memberId })
-    });
-    success(res, { year: Number(year), total });
-  } catch (error) {
-    fail(res, error.message);
+  const isAdminRequest = isPrivilegedRequest(req);
+  if (!isAdminRequest && !req.user?.memberId) {
+    return success(res, { month: Number(month), year: Number(year), total: 0 });
   }
-});
+  const total = await sumPayments({
+    month: Number(month),
+    year: Number(year),
+    ...(isAdminRequest ? {} : { memberId: req.user?.memberId })
+  });
+  success(res, { month: Number(month), year: Number(year), total });
+}));
 
-router.get('/balance', requireAuth, async (req, res) => {
-  try {
-    const { year } = req.query;
-    const isAdminRequest = isPrivilegedRequest(req);
-    const yearNum = year ? Number(year) : undefined;
-    if (!isAdminRequest && !req.user?.memberId) {
-      return success(res, { totalRaised: 0, totalExpenses: 0, balance: 0 });
-    }
-    const [totalRaised, totalExpenses] = await Promise.all([
-      sumPayments({ year: yearNum, ...(isAdminRequest ? {} : { memberId: req.user?.memberId }) }),
-      isAdminRequest ? sumExpenses({ year: yearNum }) : Promise.resolve(0)
-    ]);
-    success(res, { totalRaised, totalExpenses, balance: totalRaised - totalExpenses });
-  } catch (error) {
-    fail(res, error.message);
+router.get('/annual', requireAuth, asyncHandler(async (req, res) => {
+  const { year } = req.query;
+  if (!year) {
+    return fail(res, 'Informe o ano');
   }
-});
-
-router.get('/export', requireAuth, async (req, res) => {
-  try {
-    const { format = 'csv', type = 'payments', month, year } = req.query;
-    const isAdminRequest = isPrivilegedRequest(req);
-    if (!isAdminRequest && type === 'expenses') {
-      return fail(res, 'Acesso restrito', 403);
-    }
-    if (!isAdminRequest && !req.user?.memberId) {
-      return fail(res, 'Acesso restrito', 403);
-    }
-    const monthValue = month ? Number(month) : null;
-    const yearValue = year ? Number(year) : null;
-    let rows = [];
-    if (type === 'expenses') {
-      let sql = `SELECT e.title,
-        e.amount,
-        e.expense_date AS date,
-        e.category,
-        e.notes,
-        ev.name AS event,
-        e.attachment_name AS attachmentName,
-        e.attachment_url AS attachmentUrl
-        FROM expenses e
-        LEFT JOIN events ev ON ev.id = e.event_id
-        WHERE 1 = 1`;
-      const params = [];
-      if (yearValue) {
-        sql += config.useSupabase ? ' AND EXTRACT(YEAR FROM expense_date) = ?' : " AND strftime('%Y', expense_date) = ?";
-        params.push(yearValue);
-      }
-      if (monthValue) {
-        sql += config.useSupabase ? ' AND EXTRACT(MONTH FROM expense_date) = ?' : " AND strftime('%m', expense_date) = ?";
-        params.push(config.useSupabase ? monthValue : String(monthValue).padStart(2, '0'));
-      }
-      sql += ' ORDER BY expense_date DESC';
-      rows = await query(sql, params);
-    } else {
-      let sql = `
-        SELECT m.name AS member,
-               p.month,
-               p.year,
-               p.amount,
-               p.paid,
-               p.paid_at AS paidAt,
-               p.notes,
-               g.title AS goal,
-               p.attachment_name AS attachmentName,
-               p.attachment_url AS attachmentUrl
-        FROM payments p
-        JOIN members m ON m.id = p.member_id
-        LEFT JOIN goals g ON g.id = p.goal_id
-        WHERE 1 = 1
-      `;
-      const params = [];
-      if (!isAdminRequest && req.user?.memberId) {
-        sql += ' AND p.member_id = ?';
-        params.push(req.user.memberId);
-      }
-      if (yearValue) {
-        sql += ' AND year = ?';
-        params.push(yearValue);
-      }
-      if (monthValue) {
-        sql += ' AND month = ?';
-        params.push(monthValue);
-      }
-      sql += ' ORDER BY p.year DESC, p.month DESC, m.name ASC';
-      rows = await query(sql, params);
-    }
-
-    if (format === 'pdf') {
-      const doc = new PDFDocument({ size: 'A4', margin: 40 });
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="relatorio-${type}.pdf"`);
-      doc.pipe(res);
-      const settings = await getSettings();
-      if (type === 'expenses') {
-        renderExpensesReport(doc, rows, { month: monthValue, year: yearValue }, settings);
-      } else {
-        renderPaymentsReport(doc, rows, { month: monthValue, year: yearValue }, settings);
-      }
-      doc.end();
-    } else {
-      const headers =
-        type === 'expenses'
-          ? ['title', 'amount', 'date', 'category', 'event', 'notes', 'attachmentName', 'attachmentUrl']
-          : ['member', 'month', 'year', 'amount', 'paid', 'paidAt', 'goal', 'notes', 'attachmentName', 'attachmentUrl'];
-      const csvLines = [
-        headers.join(','),
-        ...rows.map((row) => headers.map((header) => `"${row[header] ?? ''}"`).join(','))
-      ];
-      const csv = csvLines.join('\n');
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename="relatorio-${type}.csv"`);
-      res.send(csv);
-    }
-  } catch (error) {
-    fail(res, error.message);
+  const isAdminRequest = isPrivilegedRequest(req);
+  if (!isAdminRequest && !req.user?.memberId) {
+    return success(res, { year: Number(year), total: 0 });
   }
-});
+  const total = await sumPayments({
+    year: Number(year),
+    ...(isAdminRequest ? {} : { memberId: req.user?.memberId })
+  });
+  success(res, { year: Number(year), total });
+}));
+
+router.get('/balance', requireAuth, asyncHandler(async (req, res) => {
+  const { year } = req.query;
+  const isAdminRequest = isPrivilegedRequest(req);
+  const yearNum = year ? Number(year) : undefined;
+  if (!isAdminRequest && !req.user?.memberId) {
+    return success(res, { totalRaised: 0, totalExpenses: 0, balance: 0 });
+  }
+  const [totalRaised, totalExpenses] = await Promise.all([
+    sumPayments({ year: yearNum, ...(isAdminRequest ? {} : { memberId: req.user?.memberId }) }),
+    isAdminRequest ? sumExpenses({ year: yearNum }) : Promise.resolve(0)
+  ]);
+  success(res, { totalRaised, totalExpenses, balance: totalRaised - totalExpenses });
+}));
+
+const fetchExpenseExportRows = async ({ monthValue, yearValue }) => {
+  let sql = `SELECT e.title,
+    e.amount,
+    e.expense_date AS date,
+    e.category,
+    e.notes,
+    ev.name AS event,
+    e.attachment_name AS attachmentName,
+    e.attachment_url AS attachmentUrl
+    FROM expenses e
+    LEFT JOIN events ev ON ev.id = e.event_id
+    WHERE 1 = 1`;
+  const params = [];
+  if (yearValue) {
+    sql += config.useSupabase ? ' AND EXTRACT(YEAR FROM expense_date) = ?' : " AND strftime('%Y', expense_date) = ?";
+    params.push(yearValue);
+  }
+  if (monthValue) {
+    sql += config.useSupabase ? ' AND EXTRACT(MONTH FROM expense_date) = ?' : " AND strftime('%m', expense_date) = ?";
+    params.push(config.useSupabase ? monthValue : String(monthValue).padStart(2, '0'));
+  }
+  sql += ' ORDER BY expense_date DESC';
+  return query(sql, params);
+};
+
+const fetchPaymentExportRows = async ({ monthValue, yearValue, isAdminRequest, memberId }) => {
+  let sql = `
+    SELECT m.name AS member,
+           p.month,
+           p.year,
+           p.amount,
+           p.paid,
+           p.paid_at AS paidAt,
+           p.notes,
+           g.title AS goal,
+           p.attachment_name AS attachmentName,
+           p.attachment_url AS attachmentUrl
+    FROM payments p
+    JOIN members m ON m.id = p.member_id
+    LEFT JOIN goals g ON g.id = p.goal_id
+    WHERE 1 = 1
+  `;
+  const params = [];
+  if (!isAdminRequest && memberId) {
+    sql += ' AND p.member_id = ?';
+    params.push(memberId);
+  }
+  if (yearValue) {
+    sql += ' AND year = ?';
+    params.push(yearValue);
+  }
+  if (monthValue) {
+    sql += ' AND month = ?';
+    params.push(monthValue);
+  }
+  sql += ' ORDER BY p.year DESC, p.month DESC, m.name ASC';
+  return query(sql, params);
+};
+
+const EXPORT_HEADERS = {
+  expenses: ['title', 'amount', 'date', 'category', 'event', 'notes', 'attachmentName', 'attachmentUrl'],
+  payments: ['member', 'month', 'year', 'amount', 'paid', 'paidAt', 'goal', 'notes', 'attachmentName', 'attachmentUrl']
+};
+
+const sendExportCsv = (res, type, rows) => {
+  const headers = EXPORT_HEADERS[type] || EXPORT_HEADERS.payments;
+  const csvLines = [
+    headers.join(','),
+    ...rows.map((row) => headers.map((header) => `"${row[header] ?? ''}"`).join(','))
+  ];
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="relatorio-${type}.csv"`);
+  res.send(csvLines.join('\n'));
+};
+
+const sendExportPdf = async (res, type, rows, filters) => {
+  const doc = new PDFDocument({ size: 'A4', margin: 40 });
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="relatorio-${type}.pdf"`);
+  doc.pipe(res);
+  const settings = await getSettings();
+  if (type === 'expenses') {
+    renderExpensesReport(doc, rows, filters, settings);
+  } else {
+    renderPaymentsReport(doc, rows, filters, settings);
+  }
+  doc.end();
+};
+
+router.get('/export', requireAuth, asyncHandler(async (req, res) => {
+  const { format = 'csv', type = 'payments', month, year } = req.query;
+  const isAdminRequest = isPrivilegedRequest(req);
+  if (!isAdminRequest && type === 'expenses') {
+    return fail(res, 'Acesso restrito', 403);
+  }
+  if (!isAdminRequest && !req.user?.memberId) {
+    return fail(res, 'Acesso restrito', 403);
+  }
+  const monthValue = month ? Number(month) : null;
+  const yearValue = year ? Number(year) : null;
+  const rows =
+    type === 'expenses'
+      ? await fetchExpenseExportRows({ monthValue, yearValue })
+      : await fetchPaymentExportRows({ monthValue, yearValue, isAdminRequest, memberId: req.user?.memberId });
+
+  if (format === 'pdf') {
+    await sendExportPdf(res, type, rows, { month: monthValue, year: yearValue });
+  } else {
+    sendExportCsv(res, type, rows);
+  }
+}));
 
 module.exports = router;

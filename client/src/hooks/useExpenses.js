@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { uploadDriveFile } from '../services/api';
+import { runRequest } from '../utils/hookRequests';
 
 export function useExpenses(showToast, handleError, events = []) {
   const { apiFetch, authToken } = useAuth();
@@ -22,12 +23,10 @@ export function useExpenses(showToast, handleError, events = []) {
   const [fileInputKey, setFileInputKey] = useState(0);
 
   const loadExpenses = useCallback(async () => {
-    try {
+    await runRequest(handleError, async () => {
       const data = await apiFetch('/api/expenses');
       setExpenses(data.expenses || []);
-    } catch (error) {
-      handleError(error);
-    }
+    });
   }, [apiFetch, handleError]);
 
   const resetExpenseForm = useCallback(() => {
@@ -54,7 +53,7 @@ export function useExpenses(showToast, handleError, events = []) {
       showToast('Anexo é obrigatório', 'error');
       return;
     }
-    try {
+    await runRequest(handleError, async () => {
       let attachmentId = expenseForm.attachmentId;
       let attachmentName = expenseForm.attachmentName || null;
       let attachmentUrl = expenseForm.attachmentUrl;
@@ -104,20 +103,16 @@ export function useExpenses(showToast, handleError, events = []) {
       await Promise.all([loadExpenses(), ...refreshCallbacks.map(cb => cb())]);
       resetExpenseForm();
       showToast('Despesa registrada');
-    } catch (error) {
-      handleError(error);
-    }
+    });
   }, [apiFetch, authToken, editingExpenseId, events, expenseForm, handleError, loadExpenses, resetExpenseForm, showToast]);
 
   const handleExpenseDelete = useCallback(async (id, refreshCallbacks = []) => {
     if (!window.confirm('Remover esta despesa?')) return;
-    try {
+    await runRequest(handleError, async () => {
       await apiFetch(`/api/expenses/${id}`, { method: 'DELETE' });
       await Promise.all([loadExpenses(), ...refreshCallbacks.map(cb => cb())]);
       showToast('Despesa removida');
-    } catch (error) {
-      handleError(error);
-    }
+    });
   }, [apiFetch, handleError, loadExpenses, showToast]);
 
   const startEditExpense = useCallback((expense) => {

@@ -1,7 +1,8 @@
 const express = require('express');
 const PDFDocument = require('pdfkit');
 const { query, queryOne, execute } = require('../db/query');
-const { success, fail } = require('../utils/response');
+const { success, fail, asyncHandler } = require('../utils/response');
+const { requireFields, validateNonNegativeAmount } = require('../utils/validation');
 const { requireAuth, requirePermission } = require('../middleware/auth');
 const { isPrivilegedRequest } = require('../utils/roles');
 const { adjustCurrentBalance, getSettings, DEFAULT_SETTINGS } = require('../utils/settings');
@@ -9,232 +10,224 @@ const { buildPixPayload } = require('../utils/pix');
 
 const router = express.Router();
 
-router.get('/', requireAuth, async (req, res) => {
-  try {
-    const { month, year, memberId, page, pageSize } = req.query;
-    const isAdminRequest = isPrivilegedRequest(req);
-    const effectiveMemberId = isAdminRequest ? memberId : req.user?.memberId;
-    if (!isAdminRequest && !effectiveMemberId) {
-      return success(res, { payments: [], total: 0, page: 1, pageSize: 25 });
-    }
-
-    const pageNum = Math.max(1, parseInt(page) || 1);
-    const pageSizeNum = Math.min(100, Math.max(1, parseInt(pageSize) || 25));
-    const offset = (pageNum - 1) * pageSizeNum;
-
-    let whereSql = 'WHERE 1 = 1';
-    const params = [];
-    if (month) {
-      whereSql += ' AND p.month = ?';
-      params.push(Number(month));
-    }
-    if (year) {
-      whereSql += ' AND p.year = ?';
-      params.push(Number(year));
-    }
-    if (effectiveMemberId) {
-      whereSql += ' AND p.member_id = ?';
-      params.push(Number(effectiveMemberId));
-    }
-
-    const [countRow] = await query(
-      `SELECT COUNT(*) as total FROM payments p JOIN members m ON m.id = p.member_id ${whereSql}`,
-      params
-    );
-    const total = countRow?.total || 0;
-
-    const payments = await query(
-      `SELECT p.*, m.name AS member_name
-       FROM payments p
-       JOIN members m ON m.id = p.member_id
-       ${whereSql}
-       ORDER BY p.year DESC, p.month DESC
-       LIMIT ? OFFSET ?`,
-      [...params, pageSizeNum, offset]
-    );
-
-    success(res, { payments, total, page: pageNum, pageSize: pageSizeNum });
-  } catch (error) {
-    fail(res, error.message);
+router.get('/', requireAuth, asyncHandler(async (req, res) => {
+  const { month, year, memberId, page, pageSize } = req.query;
+  const isAdminRequest = isPrivilegedRequest(req);
+  const effectiveMemberId = isAdminRequest ? memberId : req.user?.memberId;
+  if (!isAdminRequest && !effectiveMemberId) {
+    return success(res, { payments: [], total: 0, page: 1, pageSize: 25 });
   }
-});
 
-router.get('/history/:memberId', requireAuth, async (req, res) => {
-  try {
-    const { memberId } = req.params;
-    const isAdminRequest = isPrivilegedRequest(req);
-    const effectiveMemberId = isAdminRequest ? memberId : req.user?.memberId;
-    if (!effectiveMemberId) {
-      return success(res, { payments: [] });
-    }
-    const payments = await query(
-      'SELECT * FROM payments WHERE member_id = ? ORDER BY year DESC, month DESC',
-      [Number(effectiveMemberId)]
-    );
-    success(res, { payments });
-  } catch (error) {
-    fail(res, error.message);
+  const pageNum = Math.max(1, parseInt(page) || 1);
+  const pageSizeNum = Math.min(100, Math.max(1, parseInt(pageSize) || 25));
+  const offset = (pageNum - 1) * pageSizeNum;
+
+  let whereSql = 'WHERE 1 = 1';
+  const params = [];
+  if (month) {
+    whereSql += ' AND p.month = ?';
+    params.push(Number(month));
   }
-});
+  if (year) {
+    whereSql += ' AND p.year = ?';
+    params.push(Number(year));
+  }
+  if (effectiveMemberId) {
+    whereSql += ' AND p.member_id = ?';
+    params.push(Number(effectiveMemberId));
+  }
 
-router.post('/', requireAuth, requirePermission('pagamentos.criar'), async (req, res) => {
-  try {
-    const {
+  const [countRow] = await query(
+    `SELECT COUNT(*) as total FROM payments p JOIN members m ON m.id = p.member_id ${whereSql}`,
+    params
+  );
+  const total = countRow?.total || 0;
+
+  const payments = await query(
+    `SELECT p.*, m.name AS member_name
+     FROM payments p
+     JOIN members m ON m.id = p.member_id
+     ${whereSql}
+     ORDER BY p.year DESC, p.month DESC
+     LIMIT ? OFFSET ?`,
+    [...params, pageSizeNum, offset]
+  );
+
+  success(res, { payments, total, page: pageNum, pageSize: pageSizeNum });
+}));
+
+router.get('/history/:memberId', requireAuth, asyncHandler(async (req, res) => {
+  const { memberId } = req.params;
+  const isAdminRequest = isPrivilegedRequest(req);
+  const effectiveMemberId = isAdminRequest ? memberId : req.user?.memberId;
+  if (!effectiveMemberId) {
+    return success(res, { payments: [] });
+  }
+  const payments = await query(
+    'SELECT * FROM payments WHERE member_id = ? ORDER BY year DESC, month DESC',
+    [Number(effectiveMemberId)]
+  );
+  success(res, { payments });
+}));
+
+const PAYMENT_REQUIRED_FIELDS_MESSAGE = 'Campos obrigatórios não preenchidos';
+const PAYMENT_INVALID_AMOUNT_MESSAGE = 'Valor do pagamento deve ser um número maior ou igual a zero';
+
+router.post('/', requireAuth, requirePermission('pagamentos.criar'), asyncHandler(async (req, res) => {
+  const {
+    memberId,
+    month,
+    year,
+    amount,
+    paid,
+    paidAt,
+    notes,
+    goalId,
+    attachmentId,
+    attachmentName,
+    attachmentUrl
+  } = req.body;
+  const missing = requireFields({ memberId, month, year, amount }, PAYMENT_REQUIRED_FIELDS_MESSAGE);
+  if (missing) {
+    return fail(res, missing);
+  }
+  const invalidAmount = validateNonNegativeAmount(amount, PAYMENT_INVALID_AMOUNT_MESSAGE);
+  if (invalidAmount) {
+    return fail(res, invalidAmount);
+  }
+  const paidValue = paid ? 1 : 0;
+  const existingPayment = await queryOne(
+    'SELECT id, amount, paid FROM payments WHERE member_id = ? AND month = ? AND year = ?',
+    [memberId, month, year]
+  );
+  const createdAt = new Date().toISOString();
+  const [payment] = await query(
+    `
+    INSERT INTO payments (member_id, month, year, amount, paid, paid_at, created_at, notes, goal_id, attachment_id, attachment_name, attachment_url)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(member_id, month, year) DO UPDATE SET
+      amount = excluded.amount,
+      paid = excluded.paid,
+      paid_at = excluded.paid_at,
+      notes = excluded.notes,
+      goal_id = excluded.goal_id,
+      attachment_id = COALESCE(excluded.attachment_id, payments.attachment_id),
+      attachment_name = COALESCE(excluded.attachment_name, payments.attachment_name),
+      attachment_url = COALESCE(excluded.attachment_url, payments.attachment_url)
+    RETURNING *
+  `,
+    [
       memberId,
       month,
       year,
       amount,
-      paid,
+      paidValue,
+      paidAt,
+      createdAt,
+      notes,
+      goalId || null,
+      attachmentId || null,
+      attachmentName || null,
+      attachmentUrl || null
+    ]
+  );
+  const previousAmount = existingPayment ? Number(existingPayment.amount || 0) : 0;
+  const nextAmount = Number(amount || 0);
+  await adjustCurrentBalance(nextAmount - previousAmount);
+  success(res, { payment });
+}));
+
+router.put('/:id', requireAuth, requirePermission('pagamentos.editar'), asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { amount, paid, paidAt, notes, goalId, attachmentId, attachmentName, attachmentUrl } = req.body;
+  const missing = requireFields({ amount }, PAYMENT_REQUIRED_FIELDS_MESSAGE);
+  if (missing) {
+    return fail(res, missing);
+  }
+  const invalidAmount = validateNonNegativeAmount(amount, PAYMENT_INVALID_AMOUNT_MESSAGE);
+  if (invalidAmount) {
+    return fail(res, invalidAmount);
+  }
+  const paidValue = paid ? 1 : 0;
+  const existingPayment = await queryOne(
+    'SELECT amount, paid FROM payments WHERE id = ?',
+    [id]
+  );
+  const [payment] = await query(
+    `UPDATE payments
+     SET amount = ?, paid = ?, paid_at = ?, notes = ?, goal_id = ?,
+         attachment_id = COALESCE(?, attachment_id),
+         attachment_name = COALESCE(?, attachment_name),
+         attachment_url = COALESCE(?, attachment_url)
+     WHERE id = ? RETURNING *`,
+    [
+      amount,
+      paidValue,
       paidAt,
       notes,
-      goalId,
-      attachmentId,
-      attachmentName,
-      attachmentUrl
-    } = req.body;
-    if (!memberId || !month || !year || !amount) {
-      return fail(res, 'Campos obrigatórios não preenchidos');
-    }
-    const paidValue = paid ? 1 : 0;
-    const existingPayment = await queryOne(
-      'SELECT id, amount, paid FROM payments WHERE member_id = ? AND month = ? AND year = ?',
-      [memberId, month, year]
-    );
-    const createdAt = new Date().toISOString();
-    const [payment] = await query(
-      `
-      INSERT INTO payments (member_id, month, year, amount, paid, paid_at, created_at, notes, goal_id, attachment_id, attachment_name, attachment_url)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(member_id, month, year) DO UPDATE SET
-        amount = excluded.amount,
-        paid = excluded.paid,
-        paid_at = excluded.paid_at,
-        notes = excluded.notes,
-        goal_id = excluded.goal_id,
-        attachment_id = COALESCE(excluded.attachment_id, payments.attachment_id),
-        attachment_name = COALESCE(excluded.attachment_name, payments.attachment_name),
-        attachment_url = COALESCE(excluded.attachment_url, payments.attachment_url)
-      RETURNING *
-    `,
-      [
-        memberId,
-        month,
-        year,
-        amount,
-        paidValue,
-        paidAt,
-        createdAt,
-        notes,
-        goalId || null,
-        attachmentId || null,
-        attachmentName || null,
-        attachmentUrl || null
-      ]
-    );
-    const previousAmount = existingPayment ? Number(existingPayment.amount || 0) : 0;
-    const nextAmount = Number(amount || 0);
-    await adjustCurrentBalance(nextAmount - previousAmount);
-    success(res, { payment });
-  } catch (error) {
-    fail(res, error.message);
+      goalId || null,
+      attachmentId || null,
+      attachmentName || null,
+      attachmentUrl || null,
+      id
+    ]
+  );
+  if (!payment) {
+    return fail(res, 'Pagamento não encontrado', 404);
   }
-});
+  const previousAmount = existingPayment ? Number(existingPayment.amount || 0) : 0;
+  const nextAmount = Number(amount || 0);
+  await adjustCurrentBalance(nextAmount - previousAmount);
+  success(res, { payment });
+}));
 
-router.put('/:id', requireAuth, requirePermission('pagamentos.editar'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { amount, paid, paidAt, notes, goalId, attachmentId, attachmentName, attachmentUrl } = req.body;
-    const paidValue = paid ? 1 : 0;
-    const existingPayment = await queryOne(
-      'SELECT amount, paid FROM payments WHERE id = ?',
-      [id]
-    );
-    const [payment] = await query(
-      `UPDATE payments
-       SET amount = ?, paid = ?, paid_at = ?, notes = ?, goal_id = ?,
-           attachment_id = COALESCE(?, attachment_id),
-           attachment_name = COALESCE(?, attachment_name),
-           attachment_url = COALESCE(?, attachment_url)
-       WHERE id = ? RETURNING *`,
-      [
-        amount,
-        paidValue,
-        paidAt,
-        notes,
-        goalId || null,
-        attachmentId || null,
-        attachmentName || null,
-        attachmentUrl || null,
-        id
-      ]
-    );
-    if (!payment) {
-      return fail(res, 'Pagamento não encontrado', 404);
-    }
-    const previousAmount = existingPayment ? Number(existingPayment.amount || 0) : 0;
-    const nextAmount = Number(amount || 0);
-    await adjustCurrentBalance(nextAmount - previousAmount);
-    success(res, { payment });
-  } catch (error) {
-    fail(res, error.message);
+router.delete('/:id', requireAuth, requirePermission('pagamentos.excluir'), asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const existingPayment = await queryOne('SELECT amount, paid FROM payments WHERE id = ?', [id]);
+  await execute('DELETE FROM payments WHERE id = ?', [id]);
+  if (existingPayment) {
+    await adjustCurrentBalance(-Number(existingPayment.amount || 0));
   }
-});
+  success(res);
+}));
 
-router.delete('/:id', requireAuth, requirePermission('pagamentos.excluir'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const existingPayment = await queryOne('SELECT amount, paid FROM payments WHERE id = ?', [id]);
-    await execute('DELETE FROM payments WHERE id = ?', [id]);
-    if (existingPayment) {
-      await adjustCurrentBalance(-Number(existingPayment.amount || 0));
-    }
-    success(res);
-  } catch (error) {
-    fail(res, error.message);
+router.get('/:id/pix', requireAuth, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const payment = await queryOne(
+    `SELECT p.*, m.name AS member_name
+     FROM payments p
+     JOIN members m ON m.id = p.member_id
+     WHERE p.id = ?`,
+    [id]
+  );
+  if (!payment) {
+    return fail(res, 'Pagamento não encontrado', 404);
   }
-});
-
-router.get('/:id/pix', requireAuth, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const payment = await queryOne(
-      `SELECT p.*, m.name AS member_name
-       FROM payments p
-       JOIN members m ON m.id = p.member_id
-       WHERE p.id = ?`,
-      [id]
-    );
-    if (!payment) {
-      return fail(res, 'Pagamento não encontrado', 404);
-    }
-    if (!isPrivilegedRequest(req) && payment.member_id !== req.user?.memberId) {
-      return fail(res, 'Acesso restrito', 403);
-    }
-
-    const settings = await getSettings();
-    const pixKey = settings.pix_key;
-    if (!pixKey) {
-      return fail(res, 'Chave PIX não configurada nas configurações', 422);
-    }
-
-    const brcode = buildPixPayload({
-      pixKey,
-      merchantName: settings.pix_receiver || settings.org_name,
-      merchantCity: settings.pix_city,
-      amount: payment.amount,
-      txid: `MENS${payment.id}`
-    });
-
-    return success(res, {
-      brcode,
-      amount: Number(payment.amount),
-      pixKey,
-      receiver: settings.pix_receiver || settings.org_name || null
-    });
-  } catch (error) {
-    return fail(res, error.message);
+  if (!isPrivilegedRequest(req) && payment.member_id !== req.user?.memberId) {
+    return fail(res, 'Acesso restrito', 403);
   }
-});
+
+  const settings = await getSettings();
+  const pixKey = settings.pix_key;
+  if (!pixKey) {
+    return fail(res, 'Chave PIX não configurada nas configurações', 422);
+  }
+
+  const brcode = buildPixPayload({
+    pixKey,
+    merchantName: settings.pix_receiver || settings.org_name,
+    merchantCity: settings.pix_city,
+    amount: payment.amount,
+    txid: `MENS${payment.id}`
+  });
+
+  return success(res, {
+    brcode,
+    amount: Number(payment.amount),
+    pixKey,
+    receiver: settings.pix_receiver || settings.org_name || null
+  });
+}));
 
 router.get('/:id/receipt', requireAuth, async (req, res) => {
   try {
