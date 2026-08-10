@@ -134,20 +134,18 @@ export function ExpensesPanel({
               </option>
             ))}
           </select>
-          <label className="settings-field">
-            Forma de pagamento
-            <select
-              value={expenseForm.paymentMethod}
-              onChange={(e) => setExpenseForm({ ...expenseForm, paymentMethod: e.target.value })}
-            >
-              <option value="">Não informado</option>
-              {PAYMENT_METHOD_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <select
+            aria-label="Forma de pagamento"
+            value={expenseForm.paymentMethod}
+            onChange={(e) => setExpenseForm({ ...expenseForm, paymentMethod: e.target.value })}
+          >
+            <option value="">Forma de pagamento</option>
+            {PAYMENT_METHOD_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
           <input
             type="text"
             placeholder="Observações"
