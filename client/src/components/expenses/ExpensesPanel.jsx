@@ -78,19 +78,9 @@ function AttachmentFields({ expenseForm, setExpenseForm, fileInputKey, editingEx
   );
 }
 
-function ExpenseForm({
-  expenseForm,
-  setExpenseForm,
-  editingExpenseId,
-  fileInputKey,
-  events,
-  tags,
-  canEdit,
-  onSubmit,
-  onReset
-}) {
+function ExpensePrimaryFields({ expenseForm, setExpenseForm }) {
   return (
-    <form className="form-grid" onSubmit={onSubmit}>
+    <>
       <label>
         Descrição
         <input
@@ -119,6 +109,13 @@ function ExpenseForm({
           required
         />
       </label>
+    </>
+  );
+}
+
+function ExpenseSecondaryFields({ expenseForm, setExpenseForm, events }) {
+  return (
+    <>
       <label>
         Categoria
         <input
@@ -150,6 +147,25 @@ function ExpenseForm({
           onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })}
         />
       </label>
+    </>
+  );
+}
+
+function ExpenseForm({
+  expenseForm,
+  setExpenseForm,
+  editingExpenseId,
+  fileInputKey,
+  events,
+  tags,
+  canEdit,
+  onSubmit,
+  onReset
+}) {
+  return (
+    <form className="form-grid" onSubmit={onSubmit}>
+      <ExpensePrimaryFields expenseForm={expenseForm} setExpenseForm={setExpenseForm} />
+      <ExpenseSecondaryFields expenseForm={expenseForm} setExpenseForm={setExpenseForm} events={events} />
       <TagSelector
         tags={tags}
         selectedIds={expenseForm.tagIds || []}
@@ -247,20 +263,36 @@ function ExpensesTable({ filteredExpenses, canEdit, onEdit, onDelete }) {
   );
 }
 
-export function ExpensesPanel({
-  expenses,
+function ExpenseFormSection({
+  canEdit,
   expenseForm,
   setExpenseForm,
   editingExpenseId,
   fileInputKey,
   events,
-  tags = [],
+  tags,
   onSubmit,
-  onDelete,
-  onEdit,
   onReset
 }) {
-  const { canEdit } = useAuth();
+  if (!canEdit) {
+    return <p className="lock-hint">Somente o tesoureiro pode registrar despesas.</p>;
+  }
+  return (
+    <ExpenseForm
+      expenseForm={expenseForm}
+      setExpenseForm={setExpenseForm}
+      editingExpenseId={editingExpenseId}
+      fileInputKey={fileInputKey}
+      events={events}
+      tags={tags}
+      canEdit={canEdit}
+      onSubmit={onSubmit}
+      onReset={onReset}
+    />
+  );
+}
+
+function useExpensesFilters(expenses) {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
 
@@ -283,28 +315,49 @@ export function ExpensesPanel({
     });
   }, [expenses, search, categoryFilter]);
 
+  return { search, setSearch, categoryFilter, setCategoryFilter, categories, filteredExpenses };
+}
+
+function ExpensesPanelHeader() {
+  return (
+    <div className="panel-header">
+      <h2>Despesas</h2>
+      <p>Controle de gastos por categoria.</p>
+    </div>
+  );
+}
+
+export function ExpensesPanel({
+  expenses,
+  expenseForm,
+  setExpenseForm,
+  editingExpenseId,
+  fileInputKey,
+  events,
+  tags = [],
+  onSubmit,
+  onDelete,
+  onEdit,
+  onReset
+}) {
+  const { canEdit } = useAuth();
+  const { search, setSearch, categoryFilter, setCategoryFilter, categories, filteredExpenses } =
+    useExpensesFilters(expenses);
   return (
     <section className="panel">
-      <div className="panel-header">
-        <h2>Despesas</h2>
-        <p>Controle de gastos por categoria.</p>
-      </div>
+      <ExpensesPanelHeader />
 
-      {canEdit ? (
-        <ExpenseForm
-          expenseForm={expenseForm}
-          setExpenseForm={setExpenseForm}
-          editingExpenseId={editingExpenseId}
-          fileInputKey={fileInputKey}
-          events={events}
-          tags={tags}
-          canEdit={canEdit}
-          onSubmit={onSubmit}
-          onReset={onReset}
-        />
-      ) : (
-        <p className="lock-hint">Somente o tesoureiro pode registrar despesas.</p>
-      )}
+      <ExpenseFormSection
+        canEdit={canEdit}
+        expenseForm={expenseForm}
+        setExpenseForm={setExpenseForm}
+        editingExpenseId={editingExpenseId}
+        fileInputKey={fileInputKey}
+        events={events}
+        tags={tags}
+        onSubmit={onSubmit}
+        onReset={onReset}
+      />
 
       <ExpensesToolbar
         search={search}
