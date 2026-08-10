@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { uploadDriveFile } from '../services/api';
 import { runRequest } from '../utils/hookRequests';
@@ -21,12 +21,24 @@ export function useExpenses(showToast, handleError, events = []) {
   });
   const [editingExpenseId, setEditingExpenseId] = useState(null);
   const [fileInputKey, setFileInputKey] = useState(0);
-  const [selectedExpenseDetail, setSelectedExpenseDetail] = useState(null);
+  const [selectedExpenseDetail, _setSelectedExpenseDetail] = useState(null);
+
+  const selectedExpenseRef = useRef(null);
+  const setSelectedExpenseDetail = useCallback((value) => {
+    selectedExpenseRef.current = value;
+    _setSelectedExpenseDetail(value);
+  }, []);
 
   const loadExpenses = useCallback(async () => {
     await runRequest(handleError, async () => {
       const data = await apiFetch('/api/expenses');
-      setExpenses(data.expenses || []);
+      const list = data.expenses || [];
+      setExpenses(list);
+      if (selectedExpenseRef.current) {
+        const updated = list.find((e) => e.id === selectedExpenseRef.current.id);
+        selectedExpenseRef.current = updated || null;
+        _setSelectedExpenseDetail(updated || null);
+      }
     });
   }, [apiFetch, handleError]);
 
@@ -117,7 +129,7 @@ export function useExpenses(showToast, handleError, events = []) {
       await Promise.all([loadExpenses(), ...refreshCallbacks.map(cb => cb())]);
       showToast('Despesa removida');
     });
-  }, [apiFetch, handleError, loadExpenses, selectedExpenseDetail, showToast]);
+  }, [apiFetch, handleError, loadExpenses, selectedExpenseDetail, setSelectedExpenseDetail, showToast]);
 
   const startEditExpense = useCallback((expense) => {
     setExpenseForm({
