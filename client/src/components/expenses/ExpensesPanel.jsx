@@ -46,6 +46,75 @@ function TagPills({ tags }) {
   );
 }
 
+// Réplica do padrão de seleção de linha usado em MembersPanel: clicar na
+// linha alterna a despesa selecionada (toggle), e os botões de ação
+// interrompem a propagação para não disparar a seleção.
+function ExpensesTable({ expenses, canEdit, selectedExpenseDetail, setSelectedExpenseDetail, onEdit, onDelete }) {
+  const toggleSelection = (expense) => {
+    setSelectedExpenseDetail(selectedExpenseDetail?.id === expense.id ? null : expense);
+  };
+
+  return (
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Título</th>
+          <th>Valor</th>
+          <th>Categoria</th>
+          <th>Tags</th>
+          {canEdit && <th>Ações</th>}
+        </tr>
+      </thead>
+      <tbody>
+        {expenses.length === 0 ? (
+          <tr>
+            <td colSpan={canEdit ? 6 : 5} className="table-empty">
+              Nenhuma despesa encontrada.
+            </td>
+          </tr>
+        ) : (
+          expenses.map((expense) => (
+            <tr
+              key={expense.id}
+              className={selectedExpenseDetail?.id === expense.id ? 'selected' : ''}
+              style={{ cursor: 'pointer' }}
+              onClick={() => toggleSelection(expense)}
+            >
+              <td>{expense.expense_date}</td>
+              <td>{expense.title}</td>
+              <td>{formatCurrency(expense.amount)}</td>
+              <td>{expense.category}</td>
+              <td><TagPills tags={expense.tags} /></td>
+              {canEdit && (
+                <td>
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onEdit(expense);
+                    }}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    className="ghost"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onDelete(expense.id);
+                    }}
+                  >
+                    Remover
+                  </button>
+                </td>
+              )}
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  );
+}
+
 export function ExpensesPanel({
   expenses,
   expenseForm,
@@ -54,6 +123,8 @@ export function ExpensesPanel({
   fileInputKey,
   events,
   tags = [],
+  selectedExpenseDetail,
+  setSelectedExpenseDetail,
   onSubmit,
   onDelete,
   onEdit,
@@ -191,45 +262,14 @@ export function ExpensesPanel({
       </div>
 
       <div className="table-wrapper compact">
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Título</th>
-              <th>Valor</th>
-              <th>Categoria</th>
-              <th>Tags</th>
-              {canEdit && <th>Ações</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {filteredExpenses.length === 0 ? (
-              <tr>
-                <td colSpan={canEdit ? 6 : 5} className="table-empty">
-                  Nenhuma despesa encontrada.
-                </td>
-              </tr>
-            ) : (
-              filteredExpenses.map((expense) => (
-                <tr key={expense.id}>
-                  <td>{expense.expense_date}</td>
-                  <td>{expense.title}</td>
-                  <td>{formatCurrency(expense.amount)}</td>
-                  <td>{expense.category}</td>
-                  <td><TagPills tags={expense.tags} /></td>
-                  {canEdit && (
-                    <td>
-                      <button onClick={() => onEdit(expense)}>Editar</button>
-                      <button className="ghost" onClick={() => onDelete(expense.id)}>
-                        Remover
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <ExpensesTable
+          expenses={filteredExpenses}
+          canEdit={canEdit}
+          selectedExpenseDetail={selectedExpenseDetail}
+          setSelectedExpenseDetail={setSelectedExpenseDetail}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
       </div>
     </section>
   );
