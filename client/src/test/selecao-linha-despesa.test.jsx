@@ -58,7 +58,7 @@ describe('ExpensesPanel — seleção de linha da tabela', () => {
   });
 
   it('linha da despesa selecionada recebe a classe "selected"', () => {
-    const { getByText } = render(
+    const { container } = render(
       <ExpensesPanel
         {...baseProps}
         expenses={expenses}
@@ -67,8 +67,12 @@ describe('ExpensesPanel — seleção de linha da tabela', () => {
       />
     );
 
-    const selectedRow = getByText('Compra de material').closest('tr');
-    const unselectedRow = getByText('Aluguel de van').closest('tr');
+    // Com a despesa selecionada, o ExpenseDetailView também exibe o título
+    // abaixo da tabela, então a busca é escopada à tabela para evitar
+    // ambiguidade com o painel de detalhes.
+    const table = within(container.querySelector('table'));
+    const selectedRow = table.getByText('Compra de material').closest('tr');
+    const unselectedRow = table.getByText('Aluguel de van').closest('tr');
 
     expect(selectedRow.className).toContain('selected');
     expect(unselectedRow.className).not.toContain('selected');
@@ -76,7 +80,7 @@ describe('ExpensesPanel — seleção de linha da tabela', () => {
 
   it('clicar de novo na linha já selecionada desmarca (toggle)', () => {
     const setSelectedExpenseDetail = vi.fn();
-    const { getByText } = render(
+    const { container } = render(
       <ExpensesPanel
         {...baseProps}
         expenses={expenses}
@@ -85,7 +89,8 @@ describe('ExpensesPanel — seleção de linha da tabela', () => {
       />
     );
 
-    fireEvent.click(getByText('Compra de material').closest('tr'));
+    const table = within(container.querySelector('table'));
+    fireEvent.click(table.getByText('Compra de material').closest('tr'));
 
     expect(setSelectedExpenseDetail).toHaveBeenCalledWith(null);
   });

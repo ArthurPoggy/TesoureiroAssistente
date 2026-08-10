@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatCurrency } from '../../utils/formatters';
+import { ExpenseDetailView } from './ExpenseDetailView';
 
 function TagSelector({ tags = [], selectedIds = [], onChange, canEdit }) {
   const toggle = (id) => {
@@ -271,6 +272,8 @@ export function ExpensesPanel({
           onDelete={onDelete}
         />
       </div>
+
+      {selectedExpenseDetail && <ExpenseDetailView expense={selectedExpenseDetail} />}
     </section>
   );
 }
