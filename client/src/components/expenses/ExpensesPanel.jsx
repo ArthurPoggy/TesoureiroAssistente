@@ -191,7 +191,15 @@ export function ExpensesPanel({
       </div>
 
       <div className="table-wrapper compact">
-        <table>
+        <table className="expenses-table">
+          <colgroup>
+            <col className="col-date" />
+            <col className="col-title" />
+            <col className="col-amount" />
+            <col className="col-category" />
+            <col className="col-tags" />
+            {canEdit && <col className="col-actions" />}
+          </colgroup>
           <thead>
             <tr>
               <th>Data</th>

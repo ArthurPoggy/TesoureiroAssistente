@@ -105,6 +105,40 @@ table tbody tr:hover {
   overflow-wrap: break-word;
 }
 
+/* Despesas: mesmo padrão de largura fixa da tabela de pagamentos, para que
+   a tabela não "pule"/redimensione ao filtrar/buscar. */
+.expenses-table {
+  table-layout: fixed;
+}
+
+.expenses-table .col-date {
+  width: 12%;
+}
+
+.expenses-table .col-title {
+  width: 28%;
+}
+
+.expenses-table .col-amount {
+  width: 12%;
+}
+
+.expenses-table .col-category {
+  width: 15%;
+}
+
+.expenses-table .col-tags {
+  width: 18%;
+}
+
+.expenses-table .col-actions {
+  width: 15%;
+}
+
+.expenses-table td {
+  overflow-wrap: break-word;
+}
+
 .paid {
   color: var(--color-success-dark);
   font-weight: var(--font-weight-semibold);
