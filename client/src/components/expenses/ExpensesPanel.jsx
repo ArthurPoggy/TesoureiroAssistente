@@ -226,7 +226,7 @@ export function ExpensesPanel({
                   <td>{expense.category}</td>
                   <td><TagPills tags={expense.tags} /></td>
                   {canEdit && (
-                    <td>
+                    <td className="col-actions">
                       <button onClick={() => onEdit(expense)}>Editar</button>
                       <button className="ghost" onClick={() => onDelete(expense.id)}>
                         Remover
