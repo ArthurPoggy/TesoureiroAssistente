@@ -19,19 +19,8 @@
   min-width: 140px;
 }
 
-.extrato-pagesize {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  font-size: var(--font-size-sm);
+.extrato-filters .table-toolbar-pagesize {
   margin-left: auto;
-}
-
-.extrato-pagesize select {
-  padding: var(--spacing-sm);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  background: var(--color-bg-secondary);
 }
 
 .extrato-summary {

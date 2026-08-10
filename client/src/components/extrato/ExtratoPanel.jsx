@@ -97,17 +97,19 @@ export function ExtratoPanel({
         <button type="submit" disabled={loading}>
           {loading ? 'Carregando...' : 'Filtrar'}
         </button>
-        <label className="extrato-pagesize">
-          Por página:
-          <select
-            value={pageSize}
-            onChange={(e) => onPageSizeChange?.(e.target.value)}
-          >
-            {PAGE_SIZE_OPTIONS.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </label>
+        <div className="table-toolbar-pagesize">
+          <label>
+            Por página:
+            <select
+              value={pageSize}
+              onChange={(e) => onPageSizeChange?.(e.target.value)}
+            >
+              {PAGE_SIZE_OPTIONS.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </label>
+        </div>
       </form>
 
       <div className="extrato-summary">
