@@ -159,6 +159,24 @@ describe('ExpensesPanel — criação inline de tag', () => {
     expect(eventDefaultNotPrevented).toBe(false);
   });
 
+  it('mantém o texto digitado quando a criação da tag falha (onCreateTag resolve undefined via runRequest)', async () => {
+    // useTags.createTag passa por runRequest, que nunca propaga exceção: em
+    // caso de erro (rede, 500, etc.) ele chama handleError e resolve com
+    // `undefined`. NewTagField.handleCreate não deve limpar o campo nesse
+    // caso — o usuário precisa poder tentar de novo sem redigitar o nome.
+    const onCreateTag = vi.fn().mockResolvedValue(undefined);
+    const { getByPlaceholderText, getByRole } = render(
+      <ExpensesPanel {...baseProps} onCreateTag={onCreateTag} />
+    );
+
+    const input = getByPlaceholderText('Nova tag');
+    fireEvent.change(input, { target: { value: 'Transporte' } });
+    fireEvent.click(getByRole('button', { name: 'Nova tag' }));
+
+    await waitFor(() => expect(onCreateTag).toHaveBeenCalledWith('Transporte'));
+    expect(input.value).toBe('Transporte');
+  });
+
   it('fluxo ponta a ponta: tag nova aparece na lista de tags selecionáveis já marcada como selecionada', async () => {
     // Simula o comportamento real de ExpensesPage/useTags: onCreateTag
     // devolve a tag criada, o componente pai adiciona à lista de `tags` e
