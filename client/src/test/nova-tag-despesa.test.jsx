@@ -130,23 +130,33 @@ describe('ExpensesPanel — criação inline de tag', () => {
     await waitFor(() => expect(button).not.toBeDisabled());
   });
 
-  it('pressionar Enter no campo "Nova tag" cria a tag em vez de submeter a despesa', async () => {
+  it('pressionar Enter no campo "Nova tag" cria a tag e intercepta o Enter (preventDefault)', async () => {
     // O input de "Nova tag" fica dentro do <form> de despesa, cujo único
     // botão type="submit" é "Salvar despesa"/"Atualizar". Sem um handler de
     // Enter dedicado, a tecla é capturada pelo submit nativo do formulário
     // (que descarta o texto digitado) em vez de acionar a criação da tag.
+    //
+    // jsdom não implementa o submit implícito de formulário ao pressionar
+    // Enter (https://github.com/jsdom/jsdom/issues/1937), então observar
+    // `onSubmit` não seria uma prova válida do bug: essa asserção passaria
+    // mesmo sem nenhum handler de Enter no campo de tag. A prova conclusiva
+    // é o retorno de `fireEvent`, que reflete diretamente se o evento de
+    // teclado (cancelable) teve `preventDefault()` chamado por algum
+    // handler React anexado ao input — independente do jsdom acionar ou
+    // não o submit nativo. Sem handler de Enter dedicado, dispatchEvent
+    // retorna `true` (nada chamou preventDefault); com o fix, retorna
+    // `false`.
     const onCreateTag = vi.fn().mockResolvedValue({ id: 3, name: 'Transporte' });
-    const onSubmit = vi.fn((e) => e.preventDefault());
     const { getByPlaceholderText } = render(
-      <ExpensesPanel {...baseProps} onCreateTag={onCreateTag} onSubmit={onSubmit} />
+      <ExpensesPanel {...baseProps} onCreateTag={onCreateTag} />
     );
 
     const input = getByPlaceholderText('Nova tag');
     fireEvent.change(input, { target: { value: 'Transporte' } });
-    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    const eventDefaultNotPrevented = fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
 
     await waitFor(() => expect(onCreateTag).toHaveBeenCalledWith('Transporte'));
-    expect(onSubmit).not.toHaveBeenCalled();
+    expect(eventDefaultNotPrevented).toBe(false);
   });
 
   it('fluxo ponta a ponta: tag nova aparece na lista de tags selecionáveis já marcada como selecionada', async () => {
