@@ -54,4 +54,47 @@ describe('useTags.createTag', () => {
     expect(created).toBeUndefined();
     expect(handleError).toHaveBeenCalledWith(error);
   });
+
+  // Subtask "Feedback de sucesso/duplicidade ao criar tag na despesa": ao
+  // criar a tag com sucesso pelo fluxo inline, useTags.createTag deve exibir
+  // uma confirmação via showToast, no mesmo padrão já usado por deleteTag.
+  it('exibe showToast de confirmação ao criar a tag com sucesso', async () => {
+    apiFetch.mockResolvedValue({ tag: { id: 3, name: 'Transporte' } });
+    const { result } = renderHook(() => useTags(showToast, handleError));
+
+    await act(async () => {
+      await result.current.createTag('Transporte');
+    });
+
+    expect(showToast).toHaveBeenCalledWith(expect.stringMatching(/tag/i));
+  });
+
+  // O backend responde a nomes duplicados (COLLATE NOCASE) devolvendo a tag
+  // já existente em vez de erro. O hook deve reaproveitar essa tag — sem
+  // duplicá-la na lista local e sem acionar handleError — para que o
+  // TagSelector apenas marque a tag existente como selecionada.
+  it('submeter nome de tag já existente reutiliza a tag sem duplicar a lista nem mostrar erro', async () => {
+    const existingTag = { id: 1, name: 'Acampamento' };
+    apiFetch.mockResolvedValueOnce({ tag: existingTag });
+    const { result } = renderHook(() => useTags(showToast, handleError));
+
+    // Estado inicial já contém a tag (ex.: carregada via loadTags).
+    await act(async () => {
+      await result.current.createTag('Acampamento');
+    });
+    expect(result.current.tags).toEqual([existingTag]);
+
+    // Submeter o mesmo nome novamente (nome já existente no backend) não
+    // deve criar uma segunda entrada na lista.
+    apiFetch.mockResolvedValueOnce({ tag: existingTag });
+    let secondCreated;
+    await act(async () => {
+      secondCreated = await result.current.createTag('acampamento');
+    });
+
+    expect(secondCreated).toEqual(existingTag);
+    expect(result.current.tags).toEqual([existingTag]);
+    expect(result.current.tags.length).toBe(1);
+    expect(handleError).not.toHaveBeenCalled();
+  });
 });
