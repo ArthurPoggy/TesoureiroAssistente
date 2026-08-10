@@ -1,8 +1,15 @@
 const express = require('express');
 const { query, queryOne, execute } = require('../db/query');
 const { success, fail, asyncHandler } = require('../utils/response');
-const { requireAuth, requireAdmin, requirePrivileged } = require('../middleware/auth');
+const { requireAuth, requireAdmin, requirePrivileged, requirePermission } = require('../middleware/auth');
 const { isPrivilegedRequest } = require('../utils/roles');
+const {
+  PERMISSIONS_CATALOG,
+  getPresetForRole,
+  getEffectivePermissions,
+  setMemberPermissionOverride,
+  removeMemberPermissionOverride
+} = require('../utils/permissions');
 const {
   normalizeEmail,
   normalizeCpf,
@@ -97,7 +104,7 @@ router.get('/delinquent', requirePrivileged, asyncHandler(async (req, res) => {
   success(res, { members });
 }));
 
-router.post('/', requirePrivileged, asyncHandler(async (req, res) => {
+router.post('/', requireAuth, requirePermission('membros.gerenciar'), asyncHandler(async (req, res) => {
   const { name, email, nickname, cpf } = req.body || {};
   const validation = await validateMemberFields({ name, email, cpf });
   if (validation.error) {
@@ -117,7 +124,7 @@ router.post('/', requirePrivileged, asyncHandler(async (req, res) => {
   success(res, { member, setupToken });
 }));
 
-router.put('/:id', requirePrivileged, asyncHandler(async (req, res) => {
+router.put('/:id', requireAuth, requirePermission('membros.gerenciar'), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { name, email, nickname, cpf } = req.body || {};
   const validation = await validateMemberFields({ name, email, cpf, excludeId: id });
@@ -131,7 +138,7 @@ router.put('/:id', requirePrivileged, asyncHandler(async (req, res) => {
   success(res, { member });
 }));
 
-router.post('/:id/invite', requirePrivileged, asyncHandler(async (req, res) => {
+router.post('/:id/invite', requireAuth, requirePermission('membros.gerenciar'), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const member = await queryOne(
     `SELECT ${MEMBER_SUMMARY_FIELDS} FROM members WHERE id = ?`,
@@ -157,7 +164,7 @@ router.post('/:id/invite', requirePrivileged, asyncHandler(async (req, res) => {
   success(res, { member: refreshed || member, setupToken });
 }));
 
-router.delete('/:id', requirePrivileged, asyncHandler(async (req, res) => {
+router.delete('/:id', requireAuth, requirePermission('membros.gerenciar'), asyncHandler(async (req, res) => {
   const { id } = req.params;
   await execute('DELETE FROM members WHERE id = ?', [id]);
   success(res);
@@ -216,5 +223,65 @@ router.get('/:id/summary', requirePrivileged, asyncHandler(async (req, res) => {
     activeProjects
   });
 }));
+
+// -----------------------------------------------------------------------
+// Gestão granular de permissões por membro (tela admin de matriz de
+// permissões). Somente admin pode consultar/alterar permissões de outros
+// membros — a regra de negócio (proteção do último admin + audit log) vive
+// em server/utils/permissions.js.
+// -----------------------------------------------------------------------
+router.get('/:id/permissions', requireAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const member = await queryOne('SELECT id, role FROM members WHERE id = ?', [id]);
+  if (!member) {
+    return fail(res, 'Membro não encontrado', 404);
+  }
+  const overrides = await query(
+    'SELECT permission_code as code, allowed FROM member_permissions WHERE member_id = ?',
+    [id]
+  );
+  const preset = getPresetForRole(member.role);
+  const effective = await getEffectivePermissions(id);
+  success(res, {
+    catalog: PERMISSIONS_CATALOG,
+    preset,
+    effective,
+    overrides
+  });
+}));
+
+// setMemberPermissionOverride/removeMemberPermissionOverride lançam erros com
+// status próprio (403 quando não é admin, 400 na proteção do último admin);
+// usar catch dedicado em vez de asyncHandler para preservar esse status,
+// já que asyncHandler sempre responde com 400 (ver server/utils/response.js).
+router.put('/:id/permissions/:codigo', requireAdmin, async (req, res) => {
+  try {
+    const { id, codigo } = req.params;
+    const { allowed } = req.body || {};
+    const result = await setMemberPermissionOverride({
+      actorId: req.user?.memberId,
+      memberId: id,
+      code: codigo,
+      allowed: allowed ? 1 : 0
+    });
+    success(res, { override: result });
+  } catch (error) {
+    fail(res, error.message, error.status || 400);
+  }
+});
+
+router.delete('/:id/permissions/:codigo', requireAdmin, async (req, res) => {
+  try {
+    const { id, codigo } = req.params;
+    const result = await removeMemberPermissionOverride({
+      actorId: req.user?.memberId,
+      memberId: id,
+      code: codigo
+    });
+    success(res, { override: result });
+  } catch (error) {
+    fail(res, error.message, error.status || 400);
+  }
+});
 
 module.exports = router;

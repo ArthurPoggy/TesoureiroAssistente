@@ -2,6 +2,7 @@ const { getTokenFromRequest, verifyToken } = require('../utils/auth');
 const { queryOne } = require('../db/query');
 const { fail } = require('../utils/response');
 const { isPrivilegedRole } = require('../utils/roles');
+const { getEffectivePermissions } = require('../utils/permissions');
 
 const hydrateUserFromDb = async (payload) => {
   if (!payload?.memberId) {
@@ -85,8 +86,29 @@ const requirePrivileged = async (req, res, next) => {
   }
 };
 
+// requirePermission(codigoPermissao) calcula a permissão efetiva do usuário
+// logado (preset do role + overrides de member_permissions, override sempre
+// sobrescreve o preset) e responde 403 quando a permissão não está concedida.
+// Deve ser usado após requireAuth, que já popula req.user.
+const requirePermission = (permissionCode) => async (req, res, next) => {
+  try {
+    if (!req.user?.memberId) {
+      return fail(res, 'Não autorizado', 401);
+    }
+    const effectivePermissions = await getEffectivePermissions(req.user.memberId);
+    if (!effectivePermissions.includes(permissionCode)) {
+      return fail(res, 'Acesso restrito', 403);
+    }
+    return next();
+  } catch (error) {
+    const status = error.status || 500;
+    return fail(res, error.message || 'Erro ao verificar permissão', status);
+  }
+};
+
 module.exports = {
   requireAuth,
   requireAdmin,
-  requirePrivileged
+  requirePrivileged,
+  requirePermission
 };

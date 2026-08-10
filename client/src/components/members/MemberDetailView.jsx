@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { maskCpf } from '../../utils/formatters';
+import { PermissionsMatrix } from '../admin/PermissionsMatrix';
 
 const roleLabels = {
   admin: 'Tesoureiro',
@@ -18,6 +19,7 @@ export function MemberDetailView({ member, onInvite, onDelete, onRoleChange }) {
   const [changingRole, setChangingRole] = useState(false);
   const [summary, setSummary] = useState(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
+  const [showPermissions, setShowPermissions] = useState(false);
   const isStrictAdmin = authUser.role === 'admin';
   const isSelf = authUser?.memberId && String(authUser.memberId) === String(member?.id);
 
@@ -138,6 +140,16 @@ export function MemberDetailView({ member, onInvite, onDelete, onRoleChange }) {
             <p className="member-detail-hint">Não foi possível carregar.</p>
           )}
         </section>
+
+        {isStrictAdmin && (
+          <section className="member-detail-section">
+            <h4>Permissões</h4>
+            <button type="button" className="ghost" onClick={() => setShowPermissions((prev) => !prev)}>
+              {showPermissions ? 'Ocultar matriz de permissões' : 'Gerenciar permissões'}
+            </button>
+            {showPermissions && <PermissionsMatrix member={effectiveMember} />}
+          </section>
+        )}
       </div>
 
       <div className="form-actions member-detail-actions">

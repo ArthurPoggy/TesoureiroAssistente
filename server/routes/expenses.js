@@ -2,7 +2,7 @@ const express = require('express');
 const { query, queryOne, execute } = require('../db/query');
 const { success, fail, asyncHandler } = require('../utils/response');
 const { requireFields, validateNonNegativeAmount } = require('../utils/validation');
-const { requireAuth, requirePrivileged } = require('../middleware/auth');
+const { requireAuth, requirePermission } = require('../middleware/auth');
 const { computeRateio } = require('../utils/rateio');
 
 const router = express.Router();
@@ -46,7 +46,7 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
   success(res, { expenses: enriched });
 }));
 
-router.post('/', requirePrivileged, asyncHandler(async (req, res) => {
+router.post('/', requireAuth, requirePermission('despesas.criar'), asyncHandler(async (req, res) => {
   const {
     title,
     amount,
@@ -87,7 +87,7 @@ router.post('/', requirePrivileged, asyncHandler(async (req, res) => {
   success(res, { expense: enriched });
 }));
 
-router.put('/:id', requirePrivileged, asyncHandler(async (req, res) => {
+router.put('/:id', requireAuth, requirePermission('despesas.editar'), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const {
     title,
@@ -139,7 +139,7 @@ router.put('/:id', requirePrivileged, asyncHandler(async (req, res) => {
   success(res, { expense: enriched });
 }));
 
-router.delete('/:id', requirePrivileged, asyncHandler(async (req, res) => {
+router.delete('/:id', requireAuth, requirePermission('despesas.excluir'), asyncHandler(async (req, res) => {
   const { id } = req.params;
   await execute('DELETE FROM expenses WHERE id = ?', [id]);
   success(res);
@@ -147,7 +147,7 @@ router.delete('/:id', requirePrivileged, asyncHandler(async (req, res) => {
 
 // Calcula (preview) o rateio do valor de uma despesa entre os participantes
 // informados. Não persiste cobranças — retorna a divisão proporcional.
-router.post('/:id/rateio', requirePrivileged, asyncHandler(async (req, res) => {
+router.post('/:id/rateio', requireAuth, requirePermission('despesas.criar'), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { participantIds } = req.body || {};
   if (!Array.isArray(participantIds) || participantIds.length === 0) {

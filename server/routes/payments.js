@@ -3,7 +3,7 @@ const PDFDocument = require('pdfkit');
 const { query, queryOne, execute } = require('../db/query');
 const { success, fail, asyncHandler } = require('../utils/response');
 const { requireFields, validateNonNegativeAmount } = require('../utils/validation');
-const { requireAuth, requirePrivileged } = require('../middleware/auth');
+const { requireAuth, requirePermission } = require('../middleware/auth');
 const { isPrivilegedRequest } = require('../utils/roles');
 const { adjustCurrentBalance, getSettings, DEFAULT_SETTINGS } = require('../utils/settings');
 const { buildPixPayload } = require('../utils/pix');
@@ -73,7 +73,7 @@ router.get('/history/:memberId', requireAuth, asyncHandler(async (req, res) => {
 const PAYMENT_REQUIRED_FIELDS_MESSAGE = 'Campos obrigatórios não preenchidos';
 const PAYMENT_INVALID_AMOUNT_MESSAGE = 'Valor do pagamento deve ser um número maior ou igual a zero';
 
-router.post('/', requirePrivileged, asyncHandler(async (req, res) => {
+router.post('/', requireAuth, requirePermission('pagamentos.criar'), asyncHandler(async (req, res) => {
   const {
     memberId,
     month,
@@ -137,7 +137,7 @@ router.post('/', requirePrivileged, asyncHandler(async (req, res) => {
   success(res, { payment });
 }));
 
-router.put('/:id', requirePrivileged, asyncHandler(async (req, res) => {
+router.put('/:id', requireAuth, requirePermission('pagamentos.editar'), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { amount, paid, paidAt, notes, goalId, attachmentId, attachmentName, attachmentUrl } = req.body;
   const missing = requireFields({ amount }, PAYMENT_REQUIRED_FIELDS_MESSAGE);
@@ -181,7 +181,7 @@ router.put('/:id', requirePrivileged, asyncHandler(async (req, res) => {
   success(res, { payment });
 }));
 
-router.delete('/:id', requirePrivileged, asyncHandler(async (req, res) => {
+router.delete('/:id', requireAuth, requirePermission('pagamentos.excluir'), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const existingPayment = await queryOne('SELECT amount, paid FROM payments WHERE id = ?', [id]);
   await execute('DELETE FROM payments WHERE id = ?', [id]);

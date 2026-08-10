@@ -2,7 +2,7 @@ const express = require('express');
 const { query } = require('../db/query');
 const { success, asyncHandler } = require('../utils/response');
 const { getCurrentBalance } = require('../utils/settings');
-const { requireAuth, requirePrivileged } = require('../middleware/auth');
+const { requireAuth, requirePermission } = require('../middleware/auth');
 const { isPrivilegedRequest } = require('../utils/roles');
 const { sumPayments, sumExpenses } = require('../utils/finance');
 
@@ -130,7 +130,7 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
   });
 }));
 
-router.get('/ranking', requirePrivileged, asyncHandler(async (req, res) => {
+router.get('/ranking', requireAuth, requirePermission('relatorios.ver'), asyncHandler(async (req, res) => {
   const { year, memberId } = req.query;
   const isAdminRequest = isPrivilegedRequest(req);
   const effectiveMemberId = isAdminRequest ? memberId : req.user?.memberId;
