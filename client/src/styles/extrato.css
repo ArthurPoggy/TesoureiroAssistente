@@ -19,6 +19,10 @@
   min-width: 140px;
 }
 
+.extrato-filters .table-toolbar-pagesize {
+  margin-left: auto;
+}
+
 .extrato-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
