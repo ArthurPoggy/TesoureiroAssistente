@@ -39,7 +39,7 @@ describe('ExpensesPanel — filtro de busca', () => {
   it('renderiza o campo de busca e o seletor de categoria', () => {
     const { getByLabelText } = render(<ExpensesPanel {...baseProps} expenses={expenses} />);
     expect(getByLabelText('Buscar despesas')).toBeInTheDocument();
-    expect(getByLabelText('Filtrar por categoria')).toBeInTheDocument();
+    expect(getByLabelText('Filtrar despesas por tipo')).toBeInTheDocument();
   });
 
   it('filtra por texto no título (case-insensitive)', () => {
@@ -65,7 +65,7 @@ describe('ExpensesPanel — filtro de busca', () => {
     const { getByLabelText, getByText, queryByText } = render(
       <ExpensesPanel {...baseProps} expenses={expenses} />
     );
-    fireEvent.change(getByLabelText('Filtrar por categoria'), { target: { value: 'Transporte' } });
+    fireEvent.change(getByLabelText('Filtrar despesas por tipo'), { target: { value: 'Transporte' } });
     expect(getByText('Aluguel de van')).toBeInTheDocument();
     expect(queryByText('Compra de material')).not.toBeInTheDocument();
   });

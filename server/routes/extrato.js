@@ -2,9 +2,10 @@ const express = require('express');
 const PDFDocument = require('pdfkit');
 const config = require('../config');
 const { query } = require('../db/query');
-const { success, fail } = require('../utils/response');
+const { success, fail, asyncHandler } = require('../utils/response');
 const { requireAuth } = require('../middleware/auth');
 const { getSettings, DEFAULT_SETTINGS } = require('../utils/settings');
+const { parsePagination } = require('../utils/pagination');
 
 const router = express.Router();
 
@@ -137,28 +138,34 @@ const buildEntries = async (filters = {}) => {
   return entries;
 };
 
-router.get('/', requireAuth, async (req, res) => {
-  try {
-    const { startDate, endDate, type, memberId } = req.query;
-    const entries = await buildEntries({ startDate, endDate, type, memberId });
+// A paginação do extrato é aplicada em memória, e não com LIMIT/OFFSET no
+// SQL, de propósito: `buildEntries` precisa do conjunto completo e ordenado
+// para calcular o `running_balance` de cada linha — recortar no banco faria
+// o saldo acumulado recomeçar do zero a cada página. O que a paginação
+// reduz aqui é o tamanho da resposta, não o custo da consulta.
+router.get('/', requireAuth, asyncHandler(async (req, res) => {
+  const { startDate, endDate, type, memberId, page, pageSize } = req.query;
+  const entries = await buildEntries({ startDate, endDate, type, memberId });
 
-    const totalIncome = entries.filter((e) => e.amount > 0).reduce((sum, e) => sum + e.amount, 0);
-    const totalExpense = entries.filter((e) => e.amount < 0).reduce((sum, e) => sum + Math.abs(e.amount), 0);
-    const netBalance = totalIncome - totalExpense;
+  const totalIncome = entries.filter((e) => e.amount > 0).reduce((sum, e) => sum + e.amount, 0);
+  const totalExpense = entries.filter((e) => e.amount < 0).reduce((sum, e) => sum + Math.abs(e.amount), 0);
+  const netBalance = totalIncome - totalExpense;
 
-    success(res, {
-      entries,
-      summary: {
-        totalIncome,
-        totalExpense,
-        netBalance,
-        count: entries.length
-      }
-    });
-  } catch (error) {
-    fail(res, error.message);
-  }
-});
+  const { pageNum, pageSizeNum, offset } = parsePagination(page, pageSize);
+
+  success(res, {
+    entries: entries.slice(offset, offset + pageSizeNum),
+    total: entries.length,
+    page: pageNum,
+    pageSize: pageSizeNum,
+    summary: {
+      totalIncome,
+      totalExpense,
+      netBalance,
+      count: entries.length
+    }
+  });
+}));
 
 router.get('/export', requireAuth, async (req, res) => {
   try {

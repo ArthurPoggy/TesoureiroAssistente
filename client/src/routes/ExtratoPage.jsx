@@ -26,7 +26,12 @@ export function ExtratoPage() {
     filters,
     setFilters,
     loadExtrato,
-    exportExtrato
+    exportExtrato,
+    page,
+    pageSize,
+    total,
+    onPageChange,
+    onPageSizeChange
   } = useExtrato(handleError, isAdmin);
 
   return (
@@ -44,6 +49,11 @@ export function ExtratoPage() {
           onExport={exportExtrato}
           members={isAdmin ? members : []}
           isAdmin={isAdmin}
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
         />
       </Suspense>
     </div>
