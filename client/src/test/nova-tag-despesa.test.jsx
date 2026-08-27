@@ -159,12 +159,14 @@ describe('ExpensesPanel — criação inline de tag', () => {
     expect(eventDefaultNotPrevented).toBe(false);
   });
 
-  it('mantém o texto digitado quando a criação da tag falha (onCreateTag resolve undefined via runRequest)', async () => {
+  it.each([[null], [undefined]])('mantém o texto digitado quando a criação da tag falha (retorno %s)', async (retornoDeFalha) => {
     // useTags.createTag passa por runRequest, que nunca propaga exceção: em
-    // caso de erro (rede, 500, etc.) ele chama handleError e resolve com
-    // `undefined`. NewTagField.handleCreate não deve limpar o campo nesse
-    // caso — o usuário precisa poder tentar de novo sem redigitar o nome.
-    const onCreateTag = vi.fn().mockResolvedValue(undefined);
+    // caso de erro (rede, 500, etc.) ele chama handleError e resolve sem tag
+    // — `null` pelo contrato do hook, `undefined` se algum chamador repassar
+    // o retorno cru de runRequest. NewTagField.handleCreate não deve limpar o
+    // campo em nenhum dos dois: o usuário precisa poder tentar de novo sem
+    // redigitar o nome.
+    const onCreateTag = vi.fn().mockResolvedValue(retornoDeFalha);
     const { getByPlaceholderText, getByRole } = render(
       <ExpensesPanel {...baseProps} onCreateTag={onCreateTag} />
     );
