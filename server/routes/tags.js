@@ -23,10 +23,13 @@ router.post('/', requirePrivileged, async (req, res) => {
     const normalized = name.trim();
     const existing = await queryOne('SELECT * FROM tags WHERE name = ? COLLATE NOCASE', [normalized]);
     if (existing) {
-      return success(res, { tag: existing });
+      // `created` distingue a tag reaproveitada da recém-criada: quem chama
+      // não tem como saber isso comparando com a própria lista local, que
+      // pode estar desatualizada em relação ao banco.
+      return success(res, { tag: existing, created: false });
     }
     const [tag] = await query('INSERT INTO tags (name) VALUES (?) RETURNING *', [normalized]);
-    success(res, { tag });
+    success(res, { tag, created: true });
   } catch (error) {
     fail(res, error.message);
   }

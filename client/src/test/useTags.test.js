@@ -5,9 +5,9 @@ import { useTags } from '../hooks/useTags';
 // Cobre a subtask "Conectar TagSelector a useTags.createTag via
 // ExpensesPage/ExpensesPanel": useTags.createTag deve usar o util
 // compartilhado runRequest (client/src/utils/hookRequests.js) em vez do
-// try/catch manual, mantendo a interface pública do hook — ainda retorna a
-// tag criada em caso de sucesso e `undefined` (não `null`) em caso de erro,
-// que é o contrato de runRequest.
+// try/catch manual, mantendo a interface pública do hook: ainda retorna a
+// tag criada em caso de sucesso e `null` em caso de erro, como antes do
+// refactor (runRequest devolve `undefined`, normalizado no hook).
 
 vi.mock('../contexts/AuthContext', () => ({
   useAuth: vi.fn()
@@ -28,7 +28,7 @@ describe('useTags.createTag', () => {
   });
 
   it('retorna a tag criada e a adiciona à lista quando a API tem sucesso', async () => {
-    apiFetch.mockResolvedValue({ tag: { id: 3, name: 'Transporte' } });
+    apiFetch.mockResolvedValue({ tag: { id: 3, name: 'Transporte' }, created: true });
     const { result } = renderHook(() => useTags(showToast, handleError));
 
     let created;
@@ -41,7 +41,7 @@ describe('useTags.createTag', () => {
     expect(handleError).not.toHaveBeenCalled();
   });
 
-  it('retorna undefined (não null) e encaminha o erro para handleError quando a API falha', async () => {
+  it('retorna null e encaminha o erro para handleError quando a API falha', async () => {
     const error = new Error('falha de rede');
     apiFetch.mockRejectedValue(error);
     const { result } = renderHook(() => useTags(showToast, handleError));
@@ -51,7 +51,7 @@ describe('useTags.createTag', () => {
       created = await result.current.createTag('Transporte');
     });
 
-    expect(created).toBeUndefined();
+    expect(created).toBeNull();
     expect(handleError).toHaveBeenCalledWith(error);
   });
 
@@ -59,7 +59,7 @@ describe('useTags.createTag', () => {
   // criar a tag com sucesso pelo fluxo inline, useTags.createTag deve exibir
   // uma confirmação via showToast, no mesmo padrão já usado por deleteTag.
   it('exibe showToast de confirmação ao criar a tag com sucesso', async () => {
-    apiFetch.mockResolvedValue({ tag: { id: 3, name: 'Transporte' } });
+    apiFetch.mockResolvedValue({ tag: { id: 3, name: 'Transporte' }, created: true });
     const { result } = renderHook(() => useTags(showToast, handleError));
 
     await act(async () => {
@@ -75,7 +75,7 @@ describe('useTags.createTag', () => {
   // TagSelector apenas marque a tag existente como selecionada.
   it('submeter nome de tag já existente reutiliza a tag sem duplicar a lista nem mostrar erro', async () => {
     const existingTag = { id: 1, name: 'Acampamento' };
-    apiFetch.mockResolvedValueOnce({ tag: existingTag });
+    apiFetch.mockResolvedValueOnce({ tag: existingTag, created: true });
     const { result } = renderHook(() => useTags(showToast, handleError));
 
     // Estado inicial já contém a tag (ex.: carregada via loadTags).
@@ -85,8 +85,9 @@ describe('useTags.createTag', () => {
     expect(result.current.tags).toEqual([existingTag]);
 
     // Submeter o mesmo nome novamente (nome já existente no backend) não
-    // deve criar uma segunda entrada na lista.
-    apiFetch.mockResolvedValueOnce({ tag: existingTag });
+    // deve criar uma segunda entrada na lista. A API sinaliza o reaproveitamento
+    // com `created: false`.
+    apiFetch.mockResolvedValueOnce({ tag: existingTag, created: false });
     let secondCreated;
     await act(async () => {
       secondCreated = await result.current.createTag('acampamento');
