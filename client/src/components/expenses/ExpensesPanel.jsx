@@ -33,6 +33,21 @@ function TagSelector({ tags = [], selectedIds = [], onChange, canEdit }) {
   );
 }
 
+// Manter em sincronia com EXPENSE_PAYMENT_METHODS de
+// server/routes/expenses.js (a API valida contra aquela lista).
+const PAYMENT_METHOD_OPTIONS = [
+  { value: 'dinheiro', label: 'Dinheiro' },
+  { value: 'pix', label: 'PIX' },
+  { value: 'cartao', label: 'Cartão' },
+  { value: 'transferencia', label: 'Transferência' },
+  { value: 'outro', label: 'Outro' }
+];
+
+function getPaymentMethodLabel(paymentMethod) {
+  const option = PAYMENT_METHOD_OPTIONS.find((item) => item.value === paymentMethod);
+  return option ? option.label : '—';
+}
+
 function TagPills({ tags }) {
   if (!tags || !tags.length) return null;
   return (
@@ -126,6 +141,18 @@ export function ExpensesPanel({
               </option>
             ))}
           </select>
+          <select
+            aria-label="Forma de pagamento"
+            value={expenseForm.paymentMethod}
+            onChange={(e) => setExpenseForm({ ...expenseForm, paymentMethod: e.target.value })}
+          >
+            <option value="">Forma de pagamento</option>
+            {PAYMENT_METHOD_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
           <input
             type="text"
             placeholder="Observações"
@@ -198,6 +225,7 @@ export function ExpensesPanel({
               <th>Título</th>
               <th>Valor</th>
               <th>Categoria</th>
+              <th>Forma de pagamento</th>
               <th>Tags</th>
               {canEdit && <th>Ações</th>}
             </tr>
@@ -205,7 +233,7 @@ export function ExpensesPanel({
           <tbody>
             {filteredExpenses.length === 0 ? (
               <tr>
-                <td colSpan={canEdit ? 6 : 5} className="table-empty">
+                <td colSpan={canEdit ? 7 : 6} className="table-empty">
                   Nenhuma despesa encontrada.
                 </td>
               </tr>
@@ -216,6 +244,7 @@ export function ExpensesPanel({
                   <td>{expense.title}</td>
                   <td>{formatCurrency(expense.amount)}</td>
                   <td>{expense.category}</td>
+                  <td>{getPaymentMethodLabel(expense.payment_method)}</td>
                   <td><TagPills tags={expense.tags} /></td>
                   {canEdit && (
                     <td>

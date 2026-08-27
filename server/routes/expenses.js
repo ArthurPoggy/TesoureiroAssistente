@@ -1,7 +1,7 @@
 const express = require('express');
 const { query, queryOne, execute } = require('../db/query');
 const { success, fail, asyncHandler } = require('../utils/response');
-const { requireFields, validateNonNegativeAmount } = require('../utils/validation');
+const { requireFields, validateNonNegativeAmount, validateAllowedValue } = require('../utils/validation');
 const { requireAuth, requirePermission } = require('../middleware/auth');
 const { computeRateio } = require('../utils/rateio');
 
@@ -39,6 +39,12 @@ const syncTags = async (expenseId, tagIds = []) => {
 
 const EXPENSE_REQUIRED_FIELDS_MESSAGE = 'Título, valor e data são obrigatórios';
 const EXPENSE_INVALID_AMOUNT_MESSAGE = 'Valor deve ser um número não-negativo';
+const EXPENSE_INVALID_PAYMENT_METHOD_MESSAGE = 'Forma de pagamento inválida';
+// Manter em sincronia com PAYMENT_METHOD_OPTIONS de
+// client/src/components/expenses/ExpensesPanel.jsx: a lista do formulário e a
+// aceita pela API precisam coincidir, senão o usuário escolhe uma opção que
+// o backend rejeita com 400 (ou o contrário, uma opção válida inacessível).
+const EXPENSE_PAYMENT_METHODS = ['dinheiro', 'pix', 'cartao', 'transferencia', 'outro'];
 
 router.get('/', requireAuth, asyncHandler(async (req, res) => {
   const expenses = await query('SELECT * FROM expenses ORDER BY expense_date DESC');
@@ -57,7 +63,8 @@ router.post('/', requireAuth, requirePermission('despesas.criar'), asyncHandler(
     attachmentId,
     attachmentName,
     attachmentUrl,
-    tagIds
+    tagIds,
+    paymentMethod
   } = req.body;
   const missing = requireFields({ title, amount, expenseDate }, EXPENSE_REQUIRED_FIELDS_MESSAGE);
   if (missing) {
@@ -67,9 +74,17 @@ router.post('/', requireAuth, requirePermission('despesas.criar'), asyncHandler(
   if (invalidAmount) {
     return fail(res, invalidAmount);
   }
+  const invalidPaymentMethod = validateAllowedValue(
+    paymentMethod,
+    EXPENSE_PAYMENT_METHODS,
+    EXPENSE_INVALID_PAYMENT_METHOD_MESSAGE
+  );
+  if (invalidPaymentMethod) {
+    return fail(res, invalidPaymentMethod);
+  }
   const [expense] = await query(
-    `INSERT INTO expenses (title, amount, expense_date, category, notes, event_id, attachment_id, attachment_name, attachment_url)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
+    `INSERT INTO expenses (title, amount, expense_date, category, notes, event_id, attachment_id, attachment_name, attachment_url, payment_method)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
     [
       title,
       amount,
@@ -79,7 +94,8 @@ router.post('/', requireAuth, requirePermission('despesas.criar'), asyncHandler(
       eventId || null,
       attachmentId || null,
       attachmentName || null,
-      attachmentUrl || null
+      attachmentUrl || null,
+      paymentMethod || null
     ]
   );
   await syncTags(expense.id, Array.isArray(tagIds) ? tagIds : []);
@@ -99,7 +115,8 @@ router.put('/:id', requireAuth, requirePermission('despesas.editar'), asyncHandl
     attachmentId,
     attachmentName,
     attachmentUrl,
-    tagIds
+    tagIds,
+    paymentMethod
   } = req.body;
   const missing = requireFields({ title, amount, expenseDate }, EXPENSE_REQUIRED_FIELDS_MESSAGE);
   if (missing) {
@@ -109,12 +126,21 @@ router.put('/:id', requireAuth, requirePermission('despesas.editar'), asyncHandl
   if (invalidAmount) {
     return fail(res, invalidAmount);
   }
+  const invalidPaymentMethod = validateAllowedValue(
+    paymentMethod,
+    EXPENSE_PAYMENT_METHODS,
+    EXPENSE_INVALID_PAYMENT_METHOD_MESSAGE
+  );
+  if (invalidPaymentMethod) {
+    return fail(res, invalidPaymentMethod);
+  }
   const [expense] = await query(
     `UPDATE expenses
      SET title = ?, amount = ?, expense_date = ?, category = ?, notes = ?, event_id = ?,
          attachment_id = COALESCE(?, attachment_id),
          attachment_name = COALESCE(?, attachment_name),
-         attachment_url = COALESCE(?, attachment_url)
+         attachment_url = COALESCE(?, attachment_url),
+         payment_method = ?
      WHERE id = ? RETURNING *`,
     [
       title,
@@ -126,6 +152,7 @@ router.put('/:id', requireAuth, requirePermission('despesas.editar'), asyncHandl
       attachmentId || null,
       attachmentName || null,
       attachmentUrl || null,
+      paymentMethod || null,
       id
     ]
   );
