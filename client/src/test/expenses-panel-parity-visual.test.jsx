@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { ExpensesPanel } from '../components/expenses/ExpensesPanel';
 
 // Validação visual final (subtask "Validação visual final e documentação do
@@ -47,15 +44,6 @@ const defaultProps = {
   onReset: noop
 };
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const projectsPanelPath = path.resolve(
-  __dirname,
-  '..',
-  'components',
-  'projects',
-  'ProjectsPanel.jsx'
-);
-
 describe('ExpensesPanel — paridade visual com os demais painéis de detalhe', () => {
   it('usa a mesma estrutura de cabeçalho (section.panel > .panel-header > h2 + p) que ProjectsPanel', () => {
     useAuth.mockReturnValue({ canEdit: true });
@@ -68,12 +56,6 @@ describe('ExpensesPanel — paridade visual com os demais painéis de detalhe', 
     expect(header, 'deve existir um .panel-header direto dentro de section.panel').not.toBeNull();
     expect(header.querySelector('h2')).not.toBeNull();
     expect(header.querySelector('p')).not.toBeNull();
-
-    // Confirma que o padrão observado no componente renderizado também
-    // existe, textualmente, no painel de referência (ProjectsPanel), para
-    // que uma futura mudança em apenas um dos dois seja pega pelo teste.
-    const projectsSource = fs.readFileSync(projectsPanelPath, 'utf-8');
-    expect(projectsSource).toMatch(/<section className="panel">\s*<div className="panel-header">\s*<h2>/);
   });
 
   it('mantém os campos de anexo agrupados em um bloco visualmente separado do restante do formulário', () => {

@@ -23,15 +23,20 @@ function collectDefinedClasses(dir) {
   const classes = new Set();
   for (const file of fs.readdirSync(dir)) {
     if (!file.endsWith('.css')) continue;
-    const css = fs.readFileSync(path.join(dir, file), 'utf-8');
-    // Captura tokens ".classe" em qualquer posição do arquivo (seletores,
-    // inclusive dentro de @media). Não confunde com números decimais em
-    // valores (ex.: "0.4rem", "rgba(0,0,0,.1)") porque nesses casos o
-    // caractere após o ponto é um dígito, não uma letra/underscore.
-    const regex = /\.([a-zA-Z_][\w-]*)/g;
-    let match;
-    while ((match = regex.exec(css)) !== null) {
-      classes.add(match[1]);
+    const css = fs.readFileSync(path.join(dir, file), 'utf-8').replace(/\/\*[\s\S]*?\*\//g, ' ');
+    // Coleta ".classe" apenas no texto em posição de seletor (o que vem
+    // antes de cada bloco `{ ... }`, inclusive dentro de @media), nunca no
+    // corpo das regras: um `url(./icone.png)` no corpo registraria "png"
+    // como classe definida e afrouxaria a checagem de órfãs.
+    const ruleRegex = /([^{}]+)\{[^{}]*\}/g;
+    const classInSelectorRegex = /\.([a-zA-Z_][\w-]*)/g;
+    let rule;
+    while ((rule = ruleRegex.exec(css)) !== null) {
+      const selector = rule[1];
+      let match;
+      while ((match = classInSelectorRegex.exec(selector)) !== null) {
+        classes.add(match[1]);
+      }
     }
   }
   return classes;
