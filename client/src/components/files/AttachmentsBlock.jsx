@@ -20,7 +20,7 @@ export function AttachmentsBlock({
         <p>Use para comprovantes de pagamentos, despesas e eventos.</p>
       </div>
 
-      {canEdit ? (
+      {canEdit && (
         <form className="form-grid" onSubmit={onSubmit}>
           <input
             placeholder="Nome do arquivo (opcional)"
@@ -40,7 +40,7 @@ export function AttachmentsBlock({
             </button>
           </div>
         </form>
-      ) : null}
+      )}
 
       <div className="table-wrapper">
         {filesLoading ? (

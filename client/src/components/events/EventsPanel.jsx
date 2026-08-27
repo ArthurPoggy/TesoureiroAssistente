@@ -20,7 +20,7 @@ export function EventsPanel({
         <p>Use eventos para contar histórias como &quot;Acampamento de junho&quot;.</p>
       </div>
 
-      {canEdit ? (
+      {canEdit && (
         <form className="form-grid" onSubmit={onSubmit}>
           <input
             placeholder="Nome do evento"
@@ -60,7 +60,7 @@ export function EventsPanel({
             )}
           </div>
         </form>
-      ) : null}
+      )}
 
       <div className="events-list">
         {events.map((eventItem) => (

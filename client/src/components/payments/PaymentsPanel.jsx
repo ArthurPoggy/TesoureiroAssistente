@@ -138,7 +138,7 @@ export function PaymentsPanel({
         </div>
       )}
 
-      {canEdit ? (
+      {canEdit && (
         <form className="form-grid" onSubmit={handleSubmit} aria-busy={submitting}>
           {errors.memberId && <span className="error">{errors.memberId}</span>}
           <select
@@ -232,7 +232,7 @@ export function PaymentsPanel({
             )}
           </div>
         </form>
-      ) : null}
+      )}
 
       <div className="table-toolbar">
         <div className="table-toolbar-filters">

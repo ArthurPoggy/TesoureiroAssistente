@@ -89,7 +89,7 @@ export function ExpensesPanel({
         <p>Controle de gastos por categoria.</p>
       </div>
 
-      {canEdit ? (
+      {canEdit && (
         <form className="form-grid" onSubmit={onSubmit}>
           <input
             placeholder="Descrição"
@@ -163,7 +163,7 @@ export function ExpensesPanel({
             )}
           </div>
         </form>
-      ) : null}
+      )}
 
       <div className="table-toolbar">
         <div className="table-toolbar-filters">
