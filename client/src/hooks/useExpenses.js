@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { uploadDriveFile } from '../services/api';
 import { runRequest } from '../utils/hookRequests';
@@ -21,11 +21,24 @@ export function useExpenses(showToast, handleError, events = []) {
   });
   const [editingExpenseId, setEditingExpenseId] = useState(null);
   const [fileInputKey, setFileInputKey] = useState(0);
+  const [selectedExpenseDetail, setSelectedExpenseState] = useState(null);
+
+  const selectedExpenseRef = useRef(null);
+  const setSelectedExpenseDetail = useCallback((value) => {
+    selectedExpenseRef.current = value;
+    setSelectedExpenseState(value);
+  }, []);
 
   const loadExpenses = useCallback(async () => {
     await runRequest(handleError, async () => {
       const data = await apiFetch('/api/expenses');
-      setExpenses(data.expenses || []);
+      const list = data.expenses || [];
+      setExpenses(list);
+      if (selectedExpenseRef.current) {
+        const updated = list.find((e) => e.id === selectedExpenseRef.current.id);
+        selectedExpenseRef.current = updated || null;
+        setSelectedExpenseState(updated || null);
+      }
     });
   }, [apiFetch, handleError]);
 
@@ -110,10 +123,13 @@ export function useExpenses(showToast, handleError, events = []) {
     if (!window.confirm('Remover esta despesa?')) return;
     await runRequest(handleError, async () => {
       await apiFetch(`/api/expenses/${id}`, { method: 'DELETE' });
+      if (selectedExpenseDetail?.id === id) {
+        setSelectedExpenseDetail(null);
+      }
       await Promise.all([loadExpenses(), ...refreshCallbacks.map(cb => cb())]);
       showToast('Despesa removida');
     });
-  }, [apiFetch, handleError, loadExpenses, showToast]);
+  }, [apiFetch, handleError, loadExpenses, selectedExpenseDetail, setSelectedExpenseDetail, showToast]);
 
   const startEditExpense = useCallback((expense) => {
     setExpenseForm({
@@ -139,6 +155,8 @@ export function useExpenses(showToast, handleError, events = []) {
     setExpenseForm,
     editingExpenseId,
     fileInputKey,
+    selectedExpenseDetail,
+    setSelectedExpenseDetail,
     loadExpenses,
     resetExpenseForm,
     handleExpenseSubmit,

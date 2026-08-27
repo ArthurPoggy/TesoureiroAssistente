@@ -37,11 +37,18 @@ const syncTags = async (expenseId, tagIds = []) => {
   }
 };
 
+const EXPENSE_SELECT_WITH_EVENT = `SELECT e.*, ev.name AS event_name
+     FROM expenses e
+     LEFT JOIN events ev ON ev.id = e.event_id`;
+
+const fetchExpenseWithEvent = (id) =>
+  queryOne(`${EXPENSE_SELECT_WITH_EVENT} WHERE e.id = ?`, [id]);
+
 const EXPENSE_REQUIRED_FIELDS_MESSAGE = 'Título, valor e data são obrigatórios';
 const EXPENSE_INVALID_AMOUNT_MESSAGE = 'Valor deve ser um número não-negativo';
 
 router.get('/', requireAuth, asyncHandler(async (req, res) => {
-  const expenses = await query('SELECT * FROM expenses ORDER BY expense_date DESC');
+  const expenses = await query(`${EXPENSE_SELECT_WITH_EVENT} ORDER BY e.expense_date DESC`);
   const enriched = await attachTags(expenses);
   success(res, { expenses: enriched });
 }));
@@ -83,7 +90,8 @@ router.post('/', requireAuth, requirePermission('despesas.criar'), asyncHandler(
     ]
   );
   await syncTags(expense.id, Array.isArray(tagIds) ? tagIds : []);
-  const [enriched] = await attachTags([expense]);
+  const expenseWithEvent = await fetchExpenseWithEvent(expense.id);
+  const [enriched] = await attachTags([expenseWithEvent]);
   success(res, { expense: enriched });
 }));
 
@@ -135,7 +143,8 @@ router.put('/:id', requireAuth, requirePermission('despesas.editar'), asyncHandl
   if (tagIds !== undefined) {
     await syncTags(id, Array.isArray(tagIds) ? tagIds : []);
   }
-  const [enriched] = await attachTags([expense]);
+  const expenseWithEvent = await fetchExpenseWithEvent(id);
+  const [enriched] = await attachTags([expenseWithEvent]);
   success(res, { expense: enriched });
 }));
 
