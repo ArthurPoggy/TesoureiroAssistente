@@ -138,7 +138,7 @@ export function PaymentsPanel({
         </div>
       )}
 
-      {canEdit ? (
+      {canEdit && (
         <form className="form-grid" onSubmit={handleSubmit} aria-busy={submitting}>
           {errors.memberId && <span className="error">{errors.memberId}</span>}
           <select
@@ -232,8 +232,6 @@ export function PaymentsPanel({
             )}
           </div>
         </form>
-      ) : (
-        <p className="lock-hint">Somente o tesoureiro pode registrar ou editar pagamentos.</p>
       )}
 
       <div className="table-toolbar">

@@ -79,6 +79,26 @@
   border-top: none;
 }
 
+.form-grid > .attachments-block {
+  grid-column: 1 / -1;
+}
+
+.attachments-block-label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.attachments-block-fields {
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
 .hint {
   display: block;
   margin-top: var(--spacing-md);
