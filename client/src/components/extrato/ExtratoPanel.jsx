@@ -27,6 +27,29 @@ const formatDate = (value) => {
   return value;
 };
 
+function ExtratoPagination({ page, pageSize, total, onPageChange }) {
+  if (total <= 0) return null;
+
+  const totalPages = Math.ceil(total / pageSize);
+  const from = (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
+
+  return (
+    <div className="pagination">
+      <span className="pagination-info">
+        Exibindo {from}–{to} de {total} registros
+      </span>
+      <div className="pagination-controls">
+        <button className="ghost pagination-btn" onClick={() => onPageChange?.(1)} disabled={page === 1} title="Primeira">«</button>
+        <button className="ghost pagination-btn" onClick={() => onPageChange?.(page - 1)} disabled={page === 1}>Anterior</button>
+        <span className="pagination-page">Página {page} de {totalPages}</span>
+        <button className="ghost pagination-btn" onClick={() => onPageChange?.(page + 1)} disabled={page >= totalPages}>Próxima</button>
+        <button className="ghost pagination-btn" onClick={() => onPageChange?.(totalPages)} disabled={page >= totalPages} title="Última">»</button>
+      </div>
+    </div>
+  );
+}
+
 export function ExtratoPanel({
   entries,
   summary,
@@ -165,25 +188,7 @@ export function ExtratoPanel({
         </table>
       </div>
 
-      {total > 0 && (() => {
-        const totalPages = Math.ceil(total / pageSize);
-        const from = (page - 1) * pageSize + 1;
-        const to = Math.min(page * pageSize, total);
-        return (
-          <div className="pagination">
-            <span className="pagination-info">
-              Exibindo {from}–{to} de {total} registros
-            </span>
-            <div className="pagination-controls">
-              <button className="ghost pagination-btn" onClick={() => onPageChange?.(1)} disabled={page === 1} title="Primeira">«</button>
-              <button className="ghost pagination-btn" onClick={() => onPageChange?.(page - 1)} disabled={page === 1}>Anterior</button>
-              <span className="pagination-page">Página {page} de {totalPages}</span>
-              <button className="ghost pagination-btn" onClick={() => onPageChange?.(page + 1)} disabled={page >= totalPages}>Próxima</button>
-              <button className="ghost pagination-btn" onClick={() => onPageChange?.(totalPages)} disabled={page >= totalPages} title="Última">»</button>
-            </div>
-          </div>
-        );
-      })()}
+      <ExtratoPagination page={page} pageSize={pageSize} total={total} onPageChange={onPageChange} />
 
       {isAdmin && (
         <div className="extrato-export">
