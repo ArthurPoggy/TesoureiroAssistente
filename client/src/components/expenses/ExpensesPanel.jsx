@@ -2,7 +2,52 @@ import { useState, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 
-function TagSelector({ tags = [], selectedIds = [], onChange, canEdit }) {
+function NewTagField({ onCreate, onCreated }) {
+  const [name, setName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleCreate = async () => {
+    const trimmed = name.trim();
+    if (!trimmed || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const createdTag = await onCreate(trimmed);
+      if (createdTag && createdTag.id != null) {
+        setName('');
+        onCreated(createdTag.id);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="tag-selector-new">
+      <input
+        type="text"
+        placeholder="Nova tag"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          handleCreate();
+        }}
+        disabled={isSubmitting}
+      />
+      <button
+        type="button"
+        className="ghost"
+        onClick={handleCreate}
+        disabled={isSubmitting}
+      >
+        Nova tag
+      </button>
+    </div>
+  );
+}
+
+function TagSelector({ tags = [], selectedIds = [], onChange, canEdit, onCreate }) {
   const toggle = (id) => {
     if (!canEdit) return;
     onChange(
@@ -12,7 +57,8 @@ function TagSelector({ tags = [], selectedIds = [], onChange, canEdit }) {
     );
   };
 
-  if (!tags.length) return null;
+  const canCreate = canEdit && typeof onCreate === 'function';
+  if (!tags.length && !canCreate) return null;
 
   return (
     <div className="tag-selector">
@@ -29,6 +75,16 @@ function TagSelector({ tags = [], selectedIds = [], onChange, canEdit }) {
           </button>
         ))}
       </div>
+      {canCreate && (
+        <NewTagField
+          onCreate={onCreate}
+          onCreated={(id) => {
+            if (!selectedIds.includes(id)) {
+              onChange([...selectedIds, id]);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -160,7 +216,8 @@ function ExpenseForm({
   tags,
   canEdit,
   onSubmit,
-  onReset
+  onReset,
+  onCreateTag
 }) {
   return (
     <form className="form-grid" onSubmit={onSubmit}>
@@ -171,6 +228,7 @@ function ExpenseForm({
         selectedIds={expenseForm.tagIds || []}
         onChange={(ids) => setExpenseForm({ ...expenseForm, tagIds: ids })}
         canEdit={canEdit}
+        onCreate={onCreateTag}
       />
       <AttachmentFields
         expenseForm={expenseForm}
@@ -280,7 +338,8 @@ function ExpenseFormSection({
   events,
   tags,
   onSubmit,
-  onReset
+  onReset,
+  onCreateTag
 }) {
   if (!canEdit) return null;
   return (
@@ -294,6 +353,7 @@ function ExpenseFormSection({
       canEdit={canEdit}
       onSubmit={onSubmit}
       onReset={onReset}
+      onCreateTag={onCreateTag}
     />
   );
 }
@@ -344,7 +404,8 @@ export function ExpensesPanel({
   onSubmit,
   onDelete,
   onEdit,
-  onReset
+  onReset,
+  onCreateTag
 }) {
   const { canEdit } = useAuth();
   const { search, setSearch, categoryFilter, setCategoryFilter, categories, filteredExpenses } =
@@ -363,6 +424,7 @@ export function ExpensesPanel({
         tags={tags}
         onSubmit={onSubmit}
         onReset={onReset}
+        onCreateTag={onCreateTag}
       />
 
       <ExpensesToolbar

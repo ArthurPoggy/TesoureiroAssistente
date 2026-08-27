@@ -188,3 +188,29 @@ describe('Tags em despesas', () => {
     expect(links).toHaveLength(0);
   });
 });
+
+describe('POST /api/tags — sinal de criação', () => {
+  it('responde created: true ao criar uma tag nova', async () => {
+    const res = await request(app)
+      .post('/api/tags')
+      .set(auth(tokens.admin()))
+      .send({ name: 'TagInédita' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.created).toBe(true);
+    expect(res.body.tag.name).toBe('TagInédita');
+  });
+
+  it('responde created: false ao reaproveitar tag existente, mesmo fora da lista do cliente', async () => {
+    const existing = insertTag('Acampamento');
+
+    const res = await request(app)
+      .post('/api/tags')
+      .set(auth(tokens.admin()))
+      .send({ name: 'acampamento' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.created).toBe(false);
+    expect(res.body.tag.id).toBe(existing.id);
+  });
+});

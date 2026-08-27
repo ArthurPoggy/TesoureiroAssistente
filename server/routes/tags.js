@@ -21,12 +21,21 @@ router.post('/', requirePrivileged, async (req, res) => {
       return fail(res, 'Nome da tag é obrigatório', 400);
     }
     const normalized = name.trim();
-    const existing = await queryOne('SELECT * FROM tags WHERE name = ? COLLATE NOCASE', [normalized]);
+    // LOWER() nos dois lados em vez de `COLLATE NOCASE`, que é sintaxe só do
+    // SQLite e faria a consulta falhar no Postgres/Supabase. Vale também como
+    // guarda lá: a tabela `tags` do supabase-schema.sql tem UNIQUE(name)
+    // sensível a maiúscula, ao contrário do UNIQUE(name COLLATE NOCASE) do
+    // SQLite, então é esta checagem que evita "Acampamento" e "acampamento"
+    // coexistirem em produção.
+    const existing = await queryOne('SELECT * FROM tags WHERE LOWER(name) = LOWER(?)', [normalized]);
     if (existing) {
-      return success(res, { tag: existing });
+      // `created` distingue a tag reaproveitada da recém-criada: quem chama
+      // não tem como saber isso comparando com a própria lista local, que
+      // pode estar desatualizada em relação ao banco.
+      return success(res, { tag: existing, created: false });
     }
     const [tag] = await query('INSERT INTO tags (name) VALUES (?) RETURNING *', [normalized]);
-    success(res, { tag });
+    success(res, { tag, created: true });
   } catch (error) {
     fail(res, error.message);
   }

@@ -16,7 +16,7 @@ export function ExpensesPage() {
   const { toast, showToast, handleError } = useToast();
 
   const { events, loadEvents } = useEvents(showToast, handleError);
-  const { tags, loadTags } = useTags(showToast, handleError);
+  const { tags, loadTags, createTag } = useTags(showToast, handleError);
 
   const {
     expenses,
@@ -55,6 +55,7 @@ export function ExpensesPage() {
           onDelete={(id) => handleExpenseDelete(id, [])}
           onEdit={startEditExpense}
           onReset={resetExpenseForm}
+          onCreateTag={createTag}
         />
       </Suspense>
     </div>
