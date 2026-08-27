@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, formatDate } from '../../utils/formatters';
 
 function TagSelector({ tags = [], selectedIds = [], onChange, canEdit }) {
   const toggle = (id) => {
@@ -220,7 +220,15 @@ function ExpensesToolbar({ search, setSearch, categoryFilter, setCategoryFilter,
 function ExpensesTable({ filteredExpenses, canEdit, onEdit, onDelete }) {
   return (
     <div className="table-wrapper">
-      <table>
+      <table className="expenses-table">
+        <colgroup>
+          <col className="col-date" />
+          <col className="col-title" />
+          <col className="col-amount" />
+          <col className="col-category" />
+          <col className="col-tags" />
+          {canEdit && <col className="col-actions" />}
+        </colgroup>
         <thead>
           <tr>
             <th>Data</th>
@@ -241,13 +249,13 @@ function ExpensesTable({ filteredExpenses, canEdit, onEdit, onDelete }) {
           ) : (
             filteredExpenses.map((expense) => (
               <tr key={expense.id}>
-                <td>{expense.expense_date}</td>
+                <td>{formatDate(expense.expense_date)}</td>
                 <td>{expense.title}</td>
                 <td>{formatCurrency(expense.amount)}</td>
                 <td>{expense.category}</td>
                 <td><TagPills tags={expense.tags} /></td>
                 {canEdit && (
-                  <td>
+                  <td className="col-actions">
                     <button onClick={() => onEdit(expense)}>Editar</button>
                     <button className="ghost" onClick={() => onDelete(expense.id)}>
                       Remover

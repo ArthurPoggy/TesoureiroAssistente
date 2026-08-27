@@ -105,6 +105,61 @@ table tbody tr:hover {
   overflow-wrap: break-word;
 }
 
+/* Despesas: mesmo padrão de largura fixa da tabela de pagamentos, para que
+   a tabela não "pule"/redimensione ao filtrar/buscar. */
+.expenses-table {
+  table-layout: fixed;
+}
+
+.expenses-table .col-date {
+  width: 12%;
+}
+
+.expenses-table .col-title {
+  width: 28%;
+}
+
+.expenses-table .col-amount {
+  width: 12%;
+}
+
+.expenses-table .col-category {
+  width: 15%;
+}
+
+.expenses-table .col-tags {
+  width: 18%;
+}
+
+.expenses-table col.col-actions {
+  width: 15%;
+}
+
+/* Ações: Editar/Remover organizados em flex-wrap para que a quebra em
+   telas estreitas seja controlada, em vez de depender do wrap "cru" de
+   <button> inline-block, que pode estourar a largura da coluna.
+   A regra vale só para a célula: aplicar `display` ao <col> sobrescreveria
+   o `display: table-column` dele e anularia a largura fixa acima. */
+.expenses-table td.col-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.expenses-table td {
+  overflow-wrap: break-word;
+}
+
+.expenses-table .tag-pill {
+  /* Tags: uma única tag longa não pode estourar a largura fixa da coluna
+     Tags — o pill precisa poder quebrar/encolher dentro do limite da
+     célula, e não só depender do flex-wrap de .tag-pills. */
+  white-space: normal;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
 .paid {
   color: var(--color-success-dark);
   font-weight: var(--font-weight-semibold);
