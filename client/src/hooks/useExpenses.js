@@ -21,12 +21,12 @@ export function useExpenses(showToast, handleError, events = []) {
   });
   const [editingExpenseId, setEditingExpenseId] = useState(null);
   const [fileInputKey, setFileInputKey] = useState(0);
-  const [selectedExpenseDetail, _setSelectedExpenseDetail] = useState(null);
+  const [selectedExpenseDetail, setSelectedExpenseState] = useState(null);
 
   const selectedExpenseRef = useRef(null);
   const setSelectedExpenseDetail = useCallback((value) => {
     selectedExpenseRef.current = value;
-    _setSelectedExpenseDetail(value);
+    setSelectedExpenseState(value);
   }, []);
 
   const loadExpenses = useCallback(async () => {
@@ -37,7 +37,7 @@ export function useExpenses(showToast, handleError, events = []) {
       if (selectedExpenseRef.current) {
         const updated = list.find((e) => e.id === selectedExpenseRef.current.id);
         selectedExpenseRef.current = updated || null;
-        _setSelectedExpenseDetail(updated || null);
+        setSelectedExpenseState(updated || null);
       }
     });
   }, [apiFetch, handleError]);

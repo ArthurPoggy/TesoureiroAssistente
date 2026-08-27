@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, formatDate } from '../../utils/formatters';
 
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'];
 
@@ -7,12 +7,6 @@ function isImageFile(name) {
   if (!name) return false;
   const ext = name.split('.').pop().toLowerCase();
   return IMAGE_EXTENSIONS.includes(ext);
-}
-
-function formatExpenseDate(dateStr) {
-  if (!dateStr) return '-';
-  const [year, month, day] = dateStr.split('-');
-  return `${day}/${month}/${year}`;
 }
 
 function ExpenseAttachment({ attachmentName, attachmentUrl, onPreview }) {
@@ -52,7 +46,7 @@ export function ExpenseDetailView({ expense }) {
           <h4>Dados da Despesa</h4>
           <dl className="expense-detail-grid">
             <dt>Data</dt>
-            <dd>{formatExpenseDate(expense.expense_date)}</dd>
+            <dd>{formatDate(expense.expense_date)}</dd>
             <dt>Categoria</dt>
             <dd>{expense.category || '-'}</dd>
             <dt>Evento vinculado</dt>

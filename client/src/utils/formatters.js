@@ -46,6 +46,22 @@ export const formatDateTime = (value) => {
   return date.toLocaleString('pt-BR');
 };
 
+const ISO_DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+// Datas "somente dia" (ex.: expense_date no formato ISO "aaaa-mm-dd") são
+// interpretadas como horário local, e não UTC, para evitar que o fuso
+// horário desloque o dia exibido (ex.: "2026-08-09" virando 08/08 em
+// fusos negativos como America/Sao_Paulo).
+export const formatDate = (value) => {
+  if (!value) return '-';
+  const match = typeof value === 'string' ? value.match(ISO_DATE_ONLY) : null;
+  const date = match
+    ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+    : new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleDateString('pt-BR');
+};
+
 // Parsers de filtro
 export const parseMonthFilter = (value) => {
   if (value === 'all' || value === '') return null;

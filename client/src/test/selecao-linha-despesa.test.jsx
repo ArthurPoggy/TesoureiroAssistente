@@ -95,6 +95,34 @@ describe('ExpensesPanel — seleção de linha da tabela', () => {
     expect(setSelectedExpenseDetail).toHaveBeenCalledWith(null);
   });
 
+  it('abre o detalhe pelo teclado (Enter e Espaço) na linha focada', () => {
+    const setSelectedExpenseDetail = vi.fn();
+    const { getByText } = render(
+      <ExpensesPanel
+        {...baseProps}
+        expenses={expenses}
+        selectedExpenseDetail={null}
+        setSelectedExpenseDetail={setSelectedExpenseDetail}
+      />
+    );
+
+    const row = getByText('Compra de material').closest('tr');
+    // A linha precisa ser alcançável por teclado: sem tabIndex, quem navega
+    // sem mouse não chega até ela nem consegue abrir o detalhe.
+    expect(row).toHaveAttribute('tabindex', '0');
+
+    fireEvent.keyDown(row, { key: 'Enter' });
+    expect(setSelectedExpenseDetail).toHaveBeenCalledWith(expenses[0]);
+
+    setSelectedExpenseDetail.mockClear();
+    fireEvent.keyDown(row, { key: ' ' });
+    expect(setSelectedExpenseDetail).toHaveBeenCalledWith(expenses[0]);
+
+    setSelectedExpenseDetail.mockClear();
+    fireEvent.keyDown(row, { key: 'a' });
+    expect(setSelectedExpenseDetail).not.toHaveBeenCalled();
+  });
+
   it('clique nos botões de ação não altera a seleção da linha', () => {
     const setSelectedExpenseDetail = vi.fn();
     const { getByText } = render(

@@ -52,6 +52,16 @@ describe('ExpenseDetailView', () => {
     expect(queryByText('Baixar', { exact: false })).not.toBeInTheDocument();
   });
 
+  it('usa o formatador de data compartilhado, sem quebrar com valor inesperado', () => {
+    const { getByText } = render(
+      <ExpenseDetailView expense={{ ...fullExpense, expense_date: 'data-invalida' }} />
+    );
+
+    // Antes, a formatação local partia a string em '-' sem validar e exibia
+    // "undefined/invalida/data"; o util compartilhado devolve '-'.
+    expect(getByText('-')).toBeInTheDocument();
+  });
+
   it('não renderiza nada quando a despesa é null', () => {
     const { container } = render(<ExpenseDetailView expense={null} />);
     expect(container).toBeEmptyDOMElement();

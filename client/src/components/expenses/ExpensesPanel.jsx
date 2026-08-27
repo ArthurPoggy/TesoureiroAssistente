@@ -78,9 +78,15 @@ function ExpensesTable({ expenses, canEdit, selectedExpenseDetail, setSelectedEx
           expenses.map((expense) => (
             <tr
               key={expense.id}
-              className={selectedExpenseDetail?.id === expense.id ? 'selected' : ''}
-              style={{ cursor: 'pointer' }}
+              className={`expense-row${selectedExpenseDetail?.id === expense.id ? ' selected' : ''}`}
+              tabIndex={0}
+              aria-expanded={selectedExpenseDetail?.id === expense.id}
               onClick={() => toggleSelection(expense)}
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                toggleSelection(expense);
+              }}
             >
               <td>{expense.expense_date}</td>
               <td>{expense.title}</td>
