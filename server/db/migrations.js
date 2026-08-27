@@ -1,5 +1,5 @@
 const config = require('../config');
-const connection = require('./connection');
+const { getSqliteDb } = require('./connection');
 const { PERMISSIONS_CATALOG } = require('../utils/permissions');
 
 const migrations = [
@@ -229,10 +229,12 @@ const migrations = [
     )`
 ];
 
-function runMigrations() {
+// `dbOverride` existe para os testes rodarem as migrations contra um banco
+// próprio (ex.: :memory:) sem precisar substituir o módulo de conexão.
+function runMigrations(dbOverride) {
   if (config.useSupabase) return;
 
-  const db = connection.getSqliteDb();
+  const db = dbOverride || getSqliteDb();
   const runMigration = (sql) => {
     try {
       db.prepare(sql).run();

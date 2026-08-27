@@ -33,6 +33,8 @@ function TagSelector({ tags = [], selectedIds = [], onChange, canEdit }) {
   );
 }
 
+// Manter em sincronia com EXPENSE_PAYMENT_METHODS de
+// server/routes/expenses.js (a API valida contra aquela lista).
 const PAYMENT_METHOD_OPTIONS = [
   { value: 'dinheiro', label: 'Dinheiro' },
   { value: 'pix', label: 'PIX' },

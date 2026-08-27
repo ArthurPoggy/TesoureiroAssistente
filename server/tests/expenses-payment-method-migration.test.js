@@ -9,7 +9,6 @@ const fs = require('fs');
 const path = require('path');
 const Database = require('better-sqlite3');
 const { migrations, runMigrations } = require('../db/migrations');
-const connectionModule = require('../db/connection');
 
 describe('coluna expenses.payment_method', () => {
   test('migração adiciona payment_method (TEXT, nullable) em expenses', () => {
@@ -23,17 +22,14 @@ describe('coluna expenses.payment_method', () => {
 
   test('migração roda duas vezes sem erro (idempotência) em SQLite', () => {
     const db = new Database(':memory:');
-    const originalGetSqliteDb = connectionModule.getSqliteDb;
-    connectionModule.getSqliteDb = () => db;
 
     try {
-      expect(() => runMigrations()).not.toThrow();
-      expect(() => runMigrations()).not.toThrow();
+      expect(() => runMigrations(db)).not.toThrow();
+      expect(() => runMigrations(db)).not.toThrow();
 
       const columns = db.prepare('PRAGMA table_info(expenses)').all();
       expect(columns.some((column) => column.name === 'payment_method')).toBe(true);
     } finally {
-      connectionModule.getSqliteDb = originalGetSqliteDb;
       db.close();
     }
   });

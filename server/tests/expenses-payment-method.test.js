@@ -85,6 +85,29 @@ describe('POST/PUT /api/expenses — payment_method', () => {
     expect(res.body.expense.payment_method).toBe('cartao');
   });
 
+  it('limpa payment_method quando a edição envia o campo vazio', async () => {
+    const expense = insertExpense({ amount: 100, paymentMethod: 'pix' });
+
+    const res = await request(app)
+      .put(`/api/expenses/${expense.id}`)
+      .set(auth(tokens.admin()))
+      .send({
+        title: expense.title,
+        amount: expense.amount,
+        expenseDate: expense.expense_date,
+        paymentMethod: ''
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.expense.payment_method).toBeNull();
+
+    const check = await request(app)
+      .get('/api/expenses')
+      .set(auth(tokens.admin()));
+    const stored = check.body.expenses.find((e) => e.id === expense.id);
+    expect(stored.payment_method).toBeNull();
+  });
+
   it('rejeita atualização com payment_method fora da lista de valores aceitos', async () => {
     const expense = insertExpense({ amount: 100 });
 
