@@ -20,7 +20,7 @@ export function EventsPanel({
         <p>Use eventos para contar histórias como &quot;Acampamento de junho&quot;.</p>
       </div>
 
-      {canEdit ? (
+      {canEdit && (
         <form className="form-grid" onSubmit={onSubmit}>
           <input
             placeholder="Nome do evento"
@@ -60,8 +60,6 @@ export function EventsPanel({
             )}
           </div>
         </form>
-      ) : (
-        <p className="lock-hint">Somente o tesoureiro pode registrar eventos.</p>
       )}
 
       <div className="events-list">

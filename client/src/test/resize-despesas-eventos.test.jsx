@@ -88,7 +88,6 @@ describe('ExpensesPanel — estrutura visual', () => {
     mockUseAuth.mockReturnValue({ canEdit: false });
     const { queryByText } = render(<ExpensesPanel {...expenseProps} />);
     expect(queryByText('Ações')).not.toBeInTheDocument();
-    expect(queryByText('Somente o tesoureiro pode registrar despesas.')).toBeInTheDocument();
   });
 });
 
@@ -129,10 +128,9 @@ describe('EventsPanel — estrutura visual', () => {
     expect(getByPlaceholderText('Nome do evento')).toBeInTheDocument();
   });
 
-  it('oculta formulário e exibe restrição quando canEdit é false', () => {
+  it('oculta formulário quando canEdit é false', () => {
     mockUseAuth.mockReturnValue({ canEdit: false });
-    const { queryByPlaceholderText, getByText } = render(<EventsPanel {...eventProps} />);
+    const { queryByPlaceholderText } = render(<EventsPanel {...eventProps} />);
     expect(queryByPlaceholderText('Nome do evento')).not.toBeInTheDocument();
-    expect(getByText('Somente o tesoureiro pode registrar eventos.')).toBeInTheDocument();
   });
 });

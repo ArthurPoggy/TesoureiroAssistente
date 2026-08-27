@@ -20,7 +20,7 @@ export function AttachmentsBlock({
         <p>Use para comprovantes de pagamentos, despesas e eventos.</p>
       </div>
 
-      {canEdit ? (
+      {canEdit && (
         <form className="form-grid" onSubmit={onSubmit}>
           <input
             placeholder="Nome do arquivo (opcional)"
@@ -40,8 +40,6 @@ export function AttachmentsBlock({
             </button>
           </div>
         </form>
-      ) : (
-        <p className="lock-hint">Somente o tesoureiro pode enviar arquivos.</p>
       )}
 
       <div className="table-wrapper">

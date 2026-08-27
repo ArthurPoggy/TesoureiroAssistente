@@ -274,9 +274,7 @@ function ExpenseFormSection({
   onSubmit,
   onReset
 }) {
-  if (!canEdit) {
-    return <p className="lock-hint">Somente o tesoureiro pode registrar despesas.</p>;
-  }
+  if (!canEdit) return null;
   return (
     <ExpenseForm
       expenseForm={expenseForm}
