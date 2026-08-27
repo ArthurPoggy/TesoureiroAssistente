@@ -52,4 +52,21 @@ describe('ExpensesPanel — largura de coluna estável (analogo a .payments-tabl
       expect(col.className).toMatch(/^col-/);
     });
   });
+
+  it('sem permissão de edição, o colgroup acompanha as colunas exibidas', () => {
+    mockUseAuth.mockReturnValue({ canEdit: false });
+    const { container } = render(
+      <ExpensesPanel {...baseProps} expenses={expenses} />
+    );
+
+    const table = container.querySelector('table.expenses-table');
+    const cols = table.querySelectorAll('colgroup > col');
+    const headers = table.querySelectorAll('thead th');
+
+    // Sem a coluna de Ações sobram 5 colunas; o colgroup precisa ter
+    // exatamente uma <col> por cabeçalho, senão as larguras escorregam de
+    // coluna para a vizinha.
+    expect(cols.length).toBe(headers.length);
+    expect(cols.length).toBe(5);
+  });
 });

@@ -131,11 +131,16 @@ table tbody tr:hover {
   width: 18%;
 }
 
-.expenses-table .col-actions {
+.expenses-table col.col-actions {
   width: 15%;
-  /* Ações: Editar/Remover organizados em flex-wrap para que a quebra em
-     telas estreitas seja controlada, em vez de depender do wrap "cru" de
-     <button> inline-block, que pode estourar a largura da coluna. */
+}
+
+/* Ações: Editar/Remover organizados em flex-wrap para que a quebra em
+   telas estreitas seja controlada, em vez de depender do wrap "cru" de
+   <button> inline-block, que pode estourar a largura da coluna.
+   A regra vale só para a célula: aplicar `display` ao <col> sobrescreveria
+   o `display: table-column` dele e anularia a largura fixa acima. */
+.expenses-table td.col-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;

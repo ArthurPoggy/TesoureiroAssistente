@@ -28,7 +28,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const stylesDir = path.resolve(__dirname, '..', 'styles');
 
 function readCss(file) {
-  return fs.readFileSync(path.join(stylesDir, file), 'utf-8');
+  // Comentários são removidos para que o texto antes de cada `{` seja só o
+  // seletor da regra — um comentário logo acima da regra entraria no
+  // seletor e o extrator abaixo não o reconheceria.
+  return fs.readFileSync(path.join(stylesDir, file), 'utf-8').replace(/\/\*[\s\S]*?\*\//g, ' ');
 }
 
 // Extrai o corpo de todas as regras cujo seletor bate exatamente (ignorando
@@ -96,14 +99,26 @@ describe('ExpensesPanel — quebra controlada de Ações e Tags', () => {
     ).not.toBeNull();
   });
 
-  it('tables.css: .expenses-table .col-actions organiza os botões em flex-wrap com espaçamento, evitando quebra "crua"', () => {
+  it('tables.css: .expenses-table td.col-actions organiza os botões em flex-wrap com espaçamento, evitando quebra "crua"', () => {
     const css = readCss('tables.css');
-    const body = combinedBodyFor(css, '.expenses-table .col-actions');
+    const body = combinedBodyFor(css, '.expenses-table td.col-actions');
 
-    expect(body, '.expenses-table .col-actions não encontrada em tables.css').not.toBe('');
+    expect(body, '.expenses-table td.col-actions não encontrada em tables.css').not.toBe('');
     expect(body).toMatch(/display\s*:\s*flex/);
     expect(body).toMatch(/flex-wrap\s*:\s*wrap/);
     expect(body).toMatch(/gap\s*:/);
+  });
+
+  it('tables.css: a largura da coluna de ações alcança o <col> e não recebe display', () => {
+    const css = readCss('tables.css');
+    const colBody = combinedBodyFor(css, '.expenses-table col.col-actions');
+
+    expect(colBody, '.expenses-table col.col-actions não encontrada em tables.css').not.toBe('');
+    expect(colBody).toMatch(/width\s*:\s*\d+%/);
+    // Um <col> com `display` diferente de table-column deixa de definir a
+    // coluna, e a largura fixa acima passa a não valer: a regra de flex
+    // precisa mirar o <td>, nunca um seletor que alcance os dois.
+    expect(colBody).not.toMatch(/display\s*:/);
   });
 
   it('tables.css: .expenses-table .tag-pill pode quebrar/encolher dentro da coluna Tags (uma única tag longa não deve estourar a largura fixa da coluna)', () => {
